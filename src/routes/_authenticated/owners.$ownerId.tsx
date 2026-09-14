@@ -359,6 +359,24 @@ function OwnerDetailPage() {
     paymentsByContract.set(p.contract_id, list);
   }
 
+  const unitBoard = data.units.map((u) => {
+    const contract = contractByUnit.get(u.id) ?? null;
+    const pays: PaymentRow[] = contract ? (paymentsByContract.get(contract.id) ?? []) : [];
+    const remaining = pays.reduce(
+      (s, p) => s + Math.max(Number(p.amount_due) - Number(p.amount_paid), 0),
+      0,
+    );
+    return { unit: u, contract, remaining };
+  });
+  const unitCounts = {
+    total: data.units.length,
+    occupied: data.units.filter((u) => u.status === "occupied").length,
+    vacant: data.units.filter((u) => u.status === "available" || u.status === "vacant").length,
+    outOfService: data.units.filter(
+      (u) => u.status === "maintenance" || u.status === "out_of_service",
+    ).length,
+  };
+
   type GroupItem = { key: string; title: string; subtitle: string; contract: any | null; badge?: string; assetType: "unit" | "property" };
   const groups: { key: string; title: string; subtitle: string; items: GroupItem[] }[] = [];
   for (const building of data.buildings) {
@@ -582,6 +600,79 @@ function OwnerDetailPage() {
           <Kpi label="آخر سداد" value={data.lastPaidAt ? formatDate(data.lastPaidAt) : "—"} hint="آخر عملية سداد مسجلة" />
         </div>
       </section>
+
+      <section className="surface-card p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[15px] font-bold">الوحدات</h2>
+            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+              حالة وحدات المالك ومستأجريها والمبالغ المتبقية
+            </p>
+          </div>
+          <Chip tone="neutral">{unitCounts.total} وحدة</Chip>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <UnitStat label="شاغرة" value={unitCounts.vacant} tone="success" />
+          <UnitStat label="مشغولة" value={unitCounts.occupied} tone="danger" />
+          <UnitStat label="خارج الخدمة" value={unitCounts.outOfService} tone="warning" />
+          <UnitStat label="إجمالي الوحدات" value={unitCounts.total} tone="neutral" />
+        </div>
+
+        {unitBoard.length === 0 ? (
+          <p className="py-10 text-center text-[13px] text-muted-foreground">
+            لا توجد وحدات مسجلة لهذا المالك.
+          </p>
+        ) : (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {unitBoard.map(({ unit, contract, remaining }) => {
+              const occupied = unit.status === "occupied" || Boolean(contract);
+              const accent = occupied ? "border-destructive/50" : "border-success/50";
+              return (
+                <article key={unit.id} className={`rounded-xl border-2 ${accent} bg-card p-3`}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-[11.5px] text-muted-foreground">{unit.unit_type ?? "وحدة"}</p>
+                      <p className="text-base font-bold">{unit.unit_number}</p>
+                    </div>
+                    <Chip tone={occupied ? "danger" : "success"}>{occupied ? "مشغولة" : "شاغرة"}</Chip>
+                  </div>
+
+                  <div className="mt-3 border-t border-border pt-3 text-[12.5px]">
+                    <p className="flex items-center gap-2 font-semibold">
+                      <UserRound className="size-3.5 text-muted-foreground" />
+                      {contract?.tenant?.full_name ?? "لا يوجد مستأجر"}
+                    </p>
+                    <p className="mt-1 text-[11.5px] text-muted-foreground">
+                      تسجيل الدخول: {contract?.start_date ? formatDate(contract.start_date) : "—"}
+                    </p>
+                    <p className="text-[11.5px] text-muted-foreground">
+                      تسجيل الخروج: {contract?.end_date ? formatDate(contract.end_date) : "—"}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between border-t border-border pt-2 text-[12px]">
+                    <span className={remaining > 0 ? "font-semibold text-destructive" : "text-muted-foreground"}>
+                      المتبقي: {formatCurrency(remaining)}
+                    </span>
+                    {contract ? (
+                      <Link
+                        to="/contracts/$contractId"
+                        params={{ contractId: contract.id }}
+                        className="font-semibold text-primary"
+                      >
+                        العقد
+                      </Link>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+
 
       <RecordSection title="أقرب الدفعات" icon={CalendarClock} count={stats.nearest.length}>
         <div className="space-y-2">
@@ -1004,4 +1095,29 @@ function RecordSection({
 
 function Empty({ text }: { text: string }) {
   return <p className="col-span-full py-7 text-center text-[12.5px] text-muted-foreground">{text}</p>;
+}
+
+function UnitStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "success" | "danger" | "warning" | "neutral";
+}) {
+  const toneClass =
+    tone === "success"
+      ? "text-success"
+      : tone === "danger"
+        ? "text-destructive"
+        : tone === "warning"
+          ? "text-warning"
+          : "text-foreground";
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
+      <span className="text-[12.5px] text-muted-foreground">{label}</span>
+      <b className={`text-2xl ${toneClass}`}>{value}</b>
+    </div>
+  );
 }

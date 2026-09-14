@@ -205,7 +205,44 @@ function DashboardPage() {
     },
   });
 
+  const board = useQuery({
+    queryKey: ["dashboard-board"],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const [units, reservations] = await Promise.all([
+        supabase.from("units").select("unit_type, status"),
+        supabase
+          .from("reservations")
+          .select("id, status, starts_at, ends_at, property:property_id(name, code)")
+          .in("status", ["active", "hold"])
+          .order("starts_at", { ascending: false })
+          .limit(8),
+      ]);
+      const map = new Map<string, { occupied: number; vacant: number }>();
+      for (const u of units.data ?? []) {
+        const key = (u.unit_type as string | null) ?? "غير محدد";
+        const entry = map.get(key) ?? { occupied: 0, vacant: 0 };
+        if (u.status === "occupied") entry.occupied += 1;
+        else entry.vacant += 1;
+        map.set(key, entry);
+      }
+      return {
+        types: [...map.entries()]
+          .map(([type, v]) => ({ type, ...v }))
+          .sort((a, b) => b.occupied + b.vacant - (a.occupied + a.vacant)),
+        reservations: (reservations.data ?? []) as unknown as {
+          id: string;
+          status: string;
+          starts_at: string | null;
+          ends_at: string | null;
+          property: { name: string | null; code: string | null } | null;
+        }[],
+      };
+    },
+  });
+
   const s = summary.data;
+
 
   return (
     <>
@@ -511,6 +548,74 @@ function DashboardPage() {
           )}
         </section>
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="surface-card p-5">
+          <h2 className="text-[15px] font-bold">حالة الوحدة حسب النوع</h2>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">توزيع الوحدات المشغولة والشاغرة</p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[360px] text-right text-[13px]">
+              <thead>
+                <tr className="border-b border-border text-[12px] font-bold text-muted-foreground">
+                  <th className="py-2">نوع الوحدة</th>
+                  <th className="py-2">مشغول</th>
+                  <th className="py-2">شاغر</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(board.data?.types ?? []).map((row) => (
+                  <tr key={row.type} className="border-b border-border/70 last:border-0">
+                    <td className="py-2.5 font-semibold">{row.type}</td>
+                    <td className="py-2.5 text-destructive">{row.occupied}</td>
+                    <td className="py-2.5 text-success">{row.vacant}</td>
+                  </tr>
+                ))}
+                {!board.data?.types.length ? (
+                  <tr>
+                    <td colSpan={3} className="py-8 text-center text-muted-foreground">
+                      لا توجد وحدات مسجلة.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="surface-card p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-[15px] font-bold">حركة الحجوزات</h2>
+              <p className="mt-0.5 text-[12.5px] text-muted-foreground">الحجوزات القائمة والمؤقتة</p>
+            </div>
+            <Link to="/reservations" search={{ newReservation: false }} className="text-xs font-bold text-primary">
+              عرض الكل
+            </Link>
+          </div>
+          <ul className="mt-4 divide-y divide-border">
+            {(board.data?.reservations ?? []).map((row) => (
+              <li key={row.id} className="flex items-center justify-between py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] font-semibold">
+                    {row.property?.name ?? "عقار غير محدد"}
+                  </p>
+                  <p className="text-[11.5px] text-muted-foreground">
+                    {formatDate(row.starts_at)} — {formatDate(row.ends_at)}
+                  </p>
+                </div>
+                <Chip tone={row.status === "active" ? "success" : "warning"}>
+                  {row.status === "active" ? "قائم" : "مؤقت"}
+                </Chip>
+              </li>
+            ))}
+            {!board.data?.reservations.length ? (
+              <li className="py-8 text-center text-[13px] text-muted-foreground">لا توجد حجوزات حالية.</li>
+            ) : null}
+          </ul>
+        </section>
+      </div>
+
+
 
       <section className="surface-card overflow-hidden">
         <header className="flex items-center justify-between border-b border-border p-5"><div><p className="text-[11.5px] font-bold text-primary">مباشر</p><h2 className="mt-1 text-[15px] font-bold">آخر أنشطة النظام</h2></div><Link to="/activity-log" className="text-xs font-bold text-primary">متابعة الموظفين</Link></header>
