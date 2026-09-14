@@ -34,6 +34,7 @@ import { exportWorkbook, type ExportRow } from "@/lib/export";
 import { contractStatusLabels, invoiceStatusLabels } from "@/lib/labels";
 import { ImportDialog } from "@/routes/_authenticated/contracts.index";
 import { moveOwnerAsset } from "@/lib/owner-operations.functions";
+import { issueClientAccess } from "@/lib/portal.functions";
 
 export const Route = createFileRoute("/_authenticated/owners/$ownerId")({
   head: () => ({
@@ -71,6 +72,7 @@ function OwnerDetailPage() {
   const [openUnits, setOpenUnits] = useState<Record<string, boolean>>({});
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [dragAsset, setDragAsset] = useState<{ id: string; type: "unit" | "property" } | null>(null);
+  const [ownerAccess, setOwnerAccess] = useState<{ username: string; password: string } | null>(null);
 
   const dossier = useQuery({
     queryKey: ["owner-dossier", ownerId],
@@ -198,6 +200,15 @@ function OwnerDetailPage() {
       toast.success("تم نقل العنصر إلى المبنى");
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر النقل"),
+  });
+
+  const issueOwnerAccess = useMutation({
+    mutationFn: () => issueClientAccess({ data: { contactId: ownerId } }),
+    onSuccess: (result) => {
+      setOwnerAccess({ username: result.username, password: result.password });
+      toast.success("تم تجهيز حساب دخول المالك");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر تجهيز الحساب"),
   });
 
   const exportOwner = async (aiSummary?: string) => {
@@ -422,6 +433,15 @@ function OwnerDetailPage() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={() => issueOwnerAccess.mutate()}
+            disabled={issueOwnerAccess.isPending}
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-card px-3 font-semibold hover:bg-muted disabled:opacity-50"
+          >
+            <KeyRound className="size-4" />
+            حساب دخول المالك
+          </button>
+          <button
+            type="button"
             onClick={() => setImportOpen(true)}
             className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-card px-3 font-semibold hover:bg-muted"
           >
@@ -455,6 +475,16 @@ function OwnerDetailPage() {
           </button>
         </div>
       </div>
+
+      {ownerAccess ? (
+        <section className="surface-card border-e-4 border-e-success p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div><h2 className="text-sm font-bold">بيانات دخول بوابة المالك</h2><p className="mt-1 text-xs text-muted-foreground">انسخها وأرسلها للمالك بصورة آمنة. كلمة المرور لا تُعرض مرة أخرى.</p></div>
+            <button type="button" onClick={() => setOwnerAccess(null)} className="text-xs font-semibold text-muted-foreground">إخفاء</button>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2"><div className="rounded-lg bg-muted p-3"><span className="block text-xs text-muted-foreground">اسم المستخدم</span><b dir="ltr" className="mt-1 block">{ownerAccess.username}</b></div><div className="rounded-lg bg-muted p-3"><span className="block text-xs text-muted-foreground">كلمة المرور المؤقتة</span><b dir="ltr" className="mt-1 block">{ownerAccess.password}</b></div></div>
+        </section>
+      ) : null}
 
       <section className="surface-card overflow-hidden border-e-4 border-e-primary">
         <div className="flex flex-wrap items-center justify-between gap-4 p-4">
