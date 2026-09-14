@@ -99,6 +99,13 @@
       "when": 1789354131774,
       "tag": "0013_add_owner_role",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789354157927,
+      "tag": "0014_owner_portal_activity_and_property_controls",
+      "breakpoints": true
     }
   ]
 }
