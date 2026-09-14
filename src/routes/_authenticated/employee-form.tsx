@@ -318,14 +318,13 @@ function EmployeeFormPage() {
                 <input
                   type="checkbox"
                   checked={form.is_super_admin}
-                  disabled={Boolean(id)}
                   onChange={(e) => setForm({ ...form, is_super_admin: e.target.checked })}
                 />
                 مدير نظام (كل الصلاحيات)
               </label>
               <p className="text-[12px] leading-6 text-muted-foreground md:col-span-2">
                 {id
-                  ? "تغيير الدور لمدير نظام يتم من صفحة الأدوار والصلاحيات. اكتب كلمة مرور جديدة فقط إذا رغبت في تغييرها."
+                  ? "يمكنك منح أو سحب صلاحية مدير النظام من هنا مباشرة، وكلمة المرور اختيارية."
                   : "يُنشأ الحساب مباشرة ويمكن للموظف الدخول بالبريد وكلمة المرور بعد الحفظ."}
               </p>
             </div>
