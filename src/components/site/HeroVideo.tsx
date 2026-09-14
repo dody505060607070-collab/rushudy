@@ -73,7 +73,7 @@ export function HeroVideo({
 
       <div className="mx-auto flex min-h-[760px] w-full max-w-7xl flex-col justify-between px-4 pb-7 pt-14 text-center md:min-h-[760px] md:px-8 md:pb-10 md:pt-20 lg:min-h-[calc(100svh-74px)]">
         <div className="mx-auto flex max-w-5xl flex-1 flex-col items-center justify-center py-8 md:py-12">
-          <h1 className="animate-pop-in flex w-full flex-col items-center gap-1 font-hero font-bold leading-none md:gap-2">
+          <h1 className="animate-pop-in flex w-full flex-col items-center gap-2 font-hero font-bold leading-[1.25] md:gap-4">
             <span className="text-[13px] tracking-wide text-primary-foreground/80 sm:text-[15px] md:text-[19px]">
               خبرةٌ محلية.. وقرارٌ عقاري أوضح
             </span>
