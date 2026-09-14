@@ -416,8 +416,11 @@ function PropertyFormPage() {
         purpose: form.purpose,
         rent_period: form.purpose === "rent" ? form.rent_period : null,
         property_type: form.property_type.trim() || null,
+        property_type_id: types.data?.find((row) => row.name === form.property_type)?.id ?? null,
         city: form.city.trim() || null,
+        city_id: cities.data?.find((row) => row.name === form.city)?.id ?? null,
         district: form.district.trim() || null,
+        district_id: districts.data?.find((row) => row.name === form.district)?.id ?? null,
         price_text: form.price_text.trim() || null,
         price_value: form.price_value ? Number(form.price_value) : null,
         status: form.status,
@@ -736,6 +739,10 @@ function PropertyFormPage() {
                 <option value={form.property_type}>{form.property_type}</option>
               ) : null}
             </select>
+            <div className="mt-2 flex gap-2">
+              <input className={inputClass} value={quickType} onChange={(e) => setQuickType(e.target.value)} placeholder="إضافة نوع جديد سريعًا" />
+              <button type="button" className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-bold text-primary" onClick={() => quickAddLookup.mutate({ kind: "type", name: quickType })}><Plus className="size-4" /> إضافة</button>
+            </div>
           </Field>
           <Field label="الحالة">
             <select
@@ -783,6 +790,10 @@ function PropertyFormPage() {
                 <option value={form.district}>{form.district}</option>
               ) : null}
             </select>
+            <div className="mt-2 flex gap-2">
+              <input className={inputClass} value={quickDistrict} onChange={(e) => setQuickDistrict(e.target.value)} placeholder="إضافة حي جديد سريعًا" />
+              <button type="button" className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-bold text-primary" onClick={() => quickAddLookup.mutate({ kind: "district", name: quickDistrict })}><Plus className="size-4" /> إضافة</button>
+            </div>
           </Field>
           <Field label="المالك" hint="يُربط العقار بسجل المالك في قسم الملاك">
             <select
@@ -918,6 +929,13 @@ function PropertyFormPage() {
               placeholder="43.9750"
             />
           </Field>
+          <div className="sm:col-span-3">
+            <LocationPicker
+              latitude={form.latitude ? Number(form.latitude) : null}
+              longitude={form.longitude ? Number(form.longitude) : null}
+              onChange={(latitude, longitude) => set({ latitude: String(latitude), longitude: String(longitude) })}
+            />
+          </div>
         </div>
       </SectionCard>
       </> : null}
@@ -1138,13 +1156,28 @@ function PropertyFormPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {(images.data ?? []).map((img) => (
+              {(images.data ?? []).map((img, imageIndex) => (
                 <figure
                   key={img.id}
+                  draggable
+                  onDragStart={() => setDragImageId(img.id)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => {
+                    if (dragImageId) reorderImages.mutate({ sourceId: dragImageId, targetId: img.id });
+                    setDragImageId(null);
+                  }}
                   className="overflow-hidden rounded-xl border border-border bg-card"
                 >
-                  <img src={img.url} alt="صورة العقار" className="h-32 w-full object-cover" />
+                  <button type="button" onClick={() => setLightboxIndex(imageIndex)} className="group relative block w-full cursor-zoom-in">
+                    <img src={img.url} alt="صورة العقار" className="h-32 w-full object-cover" style={{ objectPosition: `${img.focal_x ?? 50}% ${img.focal_y ?? 50}%` }} />
+                    <span className="absolute end-2 top-2 grid size-8 place-items-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover:opacity-100"><Maximize2 className="size-4" /></span>
+                  </button>
+                  <div className="space-y-1 border-t border-border px-3 py-2">
+                    <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">موضع أفقي<input type="range" min="0" max="100" defaultValue={img.focal_x ?? 50} className="min-w-0 flex-1 accent-primary" onPointerUp={(event) => updateFocalPoint.mutate({ rowId: img.id, focalX: Number(event.currentTarget.value), focalY: img.focal_y ?? 50 })} /></label>
+                    <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">موضع رأسي<input type="range" min="0" max="100" defaultValue={img.focal_y ?? 50} className="min-w-0 flex-1 accent-primary" onPointerUp={(event) => updateFocalPoint.mutate({ rowId: img.id, focalX: img.focal_x ?? 50, focalY: Number(event.currentTarget.value) })} /></label>
+                  </div>
                   <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-[12px]">
+                    <GripVertical className="size-4 cursor-grab text-muted-foreground" aria-label="اسحب لترتيب الصورة" />
                     <button
                       type="button"
                       onClick={() => setCover.mutate(img.id)}
@@ -1171,6 +1204,7 @@ function PropertyFormPage() {
           </div>
         )}
       </SectionCard>
+      {lightboxIndex != null ? <Lightbox images={(images.data ?? []).map((row) => row.url)} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} /> : null}
 
       <SectionCard
         title="فيديوهات العقار"
