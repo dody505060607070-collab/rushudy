@@ -92,6 +92,27 @@
       "when": 1789353731533,
       "tag": "0012_add_property_rent_period",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789354131774,
+      "tag": "0013_add_owner_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789354157927,
+      "tag": "0014_owner_portal_activity_and_property_controls",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1789354393079,
+      "tag": "0015_expose_property_image_focal_points",
+      "breakpoints": true
     }
   ]
 }

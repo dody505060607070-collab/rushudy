@@ -33,7 +33,7 @@ export const ensureClientAccount = createServerFn({ method: "POST" })
     const db = await admin();
     const { data: contact, error } = await db
       .from("contacts")
-      .select("id, full_name, national_id, phone, whatsapp, email")
+      .select("id, full_name, national_id, phone, whatsapp, email, roles")
       .eq("id", data.contactId)
       .single();
     if (error || !contact) throw new Error("العميل غير موجود.");
@@ -60,7 +60,7 @@ export const ensureClientAccount = createServerFn({ method: "POST" })
       email: loginEmail,
       password,
       email_confirm: true,
-      user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true },
+      user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true, portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client" },
     });
 
     let userId = created.data.user?.id;
@@ -78,6 +78,10 @@ export const ensureClientAccount = createServerFn({ method: "POST" })
         { contact_id: contact.id, user_id: userId, username, login_email: loginEmail },
         { onConflict: "contact_id" },
       );
+
+    if ((contact.roles ?? []).includes("owner")) {
+      await db.from("user_roles").upsert({ user_id: userId, role: "owner" }, { onConflict: "user_id,role" });
+    }
 
     return { ok: true as const, username, password, created: true };
   });
@@ -129,7 +133,7 @@ export const issueClientAccess = createServerFn({ method: "POST" })
     const db = await admin();
     const { data: contact, error } = await db
       .from("contacts")
-      .select("id, full_name, national_id, phone, whatsapp")
+      .select("id, full_name, national_id, phone, whatsapp, roles")
       .eq("id", data.contactId)
       .single();
     if (error || !contact) throw new Error("العميل غير موجود.");
@@ -174,6 +178,9 @@ export const issueClientAccess = createServerFn({ method: "POST" })
       if (existing.data.username !== username) {
         await db.from("client_accounts").update({ username }).eq("id", existing.data.id);
       }
+      if ((contact.roles ?? []).includes("owner")) {
+        await db.from("user_roles").upsert({ user_id: existing.data.user_id, role: "owner" }, { onConflict: "user_id,role" });
+      }
       return { username, password, loginEmail, created: false, generated };
     }
 
@@ -181,7 +188,7 @@ export const issueClientAccess = createServerFn({ method: "POST" })
       email: loginEmail,
       password,
       email_confirm: true,
-      user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true },
+      user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true, portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client" },
     });
 
     let userId = created.data.user?.id;
@@ -199,6 +206,10 @@ export const issueClientAccess = createServerFn({ method: "POST" })
         { onConflict: "contact_id" },
       );
     if (up.error) throw new Error(up.error.message);
+
+    if ((contact.roles ?? []).includes("owner")) {
+      await db.from("user_roles").upsert({ user_id: userId, role: "owner" }, { onConflict: "user_id,role" });
+    }
 
     return { username, password, loginEmail, created: true, generated };
   });
@@ -236,8 +247,8 @@ export const getPortalOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { db, contactId } = await currentClient(context.userId);
-    const [contact, contracts] = await Promise.all([
-      db.from("contacts").select("id, full_name, national_id, phone, email").eq("id", contactId).single(),
+    const [contact, contracts, buildings, units, properties] = await Promise.all([
+      db.from("contacts").select("id, full_name, national_id, phone, email, roles").eq("id", contactId).single(),
       db
         .from("contracts")
         .select(
@@ -245,7 +256,9 @@ export const getPortalOverview = createServerFn({ method: "GET" })
         )
         .or(partyFilter(contactId))
         .order("start_date", { ascending: false }),
-
+      db.from("buildings").select("id, name, city, district, address").eq("owner_id", contactId).order("name"),
+      db.from("units").select("id, building_id, unit_number, unit_type, status, floor, area").eq("owner_id", contactId).order("unit_number"),
+      db.from("properties").select("id, building_id, code, name, purpose, status, city, district").eq("owner_id", contactId).order("name"),
     ]);
 
     const contractIds = (contracts.data ?? []).map((c) => c.id);
@@ -283,6 +296,10 @@ export const getPortalOverview = createServerFn({ method: "GET" })
         amount_paid: number;
         status: string;
       }[],
+      buildings: buildings.data ?? [],
+      units: units.data ?? [],
+      properties: properties.data ?? [],
+      isOwner: (contact.data?.roles ?? []).includes("owner"),
     };
   });
 

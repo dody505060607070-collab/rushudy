@@ -2,10 +2,12 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { useChatAlerts } from "@/hooks/useChatAlerts";
+import { useActivityPresence } from "@/hooks/useActivityPresence";
 import { supabase } from "@/integrations/supabase/client";
 
 function AuthedLayout() {
   useChatAlerts();
+  useActivityPresence();
   return (
     <AppShell>
       <Outlet />

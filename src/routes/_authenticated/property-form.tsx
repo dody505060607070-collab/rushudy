@@ -17,11 +17,15 @@ import {
   UploadCloud,
   ChevronLeft,
   ChevronRight,
+  GripVertical,
+  Maximize2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Field, inputClass, textareaClass } from "@/components/kit/Modal";
+import { Lightbox } from "@/components/kit/Lightbox";
+import { LocationPicker } from "@/components/kit/LocationPicker";
 import { SOCIAL_PLATFORMS, SocialGlyph } from "@/components/site/SocialIcons";
 import { PageHero } from "@/components/kit/PageHero";
 import { Toggle } from "@/components/kit/Toggle";
@@ -48,7 +52,7 @@ export const Route = createFileRoute("/_authenticated/property-form")({
   component: PropertyFormPage,
 });
 
-type MediaRow = { id: string; url: string; sort_order: number; is_cover?: boolean; title?: string | null };
+type MediaRow = { id: string; url: string; sort_order: number; is_cover?: boolean; title?: string | null; focal_x?: number; focal_y?: number };
 
 const DEFAULT_SALE_GUARANTEES = [
   { name: "الأنابيب الخضراء", years: 15 },
@@ -137,6 +141,10 @@ function PropertyFormPage() {
   const [guaranteeName, setGuaranteeName] = useState("");
   const [guaranteeYears, setGuaranteeYears] = useState("");
   const [step, setStep] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [dragImageId, setDragImageId] = useState<string | null>(null);
+  const [quickType, setQuickType] = useState("");
+  const [quickDistrict, setQuickDistrict] = useState("");
 
 
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
@@ -284,7 +292,7 @@ function PropertyFormPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("property_images")
-        .select("id, url, sort_order, is_cover")
+        .select("id, url, sort_order, is_cover, focal_x, focal_y")
         .eq("property_id", id)
         .order("sort_order");
       if (error) throw error;
@@ -408,8 +416,11 @@ function PropertyFormPage() {
         purpose: form.purpose,
         rent_period: form.purpose === "rent" ? form.rent_period : null,
         property_type: form.property_type.trim() || null,
+        property_type_id: types.data?.find((row) => row.name === form.property_type)?.id ?? null,
         city: form.city.trim() || null,
+        city_id: cities.data?.find((row) => row.name === form.city)?.id ?? null,
         district: form.district.trim() || null,
+        district_id: districts.data?.find((row) => row.name === form.district)?.id ?? null,
         price_text: form.price_text.trim() || null,
         price_value: form.price_value ? Number(form.price_value) : null,
         status: form.status,
@@ -523,6 +534,66 @@ function PropertyFormPage() {
       toast.success("تم تعيين الصورة الرئيسية");
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر التحديث"),
+  });
+
+  const reorderImages = useMutation({
+    mutationFn: async ({ sourceId, targetId }: { sourceId: string; targetId: string }) => {
+      const current = [...(images.data ?? [])];
+      const sourceIndex = current.findIndex((row) => row.id === sourceId);
+      const targetIndex = current.findIndex((row) => row.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
+      const [moved] = current.splice(sourceIndex, 1);
+      if (!moved) return;
+      current.splice(targetIndex, 0, moved);
+      const updates = await Promise.all(
+        current.map((row, index) => supabase.from("property_images").update({ sort_order: index }).eq("id", row.id)),
+      );
+      const failed = updates.find((result) => result.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["property-images", id] });
+      queryClient.invalidateQueries({ queryKey: ["public-properties"] });
+      toast.success("تم حفظ ترتيب الصور");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر ترتيب الصور"),
+  });
+
+  const updateFocalPoint = useMutation({
+    mutationFn: async ({ rowId, focalX, focalY }: { rowId: string; focalX: number; focalY: number }) => {
+      const { error } = await supabase.from("property_images").update({ focal_x: focalX, focal_y: focalY }).eq("id", rowId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["property-images", id] }),
+  });
+
+  const quickAddLookup = useMutation({
+    mutationFn: async (input: { kind: "type" | "district"; name: string }) => {
+      if (!input.name.trim()) throw new Error("اكتب الاسم أولًا");
+      if (input.kind === "type") {
+        const { data, error } = await supabase.from("property_types").insert({ name: input.name.trim(), sort_order: types.data?.length ?? 0 }).select("id, name").single();
+        if (error) throw error;
+        return { kind: input.kind, ...data };
+      }
+      const city = cities.data?.find((row) => row.name === form.city);
+      if (!city) throw new Error("اختر المدينة أولًا");
+      const { data, error } = await supabase.from("districts").insert({ city_id: city.id, name: input.name.trim(), sort_order: cityDistricts.length }).select("id, name").single();
+      if (error) throw error;
+      return { kind: input.kind, ...data };
+    },
+    onSuccess: (row) => {
+      if (row.kind === "type") {
+        set({ property_type: row.name });
+        setQuickType("");
+        queryClient.invalidateQueries({ queryKey: ["property-types", "active"] });
+      } else {
+        set({ district: row.name });
+        setQuickDistrict("");
+        queryClient.invalidateQueries({ queryKey: ["districts", "active"] });
+      }
+      toast.success("تمت الإضافة والاختيار");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّرت الإضافة"),
   });
 
   const addVideo = useMutation({
@@ -668,6 +739,10 @@ function PropertyFormPage() {
                 <option value={form.property_type}>{form.property_type}</option>
               ) : null}
             </select>
+            <div className="mt-2 flex gap-2">
+              <input className={inputClass} value={quickType} onChange={(e) => setQuickType(e.target.value)} placeholder="إضافة نوع جديد سريعًا" />
+              <button type="button" className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-bold text-primary" onClick={() => quickAddLookup.mutate({ kind: "type", name: quickType })}><Plus className="size-4" /> إضافة</button>
+            </div>
           </Field>
           <Field label="الحالة">
             <select
@@ -715,6 +790,10 @@ function PropertyFormPage() {
                 <option value={form.district}>{form.district}</option>
               ) : null}
             </select>
+            <div className="mt-2 flex gap-2">
+              <input className={inputClass} value={quickDistrict} onChange={(e) => setQuickDistrict(e.target.value)} placeholder="إضافة حي جديد سريعًا" />
+              <button type="button" className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-bold text-primary" onClick={() => quickAddLookup.mutate({ kind: "district", name: quickDistrict })}><Plus className="size-4" /> إضافة</button>
+            </div>
           </Field>
           <Field label="المالك" hint="يُربط العقار بسجل المالك في قسم الملاك">
             <select
@@ -850,6 +929,13 @@ function PropertyFormPage() {
               placeholder="43.9750"
             />
           </Field>
+          <div className="sm:col-span-3">
+            <LocationPicker
+              latitude={form.latitude ? Number(form.latitude) : null}
+              longitude={form.longitude ? Number(form.longitude) : null}
+              onChange={(latitude, longitude) => set({ latitude: String(latitude), longitude: String(longitude) })}
+            />
+          </div>
         </div>
       </SectionCard>
       </> : null}
@@ -1070,13 +1156,28 @@ function PropertyFormPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {(images.data ?? []).map((img) => (
+              {(images.data ?? []).map((img, imageIndex) => (
                 <figure
                   key={img.id}
+                  draggable
+                  onDragStart={() => setDragImageId(img.id)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => {
+                    if (dragImageId) reorderImages.mutate({ sourceId: dragImageId, targetId: img.id });
+                    setDragImageId(null);
+                  }}
                   className="overflow-hidden rounded-xl border border-border bg-card"
                 >
-                  <img src={img.url} alt="صورة العقار" className="h-32 w-full object-cover" />
+                  <button type="button" onClick={() => setLightboxIndex(imageIndex)} className="group relative block w-full cursor-zoom-in">
+                    <img src={img.url} alt="صورة العقار" className="h-32 w-full object-cover" style={{ objectPosition: `${img.focal_x ?? 50}% ${img.focal_y ?? 50}%` }} />
+                    <span className="absolute end-2 top-2 grid size-8 place-items-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover:opacity-100"><Maximize2 className="size-4" /></span>
+                  </button>
+                  <div className="space-y-1 border-t border-border px-3 py-2">
+                    <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">موضع أفقي<input type="range" min="0" max="100" defaultValue={img.focal_x ?? 50} className="min-w-0 flex-1 accent-primary" onPointerUp={(event) => updateFocalPoint.mutate({ rowId: img.id, focalX: Number(event.currentTarget.value), focalY: img.focal_y ?? 50 })} /></label>
+                    <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">موضع رأسي<input type="range" min="0" max="100" defaultValue={img.focal_y ?? 50} className="min-w-0 flex-1 accent-primary" onPointerUp={(event) => updateFocalPoint.mutate({ rowId: img.id, focalX: img.focal_x ?? 50, focalY: Number(event.currentTarget.value) })} /></label>
+                  </div>
                   <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-[12px]">
+                    <GripVertical className="size-4 cursor-grab text-muted-foreground" aria-label="اسحب لترتيب الصورة" />
                     <button
                       type="button"
                       onClick={() => setCover.mutate(img.id)}
@@ -1103,6 +1204,7 @@ function PropertyFormPage() {
           </div>
         )}
       </SectionCard>
+      {lightboxIndex != null ? <Lightbox images={(images.data ?? []).map((row) => row.url)} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} /> : null}
 
       <SectionCard
         title="فيديوهات العقار"

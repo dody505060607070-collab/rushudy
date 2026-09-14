@@ -1125,6 +1125,50 @@ export type Database = {
           },
         ]
       }
+      employee_sessions: {
+        Row: {
+          created_at: string
+          current_path: string | null
+          device_label: string | null
+          duration_seconds: number
+          ended_at: string | null
+          id: string
+          last_seen_at: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_path?: string | null
+          device_label?: string | null
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          last_seen_at?: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_path?: string | null
+          device_label?: string | null
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          last_seen_at?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       error_log: {
         Row: {
           context: Json
@@ -1933,11 +1977,13 @@ export type Database = {
         Row: {
           building_id: string | null
           city: string | null
+          city_id: string | null
           code: string
           created_at: string
           created_by: string | null
           description: string | null
           district: string | null
+          district_id: string | null
           id: string
           internal_notes: string | null
           is_featured: boolean
@@ -1958,6 +2004,7 @@ export type Database = {
           price_text: string | null
           price_value: number | null
           property_type: string | null
+          property_type_id: string | null
           purpose: string
           rent_period: string | null
           sort_order: number
@@ -1969,11 +2016,13 @@ export type Database = {
         Insert: {
           building_id?: string | null
           city?: string | null
+          city_id?: string | null
           code: string
           created_at?: string
           created_by?: string | null
           description?: string | null
           district?: string | null
+          district_id?: string | null
           id?: string
           internal_notes?: string | null
           is_featured?: boolean
@@ -1994,6 +2043,7 @@ export type Database = {
           price_text?: string | null
           price_value?: number | null
           property_type?: string | null
+          property_type_id?: string | null
           purpose?: string
           rent_period?: string | null
           sort_order?: number
@@ -2005,11 +2055,13 @@ export type Database = {
         Update: {
           building_id?: string | null
           city?: string | null
+          city_id?: string | null
           code?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
           district?: string | null
+          district_id?: string | null
           id?: string
           internal_notes?: string | null
           is_featured?: boolean
@@ -2030,6 +2082,7 @@ export type Database = {
           price_text?: string | null
           price_value?: number | null
           property_type?: string | null
+          property_type_id?: string | null
           purpose?: string
           rent_period?: string | null
           sort_order?: number
@@ -2047,10 +2100,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "properties_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "properties_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_property_type_id_fkey"
+            columns: ["property_type_id"]
+            isOneToOne: false
+            referencedRelation: "property_types"
             referencedColumns: ["id"]
           },
           {
@@ -2097,6 +2171,8 @@ export type Database = {
       property_images: {
         Row: {
           created_at: string
+          focal_x: number
+          focal_y: number
           id: string
           is_cover: boolean
           property_id: string
@@ -2105,6 +2181,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          focal_x?: number
+          focal_y?: number
           id?: string
           is_cover?: boolean
           property_id: string
@@ -2113,6 +2191,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          focal_x?: number
+          focal_y?: number
           id?: string
           is_cover?: boolean
           property_id?: string
@@ -3032,6 +3112,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      close_employee_session: {
+        Args: { _session_id: string }
+        Returns: undefined
+      }
       convert_reservation_to_contract: {
         Args: { _reservation_id: string }
         Returns: string
@@ -3071,6 +3155,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      current_owner_contact_id: { Args: never; Returns: string }
       expire_reservations: { Args: never; Returns: number }
       extend_reservation: {
         Args: { _reservation_id: string }
@@ -3126,10 +3211,30 @@ export type Database = {
         Args: { _task_id: string; _user_id: string }
         Returns: boolean
       }
+      touch_employee_session: {
+        Args: { _device?: string; _path: string; _session_id: string }
+        Returns: {
+          created_at: string
+          current_path: string | null
+          device_label: string | null
+          duration_seconds: number
+          ended_at: string | null
+          id: string
+          last_seen_at: string
+          started_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "employee_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       user_org: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "super_admin" | "employee"
+      app_role: "super_admin" | "employee" | "owner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3257,7 +3362,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "employee"],
+      app_role: ["super_admin", "employee", "owner"],
     },
   },
 } as const

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Pencil, Plus, UserCog } from "lucide-react";
+import { History, Pencil, Plus, UserCog } from "lucide-react";
 
 import { Chip } from "@/components/kit/Chip";
 import { DataTable } from "@/components/kit/DataTable";
@@ -105,9 +105,14 @@ function EmployeesPage() {
             {
               header: "إجراءات",
               cell: (r) => (
+                <div className="flex items-center gap-2">
+                <Link to="/activity-log" aria-label="عرض النشاط" title="عرض سجل النشاط">
+                  <History className="size-4 text-muted-foreground hover:text-primary" />
+                </Link>
                 <Link to="/employee-form" search={{ id: r.id }} aria-label="تعديل">
                   <Pencil className="size-4 text-muted-foreground hover:text-primary" />
                 </Link>
+                </div>
               ),
             },
           ]}
