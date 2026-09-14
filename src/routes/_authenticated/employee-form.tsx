@@ -9,7 +9,7 @@ import { PageHero } from "@/components/kit/PageHero";
 import { actionLabels, permissionModules } from "@/data/nav";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { createStaffAccount, resetStaffPassword } from "@/lib/staff.functions";
+import { createStaffAccount, resetStaffPassword, setStaffSuperAdmin } from "@/lib/staff.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/employee-form")({
