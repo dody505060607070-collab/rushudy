@@ -286,6 +286,8 @@ function PropertyFormPage() {
       needs_review: Boolean(row.needs_review),
     });
     setOwnerId(row.owner_id ?? "");
+    setOwnerName(row.owner_name ?? "");
+    setOwnerPhone(row.owner_phone ?? "");
   }, [property.data]);
 
   const images = useQuery({
