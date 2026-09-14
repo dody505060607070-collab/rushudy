@@ -38,7 +38,12 @@ async function followRedirects(url: string, maxHops = 6): Promise<string> {
   for (let i = 0; i < maxHops; i += 1) {
     const response = await fetch(current, {
       redirect: "manual",
-      headers: { "user-agent": "Mozilla/5.0 (compatible; RashoudiBot/1.0)" },
+      headers: {
+        // روابط خرائط جوجل المختصرة لا تُعيد التحويل لوكلاء "bot"
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
+        "accept-language": "ar,en;q=0.8",
+      },
     });
     const next = response.headers.get("location");
     if (!next) return current;
