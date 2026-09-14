@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { History, Pencil, Plus, UserCog } from "lucide-react";
+import { Ban, History, Pencil, Plus, Trash2, UserCog } from "lucide-react";
+import { toast } from "sonner";
 
 import { Chip } from "@/components/kit/Chip";
 import { DataTable } from "@/components/kit/DataTable";
 import { EmptyState, formatDate } from "@/components/kit/LiveTable";
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
+import { deleteStaffAccount } from "@/lib/staff.functions";
 
 type Row = {
   id: string;
@@ -35,6 +37,18 @@ export const Route = createFileRoute("/_authenticated/employees")({
 });
 
 function EmployeesPage() {
+  const queryClient = useQueryClient();
+  const remove = useMutation({
+    mutationFn: async (vars: { userId: string; mode: "disable" | "delete" }) =>
+      deleteStaffAccount({ data: vars }),
+    onSuccess: (_d, vars) => {
+      toast.success(vars.mode === "delete" ? "تم حذف الموظف" : "تم إيقاف حساب الموظف");
+      queryClient.invalidateQueries({ queryKey: ["employees-list"] });
+      queryClient.invalidateQueries({ queryKey: ["staff-with-roles"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "تعذّر تنفيذ العملية"),
+  });
+
   const list = useQuery({
     queryKey: ["employees-list"],
     queryFn: async () => {
@@ -112,6 +126,30 @@ function EmployeesPage() {
                 <Link to="/employee-form" search={{ id: r.id }} aria-label="تعديل">
                   <Pencil className="size-4 text-muted-foreground hover:text-primary" />
                 </Link>
+                <button
+                  type="button"
+                  aria-label="إيقاف الحساب"
+                  title="إيقاف حساب الموظف (منع الدخول)"
+                  disabled={remove.isPending || !r.is_active}
+                  onClick={() => {
+                    if (!window.confirm(`إيقاف حساب ${r.full_name}؟ لن يستطيع الدخول للنظام.`)) return;
+                    remove.mutate({ userId: r.id, mode: "disable" });
+                  }}
+                >
+                  <Ban className="size-4 text-muted-foreground hover:text-primary disabled:opacity-40" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="حذف الموظف"
+                  title="حذف الموظف نهائيًا"
+                  disabled={remove.isPending}
+                  onClick={() => {
+                    if (!window.confirm(`حذف ${r.full_name} نهائيًا؟ لا يمكن التراجع.`)) return;
+                    remove.mutate({ userId: r.id, mode: "delete" });
+                  }}
+                >
+                  <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
+                </button>
                 </div>
               ),
             },
