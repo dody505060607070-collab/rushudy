@@ -264,8 +264,6 @@ function PropertiesPage() {
           >
             إضافة سريعة
           </button>
-          <Link to="/properties/import" className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"><FileSpreadsheet className="size-4" />استيراد Excel</Link>
-          <Link to="/compare" className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"><Columns3 className="size-4" />مقارنة</Link>
         </div>
 
         <nav className="flex items-center gap-1 text-[12.5px] text-muted-foreground">
