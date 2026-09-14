@@ -789,40 +789,43 @@ export function ImportDialog({
       subtitle="ارفع ملف العقد ليقرأه الذكاء الاصطناعي ويستخرج بياناته تلقائيًا للمراجعة."
       footer={
         result ? (
-          <>
-            <PrimaryButton onClick={() => finalize.mutate()} disabled={finalize.isPending || !!report}>
+          report ? (
+            <>
+              <GhostButton
+                onClick={() =>
+                  onExtracted({
+                    contract_number: str("contract_number"),
+                    contract_type: str("contract_type") === "sale" ? "sale" : "rent",
+                    start_date: str("start_date"),
+                    end_date: str("end_date"),
+                    annual_rent: str("annual_rent"),
+                    total_value: str("total_value"),
+                    deposit: str("deposit"),
+                    payments_count: str("payments_count") || "1",
+                    notes: [str("property_name"), str("district"), str("special_terms")]
+                      .filter(Boolean)
+                      .join(" — "),
+                  })
+                }
+              >
+                متابعة إلى نموذج العقد
+              </GhostButton>
+              <GhostButton
+                onClick={() => {
+                  setResult(null);
+                  setFile(null);
+                  setReport(null);
+                }}
+              >
+                ملف آخر
+              </GhostButton>
+            </>
+          ) : (
+            <PrimaryButton onClick={() => finalize.mutate()} disabled={finalize.isPending}>
               {finalize.isPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
               ترحيل تلقائي كامل
             </PrimaryButton>
-            <GhostButton
-              onClick={() =>
-                onExtracted({
-                  contract_number: str("contract_number"),
-                  contract_type: str("contract_type") === "sale" ? "sale" : "rent",
-                  start_date: str("start_date"),
-                  end_date: str("end_date"),
-                  annual_rent: str("annual_rent"),
-                  total_value: str("total_value"),
-                  deposit: str("deposit"),
-                  payments_count: str("payments_count") || "1",
-                  notes: [str("property_name"), str("district"), str("special_terms")]
-                    .filter(Boolean)
-                    .join(" — "),
-                })
-              }
-            >
-              متابعة إلى نموذج العقد
-            </GhostButton>
-            <GhostButton
-              onClick={() => {
-                setResult(null);
-                setFile(null);
-                setReport(null);
-              }}
-            >
-              ملف آخر
-            </GhostButton>
-          </>
+          )
         ) : (
           <PrimaryButton onClick={() => file && analyze.mutate(file)} disabled={!file || analyze.isPending}>
             {analyze.isPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
