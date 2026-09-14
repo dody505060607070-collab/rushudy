@@ -575,7 +575,7 @@ export const createOwnerRequest = createServerFn({ method: "POST" })
       .single();
     if (ins.error) throw new Error(ins.error.message);
 
-    const staffRoles = await db.from("user_roles").select("user_id").in("role", ["super_admin", "admin"]);
+    const staffRoles = await db.from("user_roles").select("user_id").in("role", ["super_admin", "employee"]);
     const targets = [...new Set((staffRoles.data ?? []).map((r) => r.user_id))];
     if (targets.length) {
       await db.from("notifications").insert(
