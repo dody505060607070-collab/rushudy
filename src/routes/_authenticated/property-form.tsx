@@ -795,7 +795,7 @@ function PropertyFormPage() {
               <button type="button" className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-bold text-primary" onClick={() => quickAddLookup.mutate({ kind: "district", name: quickDistrict })}><Plus className="size-4" /> إضافة</button>
             </div>
           </Field>
-          <Field label="المالك" hint="يُربط العقار بسجل المالك في قسم الملاك">
+          <Field label="المالك" hint="اختياري: اربطه بسجل المالك أو اكتب الاسم والجوال يدويًا">
             <select
               className={inputClass}
               value={ownerId}
@@ -808,6 +808,22 @@ function PropertyFormPage() {
                 </option>
               ))}
             </select>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <input
+                className={inputClass}
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                placeholder="اسم المالك (اختياري)"
+              />
+              <input
+                className={inputClass}
+                value={ownerPhone}
+                onChange={(e) => setOwnerPhone(e.target.value)}
+                placeholder="جوال المالك (اختياري)"
+                inputMode="tel"
+                dir="ltr"
+              />
+            </div>
           </Field>
         </div>
       </SectionCard>
