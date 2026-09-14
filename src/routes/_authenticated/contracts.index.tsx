@@ -745,6 +745,7 @@ export function ImportDialog({
           file_path: path,
           file_name: f.name,
           file_size: f.size,
+          file_hash: fileHash,
           status: "needs_review",
           extraction: extraction as never,
           warnings: (Array.isArray(extraction["warnings"]) ? extraction["warnings"] : []) as never,
