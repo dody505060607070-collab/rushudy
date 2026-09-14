@@ -57,6 +57,19 @@ function RolesPage() {
     (r) => r.user_id === userId && r.role === "super_admin",
   );
 
+  const grantAdmin = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      if (!userId) throw new Error("لم يتم اختيار موظف");
+      return setStaffSuperAdmin({ data: { userId, enabled } });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["staff-with-roles"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      toast.success("تم تحديث صلاحية المدير العام");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "تعذّر التحديث"),
+  });
+
   const toggle = useMutation({
     mutationFn: async ({
       module,
