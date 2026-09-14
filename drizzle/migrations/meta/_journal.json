@@ -92,6 +92,13 @@
       "when": 1789353731533,
       "tag": "0012_add_property_rent_period",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789354131774,
+      "tag": "0013_add_owner_role",
+      "breakpoints": true
     }
   ]
 }
