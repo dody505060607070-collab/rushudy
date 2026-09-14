@@ -77,11 +77,11 @@ export function HeroVideo({
             <span className="text-[13px] tracking-wide text-primary-foreground/80 sm:text-[15px] md:text-[19px]">
               خبرةٌ محلية.. وقرارٌ عقاري أوضح
             </span>
-            <span className="hero-title-shadow mt-1 text-[42px] text-primary-foreground sm:text-[64px] md:mt-2 md:text-[92px] lg:text-[110px]">
+            <span className="hero-title-shadow mt-1 pb-2 text-[42px] leading-[1.2] text-primary-foreground sm:text-[64px] md:mt-2 md:pb-3 md:text-[92px] lg:text-[110px]">
               الرشودي للعقارات
             </span>
-            <span className="hero-accent-text mt-1 text-[22px] sm:text-[30px] md:mt-2 md:text-[44px] lg:text-[52px]">
-              تعرف بريدة.. ونفهم العقار
+            <span className="hero-accent-text mt-1 text-[22px] leading-[1.5] sm:text-[30px] md:mt-2 md:text-[44px] lg:text-[52px]">
+              نعرف بريدة.. ونفهم العقار
             </span>
           </h1>
           <p className="animate-pop-in mt-5 max-w-4xl text-[15px] font-medium leading-8 text-primary-foreground/85 sm:text-[17px] md:mt-7 md:text-[22px] md:leading-10">
