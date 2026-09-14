@@ -70,6 +70,7 @@ const emptyForm = {
   name: "",
   code: "",
   purpose: "rent",
+  rent_period: "yearly",
   property_type: "",
   city: "بريدة",
   district: "",
@@ -249,6 +250,7 @@ function PropertyFormPage() {
       name: row.name ?? "",
       code: row.code ?? "",
       purpose: row.purpose ?? "rent",
+      rent_period: row.rent_period ?? "yearly",
       property_type: row.property_type ?? "",
       city: row.city ?? "",
       district: row.district ?? "",
@@ -404,6 +406,7 @@ function PropertyFormPage() {
         name: form.name.trim(),
         code: form.code.trim() || `P-${Date.now().toString(36).toUpperCase()}`,
         purpose: form.purpose,
+        rent_period: form.purpose === "rent" ? form.rent_period : null,
         property_type: form.property_type.trim() || null,
         city: form.city.trim() || null,
         district: form.district.trim() || null,
@@ -635,6 +638,19 @@ function PropertyFormPage() {
               <option value="investment">استثمار</option>
             </select>
           </Field>
+          {form.purpose === "rent" ? (
+            <Field label="مدة الإيجار" hint="تظهر للعميل بجانب نوع العرض">
+              <select
+                className={inputClass}
+                value={form.rent_period}
+                onChange={(e) => set({ rent_period: e.target.value })}
+              >
+                <option value="yearly">سنوي</option>
+                <option value="monthly">شهري</option>
+                <option value="daily">يومي</option>
+              </select>
+            </Field>
+          ) : null}
           <Field label="نوع العقار" hint="القائمة تُدار من إعدادات الموقع ← الأنواع والأحياء">
             <select
               className={inputClass}

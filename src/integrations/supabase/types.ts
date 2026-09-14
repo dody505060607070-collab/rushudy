@@ -1959,6 +1959,7 @@ export type Database = {
           price_value: number | null
           property_type: string | null
           purpose: string
+          rent_period: string | null
           sort_order: number
           status: string
           unit_id: string | null
@@ -1994,6 +1995,7 @@ export type Database = {
           price_value?: number | null
           property_type?: string | null
           purpose?: string
+          rent_period?: string | null
           sort_order?: number
           status?: string
           unit_id?: string | null
@@ -2029,6 +2031,7 @@ export type Database = {
           price_value?: number | null
           property_type?: string | null
           purpose?: string
+          rent_period?: string | null
           sort_order?: number
           status?: string
           unit_id?: string | null

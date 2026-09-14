@@ -17,6 +17,7 @@ import {
   publicPropertiesQuery,
   publicPropertyQuery,
   purposeLabels,
+  rentPeriodLabels,
   whatsappLink,
 } from "@/lib/site-data";
 
@@ -125,7 +126,9 @@ function PropertyPage() {
     }
   };
 
-  const others = (related.data ?? []).filter((p) => p.code !== property.code).slice(0, 3);
+  const others = (related.data ?? [])
+    .filter((p) => p.code !== property.code && p.purpose === property.purpose)
+    .slice(0, 3);
   const mapHref =
     property.map_url ||
     (property.latitude && property.longitude
@@ -222,6 +225,9 @@ function PropertyPage() {
               <div className="flex items-center justify-between">
                 <span className="rounded-lg bg-primary px-3 py-1 text-[12px] font-bold text-primary-foreground">
                   {purposeLabels[property.purpose] ?? property.purpose}
+                  {property.purpose === "rent" && property.rent_period
+                    ? ` · ${rentPeriodLabels[property.rent_period] ?? property.rent_period}`
+                    : ""}
                 </span>
                 <span className="text-[12px] text-muted-foreground" dir="ltr">
                   {property.code}
