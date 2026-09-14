@@ -1096,3 +1096,28 @@ function RecordSection({
 function Empty({ text }: { text: string }) {
   return <p className="col-span-full py-7 text-center text-[12.5px] text-muted-foreground">{text}</p>;
 }
+
+function UnitStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "success" | "danger" | "warning" | "neutral";
+}) {
+  const toneClass =
+    tone === "success"
+      ? "text-success"
+      : tone === "danger"
+        ? "text-destructive"
+        : tone === "warning"
+          ? "text-warning"
+          : "text-foreground";
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
+      <span className="text-[12.5px] text-muted-foreground">{label}</span>
+      <b className={`text-2xl ${toneClass}`}>{value}</b>
+    </div>
+  );
+}
