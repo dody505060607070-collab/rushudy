@@ -64,8 +64,8 @@ type SettingsRow = {
 const socialFields: { key: string; label: string }[] = [
   { key: "website", label: "الموقع الإلكتروني" },
   { key: "tiktok", label: "TikTok" },
-  { key: "facebook", label: "Facebook" },
   { key: "youtube", label: "YouTube" },
+  { key: "facebook", label: "Facebook" },
   { key: "instagram", label: "Instagram" },
   { key: "x", label: "X (تويتر)" },
   { key: "snapchat", label: "Snapchat" },

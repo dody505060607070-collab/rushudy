@@ -15,6 +15,7 @@ export const SOCIAL_PLATFORMS: {
   textColor?: string;
   placeholder: string;
 }[] = [
+  { key: "link_tiktok", label: "تيك توك", color: "#010101", placeholder: "https://tiktok.com/@..." },
   {
     key: "link_youtube",
     label: "يوتيوب",
@@ -22,7 +23,6 @@ export const SOCIAL_PLATFORMS: {
     textColor: "#FF0000",
     placeholder: "https://youtube.com/...",
   },
-  { key: "link_tiktok", label: "تيك توك", color: "#010101", placeholder: "https://tiktok.com/@..." },
   { key: "link_instagram", label: "إنستغرام", color: "#E1306C", placeholder: "https://instagram.com/..." },
   { key: "link_snapchat", label: "سناب شات", color: "#FFFC00", textColor: "#111111", placeholder: "https://snapchat.com/..." },
   { key: "link_x", label: "إكس (تويتر)", color: "#0F1419", placeholder: "https://x.com/..." },
