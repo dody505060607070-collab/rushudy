@@ -588,7 +588,7 @@ function DashboardPage() {
               <h2 className="text-[15px] font-bold">حركة الحجوزات</h2>
               <p className="mt-0.5 text-[12.5px] text-muted-foreground">الحجوزات القائمة والمؤقتة</p>
             </div>
-            <Link to="/reservations" className="text-xs font-bold text-primary">
+            <Link to="/reservations" search={{ newReservation: false }} className="text-xs font-bold text-primary">
               عرض الكل
             </Link>
           </div>
