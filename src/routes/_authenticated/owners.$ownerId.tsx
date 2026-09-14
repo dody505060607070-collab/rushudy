@@ -359,6 +359,24 @@ function OwnerDetailPage() {
     paymentsByContract.set(p.contract_id, list);
   }
 
+  const unitBoard = data.units.map((u) => {
+    const contract = contractByUnit.get(u.id) ?? null;
+    const pays: PaymentRow[] = contract ? (paymentsByContract.get(contract.id) ?? []) : [];
+    const remaining = pays.reduce(
+      (s, p) => s + Math.max(Number(p.amount_due) - Number(p.amount_paid), 0),
+      0,
+    );
+    return { unit: u, contract, remaining };
+  });
+  const unitCounts = {
+    total: data.units.length,
+    occupied: data.units.filter((u) => u.status === "occupied").length,
+    vacant: data.units.filter((u) => u.status === "available" || u.status === "vacant").length,
+    outOfService: data.units.filter(
+      (u) => u.status === "maintenance" || u.status === "out_of_service",
+    ).length,
+  };
+
   type GroupItem = { key: string; title: string; subtitle: string; contract: any | null; badge?: string; assetType: "unit" | "property" };
   const groups: { key: string; title: string; subtitle: string; items: GroupItem[] }[] = [];
   for (const building of data.buildings) {
