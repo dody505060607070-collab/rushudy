@@ -96,3 +96,37 @@ export const resetStaffPassword = createServerFn({ method: "POST" })
     if (res.error) throw new Error(res.error.message);
     return { ok: true };
   });
+
+/** منح أو سحب صلاحية المدير العام لموظف آخر. */
+export const setStaffSuperAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { userId: string; enabled: boolean }) => input)
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
+    if (!data.userId) throw new Error("لم يتم تحديد الموظف.");
+    if (data.userId === context.userId && !data.enabled) {
+      throw new Error("لا يمكنك سحب صلاحية المدير العام من حسابك.");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (data.enabled) {
+      const res = await supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: data.userId, role: "super_admin" }, { onConflict: "user_id,role" });
+      if (res.error) throw new Error(res.error.message);
+    } else {
+      const res = await supabaseAdmin
+        .from("user_roles")
+        .delete()
+        .eq("user_id", data.userId)
+        .eq("role", "super_admin");
+      if (res.error) throw new Error(res.error.message);
+      const keep = await supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: data.userId, role: "employee" }, { onConflict: "user_id,role" });
+      if (keep.error) throw new Error(keep.error.message);
+    }
+
+    return { ok: true };
+  });
