@@ -4,6 +4,7 @@ import { Activity, CalendarCheck, CheckCircle2, LogIn, LogOut } from "lucide-rea
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
+import { OwnerTools } from "@/components/portal/OwnerTools";
 import { getOwnerDashboard, markOwnerPaymentPaid } from "@/lib/portal.functions";
 
 const num = (v: number | null | undefined) => Number(v ?? 0).toLocaleString("en-US");
@@ -291,6 +292,8 @@ export function OwnerDashboard() {
           </Card>
         </div>
       </div>
+
+      <OwnerTools />
     </div>
   );
 }
