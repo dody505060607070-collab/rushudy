@@ -480,7 +480,7 @@ function DashboardPage() {
               count={s?.supply ?? 0}
             />
             <WorkItem
-              to="/requests"
+              to="/listing-requests"
               icon={Building2}
               title="عقارات مقدمة"
               hint="بانتظار المراجعة"
