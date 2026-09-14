@@ -106,6 +106,13 @@
       "when": 1789354157927,
       "tag": "0014_owner_portal_activity_and_property_controls",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1789354393079,
+      "tag": "0015_expose_property_image_focal_points",
+      "breakpoints": true
     }
   ]
 }
