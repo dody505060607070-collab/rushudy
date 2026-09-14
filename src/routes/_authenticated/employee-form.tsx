@@ -157,6 +157,9 @@ function EmployeeFormPage() {
       if (upd.error) throw upd.error;
       await savePerms(id);
       if (password) await resetStaffPassword({ data: { userId: id, password } });
+      if (form.is_super_admin !== Boolean(existing.data?.isAdmin)) {
+        await setStaffSuperAdmin({ data: { userId: id, enabled: form.is_super_admin } });
+      }
       return id;
     },
     onSuccess: () => {
