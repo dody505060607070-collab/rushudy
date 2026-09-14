@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useParams } from "@tanstack/react-router";
-import { ArrowRight, Loader2, MessageCircle, Save, TriangleAlert } from "lucide-react";
+import { ArrowRight, Loader2, MessageCircle, Save, Search, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
