@@ -125,7 +125,9 @@ function PropertyPage() {
     }
   };
 
-  const others = (related.data ?? []).filter((p) => p.code !== property.code).slice(0, 3);
+  const others = (related.data ?? [])
+    .filter((p) => p.code !== property.code && p.purpose === property.purpose)
+    .slice(0, 3);
   const mapHref =
     property.map_url ||
     (property.latitude && property.longitude
