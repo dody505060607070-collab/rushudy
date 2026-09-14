@@ -62,7 +62,37 @@ function ListingRequestDetail() {
     },
   });
 
-  const [form, setForm] = useState<Record<string, string>>({});
+  type ListingForm = {
+    full_name: string;
+    phone: string;
+    email: string;
+    purpose: string;
+    property_type: string;
+    city: string;
+    district: string;
+    asking_price: string;
+    rent_period: string;
+    map_url: string;
+    description: string;
+    admin_notes: string;
+    status: string;
+  };
+
+  const [form, setForm] = useState<ListingForm>({
+    full_name: "",
+    phone: "",
+    email: "",
+    purpose: "rent",
+    property_type: "",
+    city: "",
+    district: "",
+    asking_price: "",
+    rent_period: "",
+    map_url: "",
+    description: "",
+    admin_notes: "",
+    status: "new",
+  });
 
   useEffect(() => {
     const row = query.data;
@@ -155,14 +185,15 @@ function ListingRequestDetail() {
     );
   }
 
-  const waPhone = (form.phone ?? "").replace(/[^0-9]/g, "");
+  const waPhone = (form.phone).replace(/[^0-9]/g, "");
   const approved = query.data.status === "approved" || query.data.status === "converted";
 
   return (
     <>
       <PageHero
         title={`طلب عرض عقار — ${form.full_name || "بدون اسم"}`}
-        subtitle={`الحالة الحالية: ${requestStatusLabels[form.status ?? "new"] ?? form.status}`}
+        subtitle={`الحالة الحالية: ${requestStatusLabels[form.status] ?? form.status}`}
+        icon={BadgeCheck}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -217,13 +248,13 @@ function ListingRequestDetail() {
         <h2 className="text-[15px] font-bold text-foreground">الصفحة كما عبّأها المالك</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <Field label="اسم المالك">
-            <input className={fieldClass} value={form.full_name ?? ""} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} />
+            <input className={fieldClass} value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} />
           </Field>
           <Field label="الجوال">
-            <input dir="ltr" inputMode="tel" className={fieldClass} value={form.phone ?? ""} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
+            <input dir="ltr" inputMode="tel" className={fieldClass} value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
           </Field>
           <Field label="البريد الإلكتروني">
-            <input dir="ltr" className={fieldClass} value={form.email ?? ""} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+            <input dir="ltr" className={fieldClass} value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
           </Field>
           <Field label="الغرض">
             <select className={fieldClass} value={form.purpose ?? "rent"} onChange={(e) => setForm((f) => ({ ...f, purpose: e.target.value }))}>
@@ -232,19 +263,19 @@ function ListingRequestDetail() {
             </select>
           </Field>
           <Field label="نوع العقار">
-            <input className={fieldClass} value={form.property_type ?? ""} onChange={(e) => setForm((f) => ({ ...f, property_type: e.target.value }))} />
+            <input className={fieldClass} value={form.property_type} onChange={(e) => setForm((f) => ({ ...f, property_type: e.target.value }))} />
           </Field>
           <Field label="مدة الإيجار">
-            <input className={fieldClass} value={form.rent_period ?? ""} onChange={(e) => setForm((f) => ({ ...f, rent_period: e.target.value }))} />
+            <input className={fieldClass} value={form.rent_period} onChange={(e) => setForm((f) => ({ ...f, rent_period: e.target.value }))} />
           </Field>
           <Field label="المدينة">
-            <input className={fieldClass} value={form.city ?? ""} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
+            <input className={fieldClass} value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
           </Field>
           <Field label="الحي">
-            <input className={fieldClass} value={form.district ?? ""} onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))} />
+            <input className={fieldClass} value={form.district} onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))} />
           </Field>
           <Field label="السعر المطلوب">
-            <input className={fieldClass} value={form.asking_price ?? ""} onChange={(e) => setForm((f) => ({ ...f, asking_price: e.target.value }))} />
+            <input className={fieldClass} value={form.asking_price} onChange={(e) => setForm((f) => ({ ...f, asking_price: e.target.value }))} />
           </Field>
           <Field label="الحالة">
             <select className={fieldClass} value={form.status ?? "new"} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
@@ -254,7 +285,7 @@ function ListingRequestDetail() {
             </select>
           </Field>
           <Field label="رابط الموقع على الخريطة">
-            <input dir="ltr" className={fieldClass} value={form.map_url ?? ""} onChange={(e) => setForm((f) => ({ ...f, map_url: e.target.value }))} />
+            <input dir="ltr" className={fieldClass} value={form.map_url} onChange={(e) => setForm((f) => ({ ...f, map_url: e.target.value }))} />
           </Field>
         </div>
 
@@ -272,10 +303,10 @@ function ListingRequestDetail() {
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <Field label="وصف العقار كما كتبه المالك">
-            <textarea rows={5} className="w-full rounded-lg border border-border bg-card p-3 text-[13px] text-foreground outline-none focus:border-primary" value={form.description ?? ""} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+            <textarea rows={5} className="w-full rounded-lg border border-border bg-card p-3 text-[13px] text-foreground outline-none focus:border-primary" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
           </Field>
           <Field label="ملاحظات الإدارة">
-            <textarea rows={5} className="w-full rounded-lg border border-border bg-card p-3 text-[13px] text-foreground outline-none focus:border-primary" value={form.admin_notes ?? ""} onChange={(e) => setForm((f) => ({ ...f, admin_notes: e.target.value }))} />
+            <textarea rows={5} className="w-full rounded-lg border border-border bg-card p-3 text-[13px] text-foreground outline-none focus:border-primary" value={form.admin_notes} onChange={(e) => setForm((f) => ({ ...f, admin_notes: e.target.value }))} />
           </Field>
         </div>
       </section>
