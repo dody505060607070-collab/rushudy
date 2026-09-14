@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { FavoriteButton } from "@/components/site/FavoriteButton";
+import { Lightbox } from "@/components/kit/Lightbox";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { SOCIAL_PLATFORMS, SocialGlyph } from "@/components/site/SocialIcons";
@@ -63,6 +64,7 @@ function PropertyPage() {
   const { data: property, isLoading, error } = useQuery(publicPropertyQuery(code));
   const related = useQuery(publicPropertiesQuery(undefined, 12));
   const [active, setActive] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const guarantees = useQuery({
     queryKey: ["public-property-guarantees", property?.id],
     enabled: Boolean(property?.id) && property?.purpose === "sale",
@@ -160,11 +162,13 @@ function PropertyPage() {
             <div className="relative overflow-hidden rounded-2xl border border-border bg-muted">
               <FavoriteButton code={property.code} className="absolute end-4 top-4 z-10 size-11" />
               {images[active]?.url ? (
+                <button type="button" className="block w-full cursor-zoom-in" onClick={() => setLightboxOpen(true)} aria-label="عرض الصورة بالحجم الكامل">
                 <img
                   src={images[active]!.url}
                   alt={property.name}
                   className="h-[360px] w-full object-cover md:h-[440px]"
                 />
+                </button>
               ) : (
                 <div className="grid h-[360px] place-items-center text-muted-foreground">
                   <Building2 className="size-12" />
@@ -336,6 +340,15 @@ function PropertyPage() {
               ))}
             </div>
           </section>
+        ) : null}
+        {lightboxOpen ? (
+          <Lightbox
+            images={images.map((image) => image.url)}
+            index={active}
+            onIndexChange={setActive}
+            onClose={() => setLightboxOpen(false)}
+            alt={property.name}
+          />
         ) : null}
       </div>
     </SiteLayout>

@@ -17,11 +17,15 @@ import {
   UploadCloud,
   ChevronLeft,
   ChevronRight,
+  GripVertical,
+  Maximize2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Field, inputClass, textareaClass } from "@/components/kit/Modal";
+import { Lightbox } from "@/components/kit/Lightbox";
+import { LocationPicker } from "@/components/kit/LocationPicker";
 import { SOCIAL_PLATFORMS, SocialGlyph } from "@/components/site/SocialIcons";
 import { PageHero } from "@/components/kit/PageHero";
 import { Toggle } from "@/components/kit/Toggle";
@@ -48,7 +52,7 @@ export const Route = createFileRoute("/_authenticated/property-form")({
   component: PropertyFormPage,
 });
 
-type MediaRow = { id: string; url: string; sort_order: number; is_cover?: boolean; title?: string | null };
+type MediaRow = { id: string; url: string; sort_order: number; is_cover?: boolean; title?: string | null; focal_x?: number; focal_y?: number };
 
 const DEFAULT_SALE_GUARANTEES = [
   { name: "الأنابيب الخضراء", years: 15 },
@@ -137,6 +141,10 @@ function PropertyFormPage() {
   const [guaranteeName, setGuaranteeName] = useState("");
   const [guaranteeYears, setGuaranteeYears] = useState("");
   const [step, setStep] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [dragImageId, setDragImageId] = useState<string | null>(null);
+  const [quickType, setQuickType] = useState("");
+  const [quickDistrict, setQuickDistrict] = useState("");
 
 
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
@@ -284,7 +292,7 @@ function PropertyFormPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("property_images")
-        .select("id, url, sort_order, is_cover")
+        .select("id, url, sort_order, is_cover, focal_x, focal_y")
         .eq("property_id", id)
         .order("sort_order");
       if (error) throw error;
@@ -523,6 +531,66 @@ function PropertyFormPage() {
       toast.success("تم تعيين الصورة الرئيسية");
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر التحديث"),
+  });
+
+  const reorderImages = useMutation({
+    mutationFn: async ({ sourceId, targetId }: { sourceId: string; targetId: string }) => {
+      const current = [...(images.data ?? [])];
+      const sourceIndex = current.findIndex((row) => row.id === sourceId);
+      const targetIndex = current.findIndex((row) => row.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
+      const [moved] = current.splice(sourceIndex, 1);
+      if (!moved) return;
+      current.splice(targetIndex, 0, moved);
+      const updates = await Promise.all(
+        current.map((row, index) => supabase.from("property_images").update({ sort_order: index }).eq("id", row.id)),
+      );
+      const failed = updates.find((result) => result.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["property-images", id] });
+      queryClient.invalidateQueries({ queryKey: ["public-properties"] });
+      toast.success("تم حفظ ترتيب الصور");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر ترتيب الصور"),
+  });
+
+  const updateFocalPoint = useMutation({
+    mutationFn: async ({ rowId, focalX, focalY }: { rowId: string; focalX: number; focalY: number }) => {
+      const { error } = await supabase.from("property_images").update({ focal_x: focalX, focal_y: focalY }).eq("id", rowId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["property-images", id] }),
+  });
+
+  const quickAddLookup = useMutation({
+    mutationFn: async (input: { kind: "type" | "district"; name: string }) => {
+      if (!input.name.trim()) throw new Error("اكتب الاسم أولًا");
+      if (input.kind === "type") {
+        const { data, error } = await supabase.from("property_types").insert({ name: input.name.trim(), sort_order: types.data?.length ?? 0 }).select("id, name").single();
+        if (error) throw error;
+        return { kind: input.kind, ...data };
+      }
+      const city = cities.data?.find((row) => row.name === form.city);
+      if (!city) throw new Error("اختر المدينة أولًا");
+      const { data, error } = await supabase.from("districts").insert({ city_id: city.id, name: input.name.trim(), sort_order: cityDistricts.length }).select("id, name").single();
+      if (error) throw error;
+      return { kind: input.kind, ...data };
+    },
+    onSuccess: (row) => {
+      if (row.kind === "type") {
+        set({ property_type: row.name });
+        setQuickType("");
+        queryClient.invalidateQueries({ queryKey: ["property-types", "active"] });
+      } else {
+        set({ district: row.name });
+        setQuickDistrict("");
+        queryClient.invalidateQueries({ queryKey: ["districts", "active"] });
+      }
+      toast.success("تمت الإضافة والاختيار");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّرت الإضافة"),
   });
 
   const addVideo = useMutation({

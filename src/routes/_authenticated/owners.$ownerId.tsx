@@ -33,6 +33,7 @@ import { askAdminAi } from "@/lib/ai.functions";
 import { exportWorkbook, type ExportRow } from "@/lib/export";
 import { contractStatusLabels, invoiceStatusLabels } from "@/lib/labels";
 import { ImportDialog } from "@/routes/_authenticated/contracts.index";
+import { moveOwnerAsset } from "@/lib/owner-operations.functions";
 
 export const Route = createFileRoute("/_authenticated/owners/$ownerId")({
   head: () => ({
@@ -69,6 +70,7 @@ function OwnerDetailPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [openUnits, setOpenUnits] = useState<Record<string, boolean>>({});
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [dragAsset, setDragAsset] = useState<{ id: string; type: "unit" | "property" } | null>(null);
 
   const dossier = useQuery({
     queryKey: ["owner-dossier", ownerId],
@@ -183,6 +185,19 @@ function OwnerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["owner-dossier", ownerId] });
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر تسجيل السداد"),
+  });
+
+  const moveAsset = useMutation({
+    mutationFn: (buildingId: string | null) => {
+      if (!dragAsset) throw new Error("اختر الوحدة أو العقار أولًا");
+      return moveOwnerAsset({ data: { ownerId, buildingId, itemId: dragAsset.id, itemType: dragAsset.type } });
+    },
+    onSuccess: () => {
+      setDragAsset(null);
+      queryClient.invalidateQueries({ queryKey: ["owner-dossier", ownerId] });
+      toast.success("تم نقل العنصر إلى المبنى");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر النقل"),
   });
 
   const exportOwner = async (aiSummary?: string) => {
@@ -319,7 +334,7 @@ function OwnerDetailPage() {
     paymentsByContract.set(p.contract_id, list);
   }
 
-  type GroupItem = { key: string; title: string; subtitle: string; contract: any | null; badge?: string };
+  type GroupItem = { key: string; title: string; subtitle: string; contract: any | null; badge?: string; assetType: "unit" | "property" };
   const groups: { key: string; title: string; subtitle: string; items: GroupItem[] }[] = [];
   for (const building of data.buildings) {
     groups.push({
@@ -336,6 +351,7 @@ function OwnerDetailPage() {
             .join(" · "),
           contract: contractByUnit.get(u.id) ?? null,
           badge: u.status,
+          assetType: "unit",
         })),
     });
   }
@@ -353,6 +369,7 @@ function OwnerDetailPage() {
           subtitle: [p.code, p.city, p.district].filter(Boolean).join(" · "),
           contract: contractByProperty.get(p.id) ?? null,
           badge: p.status,
+          assetType: "property",
         })),
         ...looseUnits.map((u) => ({
           key: u.id,
@@ -360,6 +377,7 @@ function OwnerDetailPage() {
           subtitle: [u.unit_type, u.floor ? `الدور ${u.floor}` : null].filter(Boolean).join(" · "),
           contract: contractByUnit.get(u.id) ?? null,
           badge: u.status,
+          assetType: "unit",
         })),
       ],
     });
@@ -579,11 +597,17 @@ function OwnerDetailPage() {
       </RecordSection>
 
       <RecordSection title="العقارات والوحدات" icon={House} count={groups.reduce((s, g) => s + g.items.length, 0)}>
-        <div className="space-y-4">
+        <p className="mb-3 text-[12px] text-muted-foreground">اسحب أي وحدة أو عقار إلى بطاقة مبنى أخرى لتحديث ارتباطه فورًا.</p>
+        <div className="grid gap-4 xl:grid-cols-2">
           {groups.map((group) => {
             const collapsed = collapsedGroups[group.key];
             return (
-              <article key={group.key} className="overflow-hidden rounded-md border border-border border-e-primary">
+              <article
+                key={group.key}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => moveAsset.mutate(group.key === "__standalone" ? null : group.key)}
+                className="overflow-hidden rounded-md border border-border border-e-primary transition-colors hover:border-primary/50"
+              >
                 <header className="flex flex-wrap items-center justify-between gap-3 bg-secondary/40 px-4 py-3">
                   <div>
                     <h3 className="text-[14px] font-bold">{group.title}</h3>
@@ -611,7 +635,13 @@ function OwnerDetailPage() {
                       const totalRemaining = list.reduce((s, p) => s + remainingOf(p), 0);
                       const link = reminderLink(contract);
                       return (
-                        <div key={item.key} className="rounded-md border border-border bg-card">
+                        <div
+                          key={item.key}
+                          draggable
+                          onDragStart={() => setDragAsset({ id: item.key, type: item.assetType })}
+                          onDragEnd={() => setDragAsset(null)}
+                          className="cursor-grab rounded-md border border-border bg-card active:cursor-grabbing"
+                        >
                           <div className="flex flex-wrap items-center justify-between gap-3 p-3">
                             <div>
                               <div className="flex items-center gap-2">
