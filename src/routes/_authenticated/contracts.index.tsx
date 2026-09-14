@@ -205,16 +205,23 @@ function ContractsPage() {
       }
       const { error } = await supabase.from("contracts").insert({ ...payload, source });
       if (error) throw error;
-      // إنشاء حساب بوابة العميل تلقائيًا (اسم المستخدم = رقم الهوية، كلمة المرور = الجوال 05…)
-      if (payload.tenant_id) {
-        try {
-          const res = await ensureClientAccount({ data: { contactId: payload.tenant_id } });
-          return res.ok ? { username: res.username, password: res.password } : { reason: res.reason };
-        } catch {
-          return { reason: "تعذّر إنشاء حساب بوابة العميل تلقائيًا." };
-        }
-      }
-      return null;
+      // إنشاء حساب المالك والمستأجر فور إنشاء العقد.
+      const contacts = [payload.owner_id, payload.tenant_id].filter(
+        (contactId, index, all): contactId is string => Boolean(contactId) && all.indexOf(contactId) === index,
+      );
+      const results = await Promise.all(
+        contacts.map(async (contactId) => {
+          try {
+            return await ensureClientAccount({ data: { contactId } });
+          } catch {
+            return { ok: false as const, reason: "تعذّر إنشاء حساب البوابة تلقائيًا." };
+          }
+        }),
+      );
+      const ownerResult = payload.owner_id ? results[contacts.indexOf(payload.owner_id)] : undefined;
+      const firstSuccess = ownerResult?.ok ? ownerResult : results.find((result) => result.ok);
+      if (firstSuccess?.ok) return { username: firstSuccess.username, password: firstSuccess.password };
+      return results[0] && !results[0].ok ? { reason: results[0].reason } : null;
     },
     onSuccess: (account) => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });

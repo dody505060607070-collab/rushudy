@@ -407,56 +407,23 @@ export const finalizeContractImport = createServerFn({ method: "POST" })
       created.push("تذكير سداد مجدول");
     }
 
-    // حساب بوابة العميل
+    // حسابا بوابة المالك والمستأجر
     let account: { username: string; password: string } | null = null;
-    if (tenantId) {
+    const portalContacts = [ownerId, tenantId].filter(
+      (contactId, index, all): contactId is string => Boolean(contactId) && all.indexOf(contactId) === index,
+    );
+    for (const contactId of portalContacts) {
       try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const contact = await supabaseAdmin
-          .from("contacts")
-          .select("id, full_name, national_id, phone, whatsapp")
-          .eq("id", tenantId)
-          .single();
-        const username = String(contact.data?.national_id ?? "").replace(/\D/g, "");
-        const digits = String(contact.data?.phone ?? contact.data?.whatsapp ?? "").replace(/\D/g, "");
-        const password = digits.startsWith("966")
-          ? `0${digits.slice(3)}`
-          : digits.startsWith("5")
-            ? `0${digits}`
-            : digits;
-        if (username && password.length >= 6) {
-          const loginEmail = `${username}@client.mithraa.sa`;
-          const existing = await supabaseAdmin
-            .from("client_accounts")
-            .select("id, user_id")
-            .eq("contact_id", tenantId)
-            .maybeSingle();
-          if (existing.data) {
-            await supabaseAdmin.auth.admin.updateUserById(existing.data.user_id, { password });
-            account = { username, password };
-          } else {
-            const createdUser = await supabaseAdmin.auth.admin.createUser({
-              email: loginEmail,
-              password,
-              email_confirm: true,
-              user_metadata: { full_name: contact.data?.full_name ?? tenantName, is_client: true },
-            });
-            if (createdUser.data.user) {
-              await supabaseAdmin.from("client_accounts").insert({
-                contact_id: tenantId,
-                user_id: createdUser.data.user.id,
-                username,
-                login_email: loginEmail,
-              });
-              account = { username, password };
-              created.push("حساب بوابة العميل");
-            } else if (createdUser.error) {
-              warnings.push(`تعذّر إنشاء حساب العميل: ${createdUser.error.message}`);
-            }
-          }
+        const { ensureClientAccountForContact } = await import("./client-account.server");
+        const result = await ensureClientAccountForContact(contactId);
+        if (result.ok) {
+          if (contactId === ownerId || !account) account = { username: result.username, password: result.password };
+          if (result.created) created.push(contactId === ownerId ? "حساب بوابة المالك" : "حساب بوابة المستأجر");
+        } else {
+          warnings.push(`${contactId === ownerId ? "المالك" : "المستأجر"}: ${result.reason}`);
         }
       } catch (err) {
-        warnings.push(`تعذّر إنشاء حساب العميل: ${err instanceof Error ? err.message : "خطأ غير معروف"}`);
+        warnings.push(`تعذّر إنشاء حساب ${contactId === ownerId ? "المالك" : "المستأجر"}: ${err instanceof Error ? err.message : "خطأ غير معروف"}`);
       }
     }
 

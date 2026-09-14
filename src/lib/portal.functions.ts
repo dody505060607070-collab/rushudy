@@ -1,21 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { ensureClientAccountForContact } from "./client-account.server";
+import { CLIENT_EMAIL_DOMAIN, clientUsername, localPhone } from "./client-credentials";
 
-const EMAIL_DOMAIN = "client.mithraa.sa";
-
-export function localPhone(raw: string | null | undefined): string {
-  const digits = String(raw ?? "").replace(/\D/g, "");
-  if (!digits) return "";
-  if (digits.startsWith("966")) return `0${digits.slice(3)}`;
-  if (digits.startsWith("00966")) return `0${digits.slice(5)}`;
-  if (digits.startsWith("5")) return `0${digits}`;
-  return digits;
-}
-
-export function clientUsername(nationalId: string | null | undefined): string {
-  return String(nationalId ?? "").replace(/\D/g, "");
-}
+export { clientUsername, localPhone } from "./client-credentials";
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -30,66 +19,7 @@ export const ensureClientAccount = createServerFn({ method: "POST" })
     const staff = await context.supabase.rpc("is_staff", { _user_id: context.userId });
     if (!staff.data) throw new Error("غير مصرّح.");
 
-    const db = await admin();
-    const { data: contact, error } = await db
-      .from("contacts")
-      .select("id, full_name, national_id, phone, whatsapp, email, roles")
-      .eq("id", data.contactId)
-      .single();
-    if (error || !contact) throw new Error("العميل غير موجود.");
-
-    const username = clientUsername(contact.national_id);
-    const password = localPhone(contact.phone ?? contact.whatsapp);
-    if (!username) return { ok: false as const, reason: "لا يوجد رقم هوية لهذا العميل." };
-    if (password.length < 6) return { ok: false as const, reason: "لا يوجد رقم جوال صالح لهذا العميل." };
-
-    const loginEmail = `${username}@${EMAIL_DOMAIN}`;
-
-    const existing = await db
-      .from("client_accounts")
-      .select("id, user_id")
-      .eq("contact_id", contact.id)
-      .maybeSingle();
-
-    if (existing.data) {
-      await db.auth.admin.updateUserById(existing.data.user_id, {
-        password,
-        user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true, portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client" },
-      });
-      if ((contact.roles ?? []).includes("owner")) {
-        await db.from("user_roles").upsert({ user_id: existing.data.user_id, role: "owner" }, { onConflict: "user_id,role" });
-      }
-      return { ok: true as const, username, password, created: false };
-    }
-
-    const created = await db.auth.admin.createUser({
-      email: loginEmail,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true, portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client" },
-    });
-
-    let userId = created.data.user?.id;
-    if (!userId) {
-      // قد يكون الحساب موجودًا مسبقًا بنفس البريد
-      const list = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      userId = list.data.users.find((u) => u.email === loginEmail)?.id;
-      if (userId) await db.auth.admin.updateUserById(userId, { password });
-    }
-    if (!userId) throw new Error(created.error?.message ?? "تعذّر إنشاء حساب العميل.");
-
-    await db
-      .from("client_accounts")
-      .upsert(
-        { contact_id: contact.id, user_id: userId, username, login_email: loginEmail },
-        { onConflict: "contact_id" },
-      );
-
-    if ((contact.roles ?? []).includes("owner")) {
-      await db.from("user_roles").upsert({ user_id: userId, role: "owner" }, { onConflict: "user_id,role" });
-    }
-
-    return { ok: true as const, username, password, created: true };
+    return ensureClientAccountForContact(data.contactId);
   });
 
 function randomDigits(length: number): string {
@@ -176,7 +106,7 @@ export const issueClientAccess = createServerFn({ method: "POST" })
       generated = true;
     }
 
-    const loginEmail = existing.data?.login_email ?? `${username}@${EMAIL_DOMAIN}`;
+    const loginEmail = existing.data?.login_email ?? `${username}@${CLIENT_EMAIL_DOMAIN}`;
 
     if (existing.data) {
       const upd = await db.auth.admin.updateUserById(existing.data.user_id, {
@@ -225,7 +155,7 @@ export const issueClientAccess = createServerFn({ method: "POST" })
 
 /** يحوّل اسم المستخدم (رقم الهوية) إلى بريد الدخول الداخلي. */
 export const resolveClientLogin = createServerFn({ method: "POST" })
-  .inputValidator((input: { username: string }) => input)
+  .inputValidator((input: { username: string; password?: string }) => input)
   .handler(async ({ data }) => {
     const username = clientUsername(data.username);
     if (!username) return { email: null as string | null };
@@ -235,7 +165,26 @@ export const resolveClientLogin = createServerFn({ method: "POST" })
       .select("login_email")
       .eq("username", username)
       .maybeSingle();
-    return { email: row.data?.login_email ?? null };
+    if (row.data?.login_email) return { email: row.data.login_email };
+
+    // إصلاح آمن للحسابات القديمة: لا ننشئ الحساب إلا إذا طابقت كلمة المرور جوال
+    // مالك موجود بالفعل وله عقد مسجل في النظام.
+    const suppliedPassword = localPhone(data.password);
+    if (!suppliedPassword) return { email: null as string | null };
+    const contact = await db
+      .from("contacts")
+      .select("id, phone, whatsapp, roles")
+      .eq("national_id", username)
+      .maybeSingle();
+    const isOwner = (contact.data?.roles ?? []).includes("owner");
+    const expectedPassword = localPhone(contact.data?.phone ?? contact.data?.whatsapp);
+    if (!contact.data || !isOwner || suppliedPassword !== expectedPassword) {
+      return { email: null as string | null };
+    }
+    const contract = await db.from("contracts").select("id").eq("owner_id", contact.data.id).limit(1);
+    if (!contract.data?.length) return { email: null as string | null };
+    const repaired = await ensureClientAccountForContact(contact.data.id);
+    return { email: repaired.ok ? `${repaired.username}@${CLIENT_EMAIL_DOMAIN}` : null };
   });
 
 async function currentClient(userId: string) {
