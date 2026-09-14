@@ -247,8 +247,8 @@ export const getPortalOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { db, contactId } = await currentClient(context.userId);
-    const [contact, contracts] = await Promise.all([
-      db.from("contacts").select("id, full_name, national_id, phone, email").eq("id", contactId).single(),
+    const [contact, contracts, buildings, units, properties] = await Promise.all([
+      db.from("contacts").select("id, full_name, national_id, phone, email, roles").eq("id", contactId).single(),
       db
         .from("contracts")
         .select(
@@ -256,7 +256,9 @@ export const getPortalOverview = createServerFn({ method: "GET" })
         )
         .or(partyFilter(contactId))
         .order("start_date", { ascending: false }),
-
+      db.from("buildings").select("id, name, city, district, address").eq("owner_id", contactId).order("name"),
+      db.from("units").select("id, building_id, unit_number, unit_type, status, floor, area").eq("owner_id", contactId).order("unit_number"),
+      db.from("properties").select("id, building_id, code, name, purpose, status, city, district").eq("owner_id", contactId).order("name"),
     ]);
 
     const contractIds = (contracts.data ?? []).map((c) => c.id);
@@ -294,6 +296,10 @@ export const getPortalOverview = createServerFn({ method: "GET" })
         amount_paid: number;
         status: string;
       }[],
+      buildings: buildings.data ?? [],
+      units: units.data ?? [],
+      properties: properties.data ?? [],
+      isOwner: (contact.data?.roles ?? []).includes("owner"),
     };
   });
 

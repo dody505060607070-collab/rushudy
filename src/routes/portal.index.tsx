@@ -135,6 +135,19 @@ function PortalHome() {
         )}
       </section>
 
+      {data.isOwner ? (
+        <section className="space-y-3">
+          <div><h2 className="text-base font-bold">محفظة المالك</h2><p className="text-xs text-muted-foreground">المباني والوحدات والعقارات المسجلة باسمك.</p></div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {data.buildings.map((building) => {
+              const units = data.units.filter((unit) => unit.building_id === building.id);
+              const occupied = units.filter((unit) => unit.status === "occupied").length;
+              return <article key={building.id} className="rounded-xl border border-border bg-card p-4 shadow-card"><div className="flex items-center justify-between"><h3 className="font-bold">{building.name}</h3><span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-bold text-primary">{units.length} وحدة</span></div><p className="mt-1 text-xs text-muted-foreground">{[building.district, building.city, building.address].filter(Boolean).join("، ") || "—"}</p><div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs"><span className="rounded-lg bg-success/10 p-2 text-success"><b className="block text-base">{occupied}</b>مشغولة</span><span className="rounded-lg bg-muted p-2"><b className="block text-base">{Math.max(units.length - occupied, 0)}</b>شاغرة</span></div></article>;
+            })}
+          </div>
+        </section>
+      ) : null}
+
       {/* عدادات */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Counter label="عقد" value={contracts.length} />

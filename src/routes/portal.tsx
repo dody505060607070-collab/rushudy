@@ -19,6 +19,7 @@ function PortalLayout() {
   const navigate = useNavigate();
   const { user } = Route.useRouteContext();
   const name = (user.user_metadata?.["full_name"] as string | undefined) ?? "العميل";
+  const isOwner = user.user_metadata?.["portal_role"] === "owner";
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -38,7 +39,7 @@ function PortalLayout() {
             </span>
             <div className="leading-tight">
               <p className="text-sm font-bold">الرشودي للعقارات</p>
-              <p className="text-[11px] text-primary-foreground/70">بوابة العميل</p>
+              <p className="text-[11px] text-primary-foreground/70">{isOwner ? "بوابة المالك" : "بوابة العميل"}</p>
             </div>
           </div>
 
