@@ -33,7 +33,7 @@ import { askAdminAi } from "@/lib/ai.functions";
 import { exportWorkbook, type ExportRow } from "@/lib/export";
 import { contractStatusLabels, invoiceStatusLabels } from "@/lib/labels";
 import { ImportDialog } from "@/routes/_authenticated/contracts.index";
-import { moveOwnerAsset } from "@/lib/owner-operations.functions";
+import { assignOwnerContract, moveOwnerAsset } from "@/lib/owner-operations.functions";
 import { issueClientAccess } from "@/lib/portal.functions";
 
 export const Route = createFileRoute("/_authenticated/owners/$ownerId")({
@@ -72,6 +72,7 @@ function OwnerDetailPage() {
   const [openUnits, setOpenUnits] = useState<Record<string, boolean>>({});
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [dragAsset, setDragAsset] = useState<{ id: string; type: "unit" | "property" } | null>(null);
+  const [dragContractId, setDragContractId] = useState<string | null>(null);
   const [ownerAccess, setOwnerAccess] = useState<{ username: string; password: string } | null>(null);
 
   const dossier = useQuery({
@@ -209,6 +210,19 @@ function OwnerDetailPage() {
       toast.success("تم تجهيز حساب دخول المالك");
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر تجهيز الحساب"),
+  });
+
+  const assignContract = useMutation({
+    mutationFn: (unitId: string) => {
+      if (!dragContractId) throw new Error("اختر العقد أولًا");
+      return assignOwnerContract({ data: { ownerId, contractId: dragContractId, unitId } });
+    },
+    onSuccess: () => {
+      setDragContractId(null);
+      queryClient.invalidateQueries({ queryKey: ["owner-dossier", ownerId] });
+      toast.success("تم ربط العقد بالوحدة");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر نقل العقد"),
   });
 
   const exportOwner = async (aiSummary?: string) => {
@@ -627,7 +641,7 @@ function OwnerDetailPage() {
       </RecordSection>
 
       <RecordSection title="العقارات والوحدات" icon={House} count={groups.reduce((s, g) => s + g.items.length, 0)}>
-        <p className="mb-3 text-[12px] text-muted-foreground">اسحب أي وحدة أو عقار إلى بطاقة مبنى أخرى لتحديث ارتباطه فورًا.</p>
+        <p className="mb-3 text-[12px] text-muted-foreground">اسحب الوحدة أو العقار بين المباني، أو اسحب عقدًا نشطًا من قسم العقود وأسقطه على وحدة شاغرة.</p>
         <div className="grid gap-4 xl:grid-cols-2">
           {groups.map((group) => {
             const collapsed = collapsedGroups[group.key];
@@ -670,6 +684,13 @@ function OwnerDetailPage() {
                           draggable
                           onDragStart={() => setDragAsset({ id: item.key, type: item.assetType })}
                           onDragEnd={() => setDragAsset(null)}
+                          onDragOver={(event) => event.preventDefault()}
+                          onDrop={(event) => {
+                            if (!dragContractId || item.assetType !== "unit") return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            assignContract.mutate(item.key);
+                          }}
                           className="cursor-grab rounded-md border border-border bg-card active:cursor-grabbing"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3 p-3">
@@ -834,6 +855,9 @@ function OwnerDetailPage() {
           {data.contracts.map((contract) => (
             <Link
               key={contract.id}
+              draggable={contract.status === "active"}
+              onDragStart={() => setDragContractId(contract.id)}
+              onDragEnd={() => setDragContractId(null)}
               to="/contracts/$contractId"
               params={{ contractId: contract.id }}
               className="grid items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted sm:grid-cols-5"

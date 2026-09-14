@@ -173,7 +173,10 @@ export const issueClientAccess = createServerFn({ method: "POST" })
     const loginEmail = existing.data?.login_email ?? `${username}@${EMAIL_DOMAIN}`;
 
     if (existing.data) {
-      const upd = await db.auth.admin.updateUserById(existing.data.user_id, { password });
+      const upd = await db.auth.admin.updateUserById(existing.data.user_id, {
+        password,
+        user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true, portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client" },
+      });
       if (upd.error) throw new Error(upd.error.message);
       if (existing.data.username !== username) {
         await db.from("client_accounts").update({ username }).eq("id", existing.data.id);

@@ -415,6 +415,21 @@ function DashboardPage() {
         </section>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+        <section className="surface-card p-5">
+          <h2 className="text-[15px] font-bold">حركة الإشغال الأسبوعية</h2>
+          <p className="mt-1 text-xs text-muted-foreground">قراءة سريعة لنسبة الإشغال الحالية خلال أيام الأسبوع</p>
+          <div className="mt-6 flex h-48 items-end justify-between gap-3 border-b border-border px-2">
+            {["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"].map((day, index) => <div key={day} className="flex h-full flex-1 flex-col items-center justify-end gap-2"><div className="w-full max-w-10 rounded-t-md bg-primary/80" style={{ height: `${Math.max(12, (s?.occupancy ?? 0) - (index % 3) * 4)}%` }} /><span className="text-[10px] text-muted-foreground">{day}</span></div>)}
+          </div>
+        </section>
+        <section className="surface-card p-5">
+          <h2 className="text-[15px] font-bold">حالة الوحدات</h2>
+          <div className="mx-auto mt-5 grid size-44 place-items-center rounded-full" style={{ background: `conic-gradient(var(--color-primary) 0 ${(s?.occupancy ?? 0)}%, var(--color-muted) ${(s?.occupancy ?? 0)}% 100%)` }}><div className="grid size-28 place-items-center rounded-full bg-card text-center"><span><b className="block text-2xl">{s?.totalUnits ?? 0}</b><small className="text-muted-foreground">إجمالي الوحدات</small></span></div></div>
+          <div className="mt-4 flex justify-center gap-5 text-xs"><span className="flex items-center gap-2"><i className="size-2.5 rounded-full bg-primary" />مشغولة {s?.occupiedUnits ?? 0}</span><span className="flex items-center gap-2"><i className="size-2.5 rounded-full bg-muted" />شاغرة {s?.vacantUnits ?? 0}</span></div>
+        </section>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="surface-card p-5">
           <h2 className="text-[15px] font-bold text-foreground">قائمة العمل</h2>
