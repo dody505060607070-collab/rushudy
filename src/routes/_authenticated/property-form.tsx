@@ -250,6 +250,8 @@ function PropertyFormPage() {
   });
 
   const [ownerId, setOwnerId] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [ownerPhone, setOwnerPhone] = useState("");
 
   useEffect(() => {
     const row = property.data;
