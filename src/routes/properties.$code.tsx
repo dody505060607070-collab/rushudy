@@ -17,6 +17,7 @@ import {
   publicPropertiesQuery,
   publicPropertyQuery,
   purposeLabels,
+  rentPeriodLabels,
   whatsappLink,
 } from "@/lib/site-data";
 
