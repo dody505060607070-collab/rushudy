@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { OwnerDashboard } from "@/components/portal/OwnerDashboard";
 import { getPortalOverview } from "@/lib/portal.functions";
 
 export const Route = createFileRoute("/portal/")({
@@ -134,6 +135,8 @@ function PortalHome() {
           </ul>
         )}
       </section>
+
+      {data.isOwner ? <OwnerDashboard /> : null}
 
       {data.isOwner ? (
         <section className="space-y-3">
