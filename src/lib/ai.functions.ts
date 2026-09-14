@@ -141,12 +141,18 @@ async function callGemini(input: Item[], opts: CallOpts = {}): Promise<string> {
 
 
 /**
- * ترتيب المزوّدين: Google Gemini أولًا (مفتاح مباشر لا يعتمد على منصة الاستضافة)،
- * ثم Groq، وأخيرًا بوابة Lovable فقط إن وُجد مفتاحها — حتى يعمل النظام كاملًا على
- * خادم Hostinger VPS بدون أي اعتماد على Lovable.
+ * ترتيب المزوّدين: بوابة Lovable أولًا عند توفر مفتاحها (تدعم النص والملفات)،
+ * ثم Google Gemini، ثم Groq كاحتياط أخير. أي مزوّد بمفتاح غير صالح يُتجاوز تلقائيًا.
  */
 async function callGateway(input: Item[], opts: CallOpts = {}): Promise<string> {
   const errors: string[] = [];
+  if (process.env["LOVABLE_API_KEY"]) {
+    try {
+      return await callLovable(input);
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+    }
+  }
   try {
     return await callGemini(input, opts);
   } catch (e) {
@@ -157,15 +163,9 @@ async function callGateway(input: Item[], opts: CallOpts = {}): Promise<string> 
   } catch (e) {
     errors.push(e instanceof Error ? e.message : String(e));
   }
-  if (process.env["LOVABLE_API_KEY"]) {
-    try {
-      return await callLovable(input);
-    } catch (e) {
-      errors.push(e instanceof Error ? e.message : String(e));
-    }
-  }
   throw new Error(`تعذّر الوصول لأي مزوّد ذكاء اصطناعي. (${errors.join(" | ").slice(0, 400)})`);
 }
+
 
 async function callLovable(input: Item[]): Promise<string> {
   const key = process.env["LOVABLE_API_KEY"];
@@ -354,14 +354,9 @@ export const analyzeContractPdf = createServerFn({ method: "POST" })
         },
       ];
 
-    // Gemini أسرع مسار؛ وعند ازدحامه نستخدم Groq للنص المستخرج.
-    let text: string;
-    try {
-      text = await callGemini(items, { json: true, fast: true, maxTokens: 3000 });
-    } catch (e) {
-      if (!extractedText) throw e;
-      text = await callGroq(items, { json: true, maxTokens: 3000 });
-    }
+    // يجرّب كل المزوّدين المتاحين بالترتيب بدل الاعتماد على مزوّد واحد قد يكون مفتاحه غير صالح.
+    const text = await callGateway(items, { json: true, fast: true, maxTokens: 3000 });
+
 
 
     const match = text.match(/\{[\s\S]*\}/);
