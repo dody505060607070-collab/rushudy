@@ -130,3 +130,31 @@ export const setStaffSuperAdmin = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+/** حذف حساب موظف نهائيًا أو إيقافه فقط. */
+export const deleteStaffAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { userId: string; mode?: "disable" | "delete" }) => input)
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
+    if (!data.userId) throw new Error("لم يتم تحديد الموظف.");
+    if (data.userId === context.userId) throw new Error("لا يمكنك حذف حسابك الحالي.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (data.mode === "disable") {
+      const res = await supabaseAdmin
+        .from("profiles")
+        .update({ is_active: false })
+        .eq("id", data.userId);
+      if (res.error) throw new Error(res.error.message);
+      return { ok: true, mode: "disable" as const };
+    }
+
+    await supabaseAdmin.from("user_permissions").delete().eq("user_id", data.userId);
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
+    await supabaseAdmin.from("profiles").delete().eq("id", data.userId);
+    const del = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (del.error) throw new Error(del.error.message);
+    return { ok: true, mode: "delete" as const };
+  });
