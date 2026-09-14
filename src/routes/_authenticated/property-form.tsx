@@ -250,6 +250,8 @@ function PropertyFormPage() {
   });
 
   const [ownerId, setOwnerId] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [ownerPhone, setOwnerPhone] = useState("");
 
   useEffect(() => {
     const row = property.data;
@@ -284,6 +286,8 @@ function PropertyFormPage() {
       needs_review: Boolean(row.needs_review),
     });
     setOwnerId(row.owner_id ?? "");
+    setOwnerName(row.owner_name ?? "");
+    setOwnerPhone(row.owner_phone ?? "");
   }, [property.data]);
 
   const images = useQuery({
@@ -435,6 +439,8 @@ function PropertyFormPage() {
         sort_order: Number(form.sort_order) || 0,
         internal_notes: form.internal_notes.trim() || null,
         owner_id: ownerId || null,
+        owner_name: ownerName.trim() || null,
+        owner_phone: ownerPhone.trim() || null,
         is_visible: form.is_visible,
         is_featured: form.is_featured,
         needs_review: form.needs_review,
@@ -795,7 +801,7 @@ function PropertyFormPage() {
               <button type="button" className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-bold text-primary" onClick={() => quickAddLookup.mutate({ kind: "district", name: quickDistrict })}><Plus className="size-4" /> إضافة</button>
             </div>
           </Field>
-          <Field label="المالك" hint="يُربط العقار بسجل المالك في قسم الملاك">
+          <Field label="المالك" hint="اختياري: اربطه بسجل المالك أو اكتب الاسم والجوال يدويًا">
             <select
               className={inputClass}
               value={ownerId}
@@ -808,6 +814,22 @@ function PropertyFormPage() {
                 </option>
               ))}
             </select>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <input
+                className={inputClass}
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                placeholder="اسم المالك (اختياري)"
+              />
+              <input
+                className={inputClass}
+                value={ownerPhone}
+                onChange={(e) => setOwnerPhone(e.target.value)}
+                placeholder="جوال المالك (اختياري)"
+                inputMode="tel"
+                dir="ltr"
+              />
+            </div>
           </Field>
         </div>
       </SectionCard>

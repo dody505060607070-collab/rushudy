@@ -120,6 +120,13 @@
       "when": 1789393749365,
       "tag": "0016_owner_portal_tools",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789425102642,
+      "tag": "0017_add_property_manual_owner",
+      "breakpoints": true
     }
   ]
 }
