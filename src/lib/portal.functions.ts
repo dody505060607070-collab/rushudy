@@ -52,7 +52,13 @@ export const ensureClientAccount = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (existing.data) {
-      await db.auth.admin.updateUserById(existing.data.user_id, { password });
+      await db.auth.admin.updateUserById(existing.data.user_id, {
+        password,
+        user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true, portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client" },
+      });
+      if ((contact.roles ?? []).includes("owner")) {
+        await db.from("user_roles").upsert({ user_id: existing.data.user_id, role: "owner" }, { onConflict: "user_id,role" });
+      }
       return { ok: true as const, username, password, created: false };
     }
 
