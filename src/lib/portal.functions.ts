@@ -60,7 +60,7 @@ export const ensureClientAccount = createServerFn({ method: "POST" })
       email: loginEmail,
       password,
       email_confirm: true,
-      user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true },
+      user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true, portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client" },
     });
 
     let userId = created.data.user?.id;
@@ -188,7 +188,7 @@ export const issueClientAccess = createServerFn({ method: "POST" })
       email: loginEmail,
       password,
       email_confirm: true,
-      user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true },
+      user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true, portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client" },
     });
 
     let userId = created.data.user?.id;

@@ -27,7 +27,7 @@ export type PublicProperty = {
   link_facebook: string | null;
   link_tour: string | null;
   created_at: string;
-  property_images: { url: string; is_cover: boolean; sort_order: number }[];
+  property_images: { url: string; is_cover: boolean; sort_order: number; focal_x?: number; focal_y?: number }[];
 };
 
 const PROPERTY_FIELDS =

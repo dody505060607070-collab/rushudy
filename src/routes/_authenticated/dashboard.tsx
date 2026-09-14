@@ -15,6 +15,10 @@ import {
   TriangleAlert,
   Upload,
   Wallet,
+  LogIn,
+  LogOut,
+  CalendarCheck,
+  Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -44,6 +48,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function DashboardPage() {
+  const todayIso = new Date().toISOString().slice(0, 10);
   const summary = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: async () => {
@@ -186,6 +191,20 @@ function DashboardPage() {
     },
   });
 
+  const operations = useQuery({
+    queryKey: ["dashboard-operations", todayIso],
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const dayStart = `${todayIso}T00:00:00.000Z`;
+      const [sessions, reservations, activities] = await Promise.all([
+        supabase.from("employee_sessions").select("id, user_id, started_at, ended_at, last_seen_at, profile:user_id(full_name)").gte("started_at", dayStart).order("started_at", { ascending: false }).limit(8),
+        supabase.from("reservations").select("id, starts_at, ends_at, status").in("status", ["active", "hold"]),
+        supabase.from("activity_log").select("id, action, entity_type, created_at, actor:actor_id(full_name)").order("created_at", { ascending: false }).limit(8),
+      ]);
+      return { sessions: sessions.data ?? [], reservations: reservations.data ?? [], activities: activities.data ?? [] };
+    },
+  });
+
   const s = summary.data;
 
   return (
@@ -200,6 +219,12 @@ function DashboardPage() {
           { value: String(s?.overdueCount ?? 0), label: "دفعة متأخرة" },
         ]}
       />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <DailyCard icon={LogIn} label="الدخول اليوم" value={String(operations.data?.sessions.length ?? 0)} />
+        <DailyCard icon={LogOut} label="المغادرة اليوم" value={String((operations.data?.sessions ?? []).filter((row) => row.ended_at).length)} />
+        <DailyCard icon={CalendarCheck} label="الحجوزات القائمة" value={String(operations.data?.reservations.length ?? 0)} />
+      </div>
 
       <div className="flex flex-wrap items-center justify-center gap-3">
         <Link
@@ -471,8 +496,17 @@ function DashboardPage() {
           )}
         </section>
       </div>
+
+      <section className="surface-card overflow-hidden">
+        <header className="flex items-center justify-between border-b border-border p-5"><div><p className="text-[11.5px] font-bold text-primary">مباشر</p><h2 className="mt-1 text-[15px] font-bold">آخر أنشطة النظام</h2></div><Link to="/activity-log" className="text-xs font-bold text-primary">متابعة الموظفين</Link></header>
+        <div className="divide-y divide-border">{(operations.data?.activities ?? []).map((row) => <div key={row.id} className="flex items-center gap-3 px-5 py-3"><span className="grid size-8 place-items-center rounded-lg bg-accent text-primary"><Activity className="size-4" /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{row.action} · {row.entity_type ?? "النظام"}</p><p className="text-xs text-muted-foreground">{(row.actor as { full_name?: string } | null)?.full_name ?? "النظام"}</p></div><time className="text-[11px] text-muted-foreground">{formatDate(row.created_at)}</time></div>)}{!operations.data?.activities.length ? <p className="p-8 text-center text-sm text-muted-foreground">لا توجد أنشطة بعد.</p> : null}</div>
+      </section>
     </>
   );
+}
+
+function DailyCard({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+  return <div className="surface-card flex items-center justify-between p-4"><div><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></div><span className="grid size-10 place-items-center rounded-lg border border-border bg-muted text-primary"><Icon className="size-5" /></span></div>;
 }
 
 function MetricCard({

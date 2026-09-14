@@ -167,6 +167,7 @@ function PropertyPage() {
                   src={images[active]!.url}
                   alt={property.name}
                   className="h-[360px] w-full object-cover md:h-[440px]"
+                  style={{ objectPosition: `${images[active]?.focal_x ?? 50}% ${images[active]?.focal_y ?? 50}%` }}
                 />
                 </button>
               ) : (
