@@ -66,6 +66,7 @@ import { Route as AuthenticatedOwnersOwnerIdRouteImport } from './routes/_authen
 import { Route as AuthenticatedPaymentReminderPaymentIdRouteImport } from './routes/_authenticated/payment-reminder.$paymentId'
 import { Route as AuthenticatedPropertiesImportRouteImport } from './routes/_authenticated/properties.import'
 import { Route as AuthenticatedSupplyRequestsIndexRouteImport } from './routes/_authenticated/supply-requests.index'
+import { Route as AuthenticatedSupplyRequestsRequestIdRouteImport } from './routes/_authenticated/supply-requests.$requestId'
 import { Route as ApiPublicN8nRouteImport } from './routes/api/public/n8n'
 import { Route as ApiPublicTwilioWhatsappRouteImport } from './routes/api/public/twilio-whatsapp'
 import { Route as PortalContractsIndexRouteImport } from './routes/portal.contracts.index'
@@ -376,6 +377,12 @@ const AuthenticatedSupplyRequestsIndexRoute =
     path: '/supply-requests/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSupplyRequestsRequestIdRoute =
+  AuthenticatedSupplyRequestsRequestIdRouteImport.update({
+    id: '/supply-requests/$requestId',
+    path: '/supply-requests/$requestId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicN8nRoute = ApiPublicN8nRouteImport.update({
   id: '/api/public/n8n',
   path: '/api/public/n8n',
@@ -465,6 +472,7 @@ export interface FileRoutesByFullPath {
   '/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRoute
   '/payment-reminder/$paymentId': typeof AuthenticatedPaymentReminderPaymentIdRoute
   '/properties/import': typeof AuthenticatedPropertiesImportRoute
+  '/supply-requests/$requestId': typeof AuthenticatedSupplyRequestsRequestIdRoute
   '/api/public/n8n': typeof ApiPublicN8nRoute
   '/api/public/twilio-whatsapp': typeof ApiPublicTwilioWhatsappRoute
   '/portal/contracts/$contractId': typeof PortalContractsContractIdRoute
@@ -529,6 +537,7 @@ export interface FileRoutesByTo {
   '/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRoute
   '/payment-reminder/$paymentId': typeof AuthenticatedPaymentReminderPaymentIdRoute
   '/properties/import': typeof AuthenticatedPropertiesImportRoute
+  '/supply-requests/$requestId': typeof AuthenticatedSupplyRequestsRequestIdRoute
   '/api/public/n8n': typeof ApiPublicN8nRoute
   '/api/public/twilio-whatsapp': typeof ApiPublicTwilioWhatsappRoute
   '/portal/contracts/$contractId': typeof PortalContractsContractIdRoute
@@ -596,6 +605,7 @@ export interface FileRoutesById {
   '/_authenticated/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRoute
   '/_authenticated/payment-reminder/$paymentId': typeof AuthenticatedPaymentReminderPaymentIdRoute
   '/_authenticated/properties/import': typeof AuthenticatedPropertiesImportRoute
+  '/_authenticated/supply-requests/$requestId': typeof AuthenticatedSupplyRequestsRequestIdRoute
   '/api/public/n8n': typeof ApiPublicN8nRoute
   '/api/public/twilio-whatsapp': typeof ApiPublicTwilioWhatsappRoute
   '/portal/contracts/$contractId': typeof PortalContractsContractIdRoute
@@ -663,6 +673,7 @@ export interface FileRouteTypes {
     | '/owners/$ownerId'
     | '/payment-reminder/$paymentId'
     | '/properties/import'
+    | '/supply-requests/$requestId'
     | '/api/public/n8n'
     | '/api/public/twilio-whatsapp'
     | '/portal/contracts/$contractId'
@@ -727,6 +738,7 @@ export interface FileRouteTypes {
     | '/owners/$ownerId'
     | '/payment-reminder/$paymentId'
     | '/properties/import'
+    | '/supply-requests/$requestId'
     | '/api/public/n8n'
     | '/api/public/twilio-whatsapp'
     | '/portal/contracts/$contractId'
@@ -793,6 +805,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owners/$ownerId'
     | '/_authenticated/payment-reminder/$paymentId'
     | '/_authenticated/properties/import'
+    | '/_authenticated/supply-requests/$requestId'
     | '/api/public/n8n'
     | '/api/public/twilio-whatsapp'
     | '/portal/contracts/$contractId'
@@ -1230,6 +1243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSupplyRequestsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/supply-requests/$requestId': {
+      id: '/_authenticated/supply-requests/$requestId'
+      path: '/supply-requests/$requestId'
+      fullPath: '/supply-requests/$requestId'
+      preLoaderRoute: typeof AuthenticatedSupplyRequestsRequestIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/n8n': {
       id: '/api/public/n8n'
       path: '/api/public/n8n'
@@ -1331,6 +1351,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInvoicesInvoiceIdRoute: typeof AuthenticatedInvoicesInvoiceIdRoute
   AuthenticatedOwnersOwnerIdRoute: typeof AuthenticatedOwnersOwnerIdRoute
   AuthenticatedPaymentReminderPaymentIdRoute: typeof AuthenticatedPaymentReminderPaymentIdRoute
+  AuthenticatedSupplyRequestsRequestIdRoute: typeof AuthenticatedSupplyRequestsRequestIdRoute
   AuthenticatedContractsIndexRoute: typeof AuthenticatedContractsIndexRoute
   AuthenticatedInvoicesIndexRoute: typeof AuthenticatedInvoicesIndexRoute
   AuthenticatedListingRequestsIndexRoute: typeof AuthenticatedListingRequestsIndexRoute
@@ -1374,6 +1395,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOwnersOwnerIdRoute: AuthenticatedOwnersOwnerIdRoute,
   AuthenticatedPaymentReminderPaymentIdRoute:
     AuthenticatedPaymentReminderPaymentIdRoute,
+  AuthenticatedSupplyRequestsRequestIdRoute:
+    AuthenticatedSupplyRequestsRequestIdRoute,
   AuthenticatedContractsIndexRoute: AuthenticatedContractsIndexRoute,
   AuthenticatedInvoicesIndexRoute: AuthenticatedInvoicesIndexRoute,
   AuthenticatedListingRequestsIndexRoute:
