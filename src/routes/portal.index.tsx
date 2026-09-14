@@ -136,6 +136,8 @@ function PortalHome() {
         )}
       </section>
 
+      {data.isOwner ? <OwnerDashboard /> : null}
+
       {data.isOwner ? (
         <section className="space-y-3">
           <div><h2 className="text-base font-bold">محفظة المالك</h2><p className="text-xs text-muted-foreground">المباني والوحدات والعقارات المسجلة باسمك.</p></div>
