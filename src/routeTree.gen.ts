@@ -60,6 +60,7 @@ import { Route as AuthenticatedContractsIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedContractsContractIdRouteImport } from './routes/_authenticated/contracts.$contractId'
 import { Route as AuthenticatedInvoicesIndexRouteImport } from './routes/_authenticated/invoices.index'
 import { Route as AuthenticatedInvoicesInvoiceIdRouteImport } from './routes/_authenticated/invoices.$invoiceId'
+import { Route as AuthenticatedListingRequestsIndexRouteImport } from './routes/_authenticated/listing-requests.index'
 import { Route as AuthenticatedOwnersIndexRouteImport } from './routes/_authenticated/owners.index'
 import { Route as AuthenticatedOwnersOwnerIdRouteImport } from './routes/_authenticated/owners.$ownerId'
 import { Route as AuthenticatedPaymentReminderPaymentIdRouteImport } from './routes/_authenticated/payment-reminder.$paymentId'
@@ -339,6 +340,12 @@ const AuthenticatedInvoicesInvoiceIdRoute =
     path: '/invoices/$invoiceId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedListingRequestsIndexRoute =
+  AuthenticatedListingRequestsIndexRouteImport.update({
+    id: '/listing-requests/',
+    path: '/listing-requests/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOwnersIndexRoute =
   AuthenticatedOwnersIndexRouteImport.update({
     id: '/owners/',
@@ -464,6 +471,7 @@ export interface FileRoutesByFullPath {
   '/portal/invoices/$invoiceId': typeof PortalInvoicesInvoiceIdRoute
   '/contracts/': typeof AuthenticatedContractsIndexRoute
   '/invoices/': typeof AuthenticatedInvoicesIndexRoute
+  '/listing-requests/': typeof AuthenticatedListingRequestsIndexRoute
   '/owners/': typeof AuthenticatedOwnersIndexRoute
   '/supply-requests/': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts/': typeof PortalContractsIndexRoute
@@ -527,6 +535,7 @@ export interface FileRoutesByTo {
   '/portal/invoices/$invoiceId': typeof PortalInvoicesInvoiceIdRoute
   '/contracts': typeof AuthenticatedContractsIndexRoute
   '/invoices': typeof AuthenticatedInvoicesIndexRoute
+  '/listing-requests': typeof AuthenticatedListingRequestsIndexRoute
   '/owners': typeof AuthenticatedOwnersIndexRoute
   '/supply-requests': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts': typeof PortalContractsIndexRoute
@@ -593,6 +602,7 @@ export interface FileRoutesById {
   '/portal/invoices/$invoiceId': typeof PortalInvoicesInvoiceIdRoute
   '/_authenticated/contracts/': typeof AuthenticatedContractsIndexRoute
   '/_authenticated/invoices/': typeof AuthenticatedInvoicesIndexRoute
+  '/_authenticated/listing-requests/': typeof AuthenticatedListingRequestsIndexRoute
   '/_authenticated/owners/': typeof AuthenticatedOwnersIndexRoute
   '/_authenticated/supply-requests/': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts/': typeof PortalContractsIndexRoute
@@ -659,6 +669,7 @@ export interface FileRouteTypes {
     | '/portal/invoices/$invoiceId'
     | '/contracts/'
     | '/invoices/'
+    | '/listing-requests/'
     | '/owners/'
     | '/supply-requests/'
     | '/portal/contracts/'
@@ -722,6 +733,7 @@ export interface FileRouteTypes {
     | '/portal/invoices/$invoiceId'
     | '/contracts'
     | '/invoices'
+    | '/listing-requests'
     | '/owners'
     | '/supply-requests'
     | '/portal/contracts'
@@ -787,6 +799,7 @@ export interface FileRouteTypes {
     | '/portal/invoices/$invoiceId'
     | '/_authenticated/contracts/'
     | '/_authenticated/invoices/'
+    | '/_authenticated/listing-requests/'
     | '/_authenticated/owners/'
     | '/_authenticated/supply-requests/'
     | '/portal/contracts/'
@@ -1175,6 +1188,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInvoicesInvoiceIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/listing-requests/': {
+      id: '/_authenticated/listing-requests/'
+      path: '/listing-requests'
+      fullPath: '/listing-requests/'
+      preLoaderRoute: typeof AuthenticatedListingRequestsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/owners/': {
       id: '/_authenticated/owners/'
       path: '/owners'
@@ -1313,6 +1333,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPaymentReminderPaymentIdRoute: typeof AuthenticatedPaymentReminderPaymentIdRoute
   AuthenticatedContractsIndexRoute: typeof AuthenticatedContractsIndexRoute
   AuthenticatedInvoicesIndexRoute: typeof AuthenticatedInvoicesIndexRoute
+  AuthenticatedListingRequestsIndexRoute: typeof AuthenticatedListingRequestsIndexRoute
   AuthenticatedOwnersIndexRoute: typeof AuthenticatedOwnersIndexRoute
   AuthenticatedSupplyRequestsIndexRoute: typeof AuthenticatedSupplyRequestsIndexRoute
 }
@@ -1355,6 +1376,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedPaymentReminderPaymentIdRoute,
   AuthenticatedContractsIndexRoute: AuthenticatedContractsIndexRoute,
   AuthenticatedInvoicesIndexRoute: AuthenticatedInvoicesIndexRoute,
+  AuthenticatedListingRequestsIndexRoute:
+    AuthenticatedListingRequestsIndexRoute,
   AuthenticatedOwnersIndexRoute: AuthenticatedOwnersIndexRoute,
   AuthenticatedSupplyRequestsIndexRoute: AuthenticatedSupplyRequestsIndexRoute,
 }
