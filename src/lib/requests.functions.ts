@@ -68,12 +68,10 @@ export const approveListingRequest = createServerFn({ method: "POST" })
     let whatsapp: { ok: boolean; error?: string } = { ok: false, error: "لم يُرسل" };
     if (data.notifyWhatsapp && req.phone) {
       try {
-        const { sendWhatsAppMessage } = await import("@/lib/whatsapp.functions");
-        const result = await sendWhatsAppMessage({
-          data: {
-            to: req.phone,
-            body: `مرحباً ${req.full_name}، تم اعتماد عقارك لدى الرشودي للعقارات وأصبح معروضاً الآن. شكراً لثقتك.`,
-          },
+        const { twilioSend } = await import("@/lib/whatsapp.functions");
+        const result = await twilioSend({
+          to: req.phone,
+          body: `مرحباً ${req.full_name}، تم اعتماد عقارك لدى الرشودي للعقارات وأصبح معروضاً الآن. شكراً لثقتك.`,
         });
         whatsapp = result.ok ? { ok: true } : { ok: false, error: result.error };
       } catch (err) {
