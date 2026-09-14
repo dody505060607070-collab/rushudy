@@ -85,6 +85,13 @@
       "when": 1789308505815,
       "tag": "0011_lock_down_privileged_database_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789353731533,
+      "tag": "0012_add_property_rent_period",
+      "breakpoints": true
     }
   ]
 }
