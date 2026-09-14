@@ -473,14 +473,14 @@ function DashboardPage() {
           <p className="mt-0.5 text-[12.5px] text-muted-foreground">عناصر تنتظر الإجراء</p>
           <div className="mt-4 grid gap-2">
             <WorkItem
-              to="/requests"
+              to="/supply-requests"
               icon={Search}
               title="طلبات توفير عقار"
               hint="بانتظار بدء المتابعة"
               count={s?.supply ?? 0}
             />
             <WorkItem
-              to="/requests"
+              to="/listing-requests"
               icon={Building2}
               title="عقارات مقدمة"
               hint="بانتظار المراجعة"

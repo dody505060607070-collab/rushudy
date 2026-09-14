@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Building2, ChevronLeft, Columns3, FileSpreadsheet, Loader2, Pencil, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { Building2, ChevronLeft, Loader2, Pencil, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -264,8 +264,6 @@ function PropertiesPage() {
           >
             إضافة سريعة
           </button>
-          <Link to="/properties/import" className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"><FileSpreadsheet className="size-4" />استيراد Excel</Link>
-          <Link to="/compare" className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"><Columns3 className="size-4" />مقارنة</Link>
         </div>
 
         <nav className="flex items-center gap-1 text-[12.5px] text-muted-foreground">
