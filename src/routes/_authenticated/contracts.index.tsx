@@ -675,6 +675,24 @@ export function ImportDialog({
 
   const analyze = useMutation({
     mutationFn: async (f: File) => {
+      setAnalysisStage("جاري التحقق من تكرار العقد…");
+      const buffer = await f.arrayBuffer();
+      const digest = await crypto.subtle.digest("SHA-256", buffer);
+      const fileHash = Array.from(new Uint8Array(digest))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      const dupImport = await supabase
+        .from("contract_imports")
+        .select("id, file_name, contract_id, created_at")
+        .eq("file_hash", fileHash)
+        .limit(1);
+      if (dupImport.data?.length) {
+        const prev = dupImport.data[0]!;
+        throw new Error(
+          `هذا العقد مرفوع مسبقًا (${prev.file_name}) بتاريخ ${new Date(prev.created_at).toLocaleDateString("ar-SA")}${prev.contract_id ? " وتم ترحيله بالفعل" : ""} — تم رفض الملف.`,
+        );
+      }
+
       setAnalysisStage("جاري قراءة نص العقد…");
       let extractedText = "";
       try {
@@ -727,6 +745,7 @@ export function ImportDialog({
           file_path: path,
           file_name: f.name,
           file_size: f.size,
+          file_hash: fileHash,
           status: "needs_review",
           extraction: extraction as never,
           warnings: (Array.isArray(extraction["warnings"]) ? extraction["warnings"] : []) as never,

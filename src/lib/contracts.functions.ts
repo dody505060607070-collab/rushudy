@@ -272,23 +272,20 @@ export const finalizeContractImport = createServerFn({ method: "POST" })
 
     // منع تكرار رقم العقد لنفس النوع
     const contractType = isSale ? "sale" : "rent";
-    let contractNumber = str(e["contract_number"]) || `C-${Date.now().toString(36).toUpperCase()}`;
-    const baseNumber = contractNumber;
-    for (let attempt = 0; attempt < 25; attempt += 1) {
+    const extractedNumber = str(e["contract_number"]);
+    const contractNumber = extractedNumber || `C-${Date.now().toString(36).toUpperCase()}`;
+    if (extractedNumber) {
       const dup = await db
         .from("contracts")
-        .select("id")
+        .select("id, contract_number")
         .eq("contract_number", contractNumber)
         .eq("contract_type", contractType)
         .limit(1);
-      if (!dup.data?.length) break;
-      const suffix = `-${(attempt + 2).toString()}-${Math.random().toString(36).toUpperCase().slice(2, 6)}`;
-      contractNumber = `${baseNumber}${suffix}`;
-    }
-    if (contractNumber !== baseNumber) {
-      warnings.push(
-        `رقم العقد ${baseNumber} مسجَّل مسبقًا — تم حفظ نسخة جديدة برقم ${contractNumber} (عقد مستقل لنفس الشخص).`,
-      );
+      if (dup.data?.length) {
+        throw new Error(
+          `العقد رقم ${contractNumber} مسجَّل مسبقًا في النظام — تم رفض الترحيل لمنع التكرار.`,
+        );
+      }
     }
 
     const contractIns = await db
