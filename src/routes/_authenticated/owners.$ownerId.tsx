@@ -351,7 +351,7 @@ function OwnerDetailPage() {
             .join(" · "),
           contract: contractByUnit.get(u.id) ?? null,
           badge: u.status,
-          assetType: "unit",
+          assetType: "unit" as const,
         })),
     });
   }
@@ -369,7 +369,7 @@ function OwnerDetailPage() {
           subtitle: [p.code, p.city, p.district].filter(Boolean).join(" · "),
           contract: contractByProperty.get(p.id) ?? null,
           badge: p.status,
-          assetType: "property",
+          assetType: "property" as const,
         })),
         ...looseUnits.map((u) => ({
           key: u.id,
@@ -377,7 +377,7 @@ function OwnerDetailPage() {
           subtitle: [u.unit_type, u.floor ? `الدور ${u.floor}` : null].filter(Boolean).join(" · "),
           contract: contractByUnit.get(u.id) ?? null,
           badge: u.status,
-          assetType: "unit",
+          assetType: "unit" as const,
         })),
       ],
     });

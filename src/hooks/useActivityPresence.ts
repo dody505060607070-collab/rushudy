@@ -54,7 +54,6 @@ export function useActivityPresence() {
     void supabase.rpc("touch_employee_session", {
       _session_id: sessionId.current,
       _path: pathname,
-      _device: undefined,
     });
   }, [pathname]);
 }
