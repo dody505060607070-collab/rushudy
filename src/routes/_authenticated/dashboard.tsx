@@ -205,7 +205,44 @@ function DashboardPage() {
     },
   });
 
+  const board = useQuery({
+    queryKey: ["dashboard-board"],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const [units, reservations] = await Promise.all([
+        supabase.from("units").select("unit_type, status"),
+        supabase
+          .from("reservations")
+          .select("id, status, starts_at, ends_at, property:property_id(name, code)")
+          .in("status", ["active", "hold"])
+          .order("starts_at", { ascending: false })
+          .limit(8),
+      ]);
+      const map = new Map<string, { occupied: number; vacant: number }>();
+      for (const u of units.data ?? []) {
+        const key = (u.unit_type as string | null) ?? "غير محدد";
+        const entry = map.get(key) ?? { occupied: 0, vacant: 0 };
+        if (u.status === "occupied") entry.occupied += 1;
+        else entry.vacant += 1;
+        map.set(key, entry);
+      }
+      return {
+        types: [...map.entries()]
+          .map(([type, v]) => ({ type, ...v }))
+          .sort((a, b) => b.occupied + b.vacant - (a.occupied + a.vacant)),
+        reservations: (reservations.data ?? []) as unknown as {
+          id: string;
+          status: string;
+          starts_at: string | null;
+          ends_at: string | null;
+          property: { name: string | null; code: string | null } | null;
+        }[],
+      };
+    },
+  });
+
   const s = summary.data;
+
 
   return (
     <>
