@@ -575,12 +575,18 @@ export const createOwnerRequest = createServerFn({ method: "POST" })
       .single();
     if (ins.error) throw new Error(ins.error.message);
 
-    await db.from("notifications").insert({
-      title: "طلب جديد من مالك",
-      body: `${contact?.full_name ?? "مالك"}: ${title}`,
-      kind: "owner_request",
-      link: "/owners",
-    });
+    const staffRoles = await db.from("user_roles").select("user_id").in("role", ["super_admin", "admin"]);
+    const targets = [...new Set((staffRoles.data ?? []).map((r) => r.user_id))];
+    if (targets.length) {
+      await db.from("notifications").insert(
+        targets.map((user_id) => ({
+          user_id,
+          title: "طلب جديد من مالك",
+          body: `${contact?.full_name ?? "مالك"}: ${title}`,
+          link: "/owners",
+        })),
+      );
+    }
 
     return { ok: true as const, id: ins.data.id };
   });
