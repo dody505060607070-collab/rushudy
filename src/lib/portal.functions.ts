@@ -362,3 +362,110 @@ export const getPortalInvoice = createServerFn({ method: "POST" })
       .order("sort_order", { ascending: true });
     return { invoice: invoice.data, items: items.data ?? [] };
   });
+
+/** لوحة تحكم المالك: المباني والوحدات والعقود والدفعات الخاصة به فقط. */
+export const getOwnerDashboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db, contactId } = await currentClient(context.userId);
+    const contact = await db
+      .from("contacts")
+      .select("id, full_name, national_id, phone, roles")
+      .eq("id", contactId)
+      .single();
+    if (!(contact.data?.roles ?? []).includes("owner")) throw new Error("هذه اللوحة متاحة للملاك فقط.");
+
+    const [buildings, units, properties, contracts] = await Promise.all([
+      db.from("buildings").select("id, name, city, district, address").eq("owner_id", contactId).order("name"),
+      db
+        .from("units")
+        .select("id, building_id, unit_number, unit_type, status, floor, area")
+        .eq("owner_id", contactId)
+        .order("unit_number"),
+      db.from("properties").select("id, code, name, purpose, status, city, district").eq("owner_id", contactId),
+      db
+        .from("contracts")
+        .select(
+          "id, contract_number, status, start_date, end_date, annual_rent, total_value, created_at, tenant:tenant_id(full_name, phone), property:property_id(name), unit:unit_id(id, unit_number, unit_type)",
+        )
+        .eq("owner_id", contactId)
+        .order("start_date", { ascending: false }),
+    ]);
+
+    const contractIds = (contracts.data ?? []).map((c) => c.id);
+    const payments = contractIds.length
+      ? await db
+          .from("contract_payments")
+          .select("id, contract_id, payment_number, due_date, amount_due, amount_paid, status, updated_at")
+          .in("contract_id", contractIds)
+          .order("due_date", { ascending: true })
+      : { data: [] as never[] };
+
+    return {
+      contact: contact.data,
+      buildings: buildings.data ?? [],
+      units: units.data ?? [],
+      properties: properties.data ?? [],
+      contracts: (contracts.data ?? []) as unknown as {
+        id: string;
+        contract_number: string;
+        status: string;
+        start_date: string | null;
+        end_date: string | null;
+        annual_rent: number | null;
+        total_value: number | null;
+        created_at: string;
+        tenant: { full_name: string; phone: string | null } | null;
+        property: { name: string } | null;
+        unit: { id: string; unit_number: string | null; unit_type: string | null } | null;
+      }[],
+      payments: (payments.data ?? []) as {
+        id: string;
+        contract_id: string;
+        payment_number: number;
+        due_date: string;
+        amount_due: number;
+        amount_paid: number;
+        status: string;
+        updated_at: string;
+      }[],
+    };
+  });
+
+/** يسمح للمالك بتسجيل سداد دفعة على أحد عقوده فقط. */
+export const markOwnerPaymentPaid = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { paymentId: string; amount?: number; note?: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { db, contactId } = await currentClient(context.userId);
+    const payment = await db
+      .from("contract_payments")
+      .select("id, contract_id, amount_due, amount_paid, notes")
+      .eq("id", data.paymentId)
+      .maybeSingle();
+    if (!payment.data) throw new Error("الدفعة غير موجودة.");
+
+    const contract = await db
+      .from("contracts")
+      .select("id, owner_id")
+      .eq("id", payment.data.contract_id)
+      .maybeSingle();
+    if (!contract.data || contract.data.owner_id !== contactId) throw new Error("غير مصرّح بتعديل هذه الدفعة.");
+
+    const due = Number(payment.data.amount_due ?? 0);
+    const amount = data.amount != null ? Math.max(0, Number(data.amount)) : due;
+    const status = amount >= due && due > 0 ? "paid" : amount > 0 ? "partial" : "pending";
+    const note = String(data.note ?? "").trim();
+
+    const upd = await db
+      .from("contract_payments")
+      .update({
+        amount_paid: amount,
+        status,
+        notes: note ? `${payment.data.notes ? `${payment.data.notes}\n` : ""}${note}` : payment.data.notes,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.paymentId);
+    if (upd.error) throw new Error(upd.error.message);
+    return { ok: true as const, status, amount };
+  });
