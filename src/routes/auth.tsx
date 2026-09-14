@@ -55,7 +55,7 @@ function AuthPage() {
     setBusy(true);
     try {
       if (audience === "client") {
-        const { email: loginEmail } = await resolveClientLogin({ data: { username } });
+        const { email: loginEmail } = await resolveClientLogin({ data: { username, password } });
         if (!loginEmail) throw new Error("لا يوجد حساب عميل بهذا اسم المستخدم. تواصل مع الإدارة.");
         const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw new Error("اسم المستخدم أو كلمة المرور غير صحيحة.");
