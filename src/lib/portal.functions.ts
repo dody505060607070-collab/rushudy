@@ -33,7 +33,7 @@ export const ensureClientAccount = createServerFn({ method: "POST" })
     const db = await admin();
     const { data: contact, error } = await db
       .from("contacts")
-      .select("id, full_name, national_id, phone, whatsapp, email")
+      .select("id, full_name, national_id, phone, whatsapp, email, roles")
       .eq("id", data.contactId)
       .single();
     if (error || !contact) throw new Error("العميل غير موجود.");
@@ -78,6 +78,10 @@ export const ensureClientAccount = createServerFn({ method: "POST" })
         { contact_id: contact.id, user_id: userId, username, login_email: loginEmail },
         { onConflict: "contact_id" },
       );
+
+    if ((contact.roles ?? []).includes("owner")) {
+      await db.from("user_roles").upsert({ user_id: userId, role: "owner" }, { onConflict: "user_id,role" });
+    }
 
     return { ok: true as const, username, password, created: true };
   });
@@ -129,7 +133,7 @@ export const issueClientAccess = createServerFn({ method: "POST" })
     const db = await admin();
     const { data: contact, error } = await db
       .from("contacts")
-      .select("id, full_name, national_id, phone, whatsapp")
+      .select("id, full_name, national_id, phone, whatsapp, roles")
       .eq("id", data.contactId)
       .single();
     if (error || !contact) throw new Error("العميل غير موجود.");
@@ -174,6 +178,9 @@ export const issueClientAccess = createServerFn({ method: "POST" })
       if (existing.data.username !== username) {
         await db.from("client_accounts").update({ username }).eq("id", existing.data.id);
       }
+      if ((contact.roles ?? []).includes("owner")) {
+        await db.from("user_roles").upsert({ user_id: existing.data.user_id, role: "owner" }, { onConflict: "user_id,role" });
+      }
       return { username, password, loginEmail, created: false, generated };
     }
 
@@ -199,6 +206,10 @@ export const issueClientAccess = createServerFn({ method: "POST" })
         { onConflict: "contact_id" },
       );
     if (up.error) throw new Error(up.error.message);
+
+    if ((contact.roles ?? []).includes("owner")) {
+      await db.from("user_roles").upsert({ user_id: userId, role: "owner" }, { onConflict: "user_id,role" });
+    }
 
     return { username, password, loginEmail, created: true, generated };
   });

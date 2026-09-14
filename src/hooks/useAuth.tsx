@@ -4,7 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "super_admin" | "employee";
+export type AppRole = "super_admin" | "employee" | "owner";
 
 export type Profile = {
   id: string;
@@ -113,5 +113,10 @@ export function useCurrentUser() {
 }
 
 export async function signOut() {
+  const sessionId = window.sessionStorage.getItem("rashoudi_employee_session");
+  if (sessionId) {
+    await supabase.rpc("close_employee_session", { _session_id: sessionId });
+    window.sessionStorage.removeItem("rashoudi_employee_session");
+  }
   await supabase.auth.signOut();
 }
