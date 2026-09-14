@@ -439,6 +439,8 @@ function PropertyFormPage() {
         sort_order: Number(form.sort_order) || 0,
         internal_notes: form.internal_notes.trim() || null,
         owner_id: ownerId || null,
+        owner_name: ownerName.trim() || null,
+        owner_phone: ownerPhone.trim() || null,
         is_visible: form.is_visible,
         is_featured: form.is_featured,
         needs_review: form.needs_review,
