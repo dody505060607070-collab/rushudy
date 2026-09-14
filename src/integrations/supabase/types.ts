@@ -2117,6 +2117,8 @@ export type Database = {
           name: string
           needs_review: boolean
           owner_id: string | null
+          owner_name: string | null
+          owner_phone: string | null
           price_text: string | null
           price_value: number | null
           property_type: string | null
@@ -2156,6 +2158,8 @@ export type Database = {
           name: string
           needs_review?: boolean
           owner_id?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
           price_text?: string | null
           price_value?: number | null
           property_type?: string | null
@@ -2195,6 +2199,8 @@ export type Database = {
           name?: string
           needs_review?: boolean
           owner_id?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
           price_text?: string | null
           price_value?: number | null
           property_type?: string | null
