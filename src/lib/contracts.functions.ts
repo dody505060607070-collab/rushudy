@@ -21,7 +21,7 @@ function addCycle(base: Date, cycle: string, i: number) {
 
 /**
  * الترحيل الكامل لعقد مستورد من PDF:
- * ينشئ/يربط المالك والمستأجر والوسيط والعقار والعقد وجدول الدفعات والفواتير
+ * ينشئ/يربط المالك والمستأجر والوسيط والعقار والعقد وجدول الدفعات
  * وحساب بوابة العميل، ويسجّل الاستثناءات للمراجعة.
  */
 export const finalizeContractImport = createServerFn({ method: "POST" })
@@ -340,43 +340,6 @@ export const finalizeContractImport = createServerFn({ method: "POST" })
     const payIns = await db.from("contract_payments").insert(payments).select("id, due_date, amount_due, payment_number");
     if (payIns.error) warnings.push(`تعذّر إنشاء جدول الدفعات: ${payIns.error.message}`);
     else created.push(`${payIns.data.length} دفعة مجدولة`);
-
-    // الفواتير لكل دفعة
-    let invoicesCreated = 0;
-    for (const p of payIns.data ?? []) {
-      const invoiceNumber = `INV-${contractIns.data.contract_number}-${p.payment_number}`;
-      const inv = await db
-        .from("invoices")
-        .insert({
-          invoice_number: invoiceNumber,
-          contact_id: tenantId,
-          contract_id: contractId,
-          issue_date: p.due_date,
-          due_date: p.due_date,
-          status: "unpaid",
-          subtotal: p.amount_due,
-          vat_amount: 0,
-          total: p.amount_due,
-          notes: "أُنشئت تلقائيًا من استيراد العقد",
-          created_by: context.userId,
-        })
-        .select("id")
-        .single();
-      if (inv.error) {
-        warnings.push(`تعذّر إنشاء الفاتورة ${invoiceNumber}: ${inv.error.message}`);
-        continue;
-      }
-      invoicesCreated += 1;
-      await db.from("invoice_items").insert({
-        invoice_id: inv.data.id,
-        description: `دفعة رقم ${p.payment_number} — عقد ${contractIns.data.contract_number}`,
-        quantity: 1,
-        unit_price: p.amount_due,
-        total: p.amount_due,
-        sort_order: 1,
-      });
-    }
-    if (invoicesCreated) created.push(`${invoicesCreated} فاتورة`);
 
     // تذكير أول دفعة
     const firstPayment = (payIns.data ?? []).sort((a, b) => a.payment_number - b.payment_number)[0];
