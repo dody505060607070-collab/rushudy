@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/kit/LiveTable";
 import { actionLabels, permissionModules } from "@/data/nav";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { setStaffSuperAdmin } from "@/lib/staff.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/roles")({
