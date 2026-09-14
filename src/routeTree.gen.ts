@@ -64,6 +64,7 @@ import { Route as AuthenticatedOwnersIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOwnersOwnerIdRouteImport } from './routes/_authenticated/owners.$ownerId'
 import { Route as AuthenticatedPaymentReminderPaymentIdRouteImport } from './routes/_authenticated/payment-reminder.$paymentId'
 import { Route as AuthenticatedPropertiesImportRouteImport } from './routes/_authenticated/properties.import'
+import { Route as AuthenticatedSupplyRequestsIndexRouteImport } from './routes/_authenticated/supply-requests.index'
 import { Route as ApiPublicN8nRouteImport } from './routes/api/public/n8n'
 import { Route as ApiPublicTwilioWhatsappRouteImport } from './routes/api/public/twilio-whatsapp'
 import { Route as PortalContractsIndexRouteImport } from './routes/portal.contracts.index'
@@ -362,6 +363,12 @@ const AuthenticatedPropertiesImportRoute =
     path: '/import',
     getParentRoute: () => AuthenticatedPropertiesRoute,
   } as any)
+const AuthenticatedSupplyRequestsIndexRoute =
+  AuthenticatedSupplyRequestsIndexRouteImport.update({
+    id: '/supply-requests/',
+    path: '/supply-requests/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicN8nRoute = ApiPublicN8nRouteImport.update({
   id: '/api/public/n8n',
   path: '/api/public/n8n',
@@ -458,6 +465,7 @@ export interface FileRoutesByFullPath {
   '/contracts/': typeof AuthenticatedContractsIndexRoute
   '/invoices/': typeof AuthenticatedInvoicesIndexRoute
   '/owners/': typeof AuthenticatedOwnersIndexRoute
+  '/supply-requests/': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts/': typeof PortalContractsIndexRoute
   '/portal/invoices/': typeof PortalInvoicesIndexRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
@@ -520,6 +528,7 @@ export interface FileRoutesByTo {
   '/contracts': typeof AuthenticatedContractsIndexRoute
   '/invoices': typeof AuthenticatedInvoicesIndexRoute
   '/owners': typeof AuthenticatedOwnersIndexRoute
+  '/supply-requests': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts': typeof PortalContractsIndexRoute
   '/portal/invoices': typeof PortalInvoicesIndexRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
@@ -585,6 +594,7 @@ export interface FileRoutesById {
   '/_authenticated/contracts/': typeof AuthenticatedContractsIndexRoute
   '/_authenticated/invoices/': typeof AuthenticatedInvoicesIndexRoute
   '/_authenticated/owners/': typeof AuthenticatedOwnersIndexRoute
+  '/_authenticated/supply-requests/': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts/': typeof PortalContractsIndexRoute
   '/portal/invoices/': typeof PortalInvoicesIndexRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
@@ -650,6 +660,7 @@ export interface FileRouteTypes {
     | '/contracts/'
     | '/invoices/'
     | '/owners/'
+    | '/supply-requests/'
     | '/portal/contracts/'
     | '/portal/invoices/'
     | '/api/public/files/$'
@@ -712,6 +723,7 @@ export interface FileRouteTypes {
     | '/contracts'
     | '/invoices'
     | '/owners'
+    | '/supply-requests'
     | '/portal/contracts'
     | '/portal/invoices'
     | '/api/public/files/$'
@@ -776,6 +788,7 @@ export interface FileRouteTypes {
     | '/_authenticated/contracts/'
     | '/_authenticated/invoices/'
     | '/_authenticated/owners/'
+    | '/_authenticated/supply-requests/'
     | '/portal/contracts/'
     | '/portal/invoices/'
     | '/api/public/files/$'
@@ -1190,6 +1203,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPropertiesImportRouteImport
       parentRoute: typeof AuthenticatedPropertiesRoute
     }
+    '/_authenticated/supply-requests/': {
+      id: '/_authenticated/supply-requests/'
+      path: '/supply-requests'
+      fullPath: '/supply-requests/'
+      preLoaderRoute: typeof AuthenticatedSupplyRequestsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/n8n': {
       id: '/api/public/n8n'
       path: '/api/public/n8n'
@@ -1294,6 +1314,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContractsIndexRoute: typeof AuthenticatedContractsIndexRoute
   AuthenticatedInvoicesIndexRoute: typeof AuthenticatedInvoicesIndexRoute
   AuthenticatedOwnersIndexRoute: typeof AuthenticatedOwnersIndexRoute
+  AuthenticatedSupplyRequestsIndexRoute: typeof AuthenticatedSupplyRequestsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1335,6 +1356,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContractsIndexRoute: AuthenticatedContractsIndexRoute,
   AuthenticatedInvoicesIndexRoute: AuthenticatedInvoicesIndexRoute,
   AuthenticatedOwnersIndexRoute: AuthenticatedOwnersIndexRoute,
+  AuthenticatedSupplyRequestsIndexRoute: AuthenticatedSupplyRequestsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
