@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/kit/LiveTable";
 import { actionLabels, permissionModules } from "@/data/nav";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { setStaffSuperAdmin } from "@/lib/staff.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/roles")({
@@ -56,6 +57,19 @@ function RolesPage() {
   const isTargetAdmin = (staff.data?.roles ?? []).some(
     (r) => r.user_id === userId && r.role === "super_admin",
   );
+
+  const grantAdmin = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      if (!userId) throw new Error("لم يتم اختيار موظف");
+      return setStaffSuperAdmin({ data: { userId, enabled } });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["staff-with-roles"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      toast.success("تم تحديث صلاحية المدير العام");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "تعذّر التحديث"),
+  });
 
   const toggle = useMutation({
     mutationFn: async ({
@@ -144,6 +158,29 @@ function RolesPage() {
                 هذا الحساب مدير عام ولديه كل الصلاحيات تلقائيًا.
               </p>
             ) : null}
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-4 py-3">
+              <div>
+                <p className="text-[13.5px] font-bold text-foreground">صلاحية المدير العام</p>
+                <p className="text-[12.5px] text-muted-foreground">
+                  منح هذا الموظف نفس صلاحيات المدير العام بالكامل.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={!userId || grantAdmin.isPending}
+                onClick={() => grantAdmin.mutate(!isTargetAdmin)}
+                className={cn(
+                  "rounded-lg border px-4 py-2 text-[12.5px] font-bold transition-colors disabled:opacity-60",
+                  isTargetAdmin
+                    ? "border-destructive/30 bg-destructive/10 text-destructive"
+                    : "border-primary/30 bg-primary/10 text-primary",
+                )}
+              >
+                {isTargetAdmin ? "سحب صلاحية المدير العام" : "منح صلاحية المدير العام"}
+              </button>
+            </div>
+
 
             <div className="mt-4 space-y-5">
               {permissionModules.map((mod) => (
