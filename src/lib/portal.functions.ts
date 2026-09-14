@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { ensureClientAccountForContact } from "./client-account.server";
 import { CLIENT_EMAIL_DOMAIN, clientUsername, localPhone } from "./client-credentials";
 
 export { clientUsername, localPhone } from "./client-credentials";
@@ -19,6 +18,7 @@ export const ensureClientAccount = createServerFn({ method: "POST" })
     const staff = await context.supabase.rpc("is_staff", { _user_id: context.userId });
     if (!staff.data) throw new Error("غير مصرّح.");
 
+    const { ensureClientAccountForContact } = await import("./client-account.server");
     return ensureClientAccountForContact(data.contactId);
   });
 
@@ -183,6 +183,7 @@ export const resolveClientLogin = createServerFn({ method: "POST" })
     }
     const contract = await db.from("contracts").select("id").eq("owner_id", contact.data.id).limit(1);
     if (!contract.data?.length) return { email: null as string | null };
+    const { ensureClientAccountForContact } = await import("./client-account.server");
     const repaired = await ensureClientAccountForContact(contact.data.id);
     return { email: repaired.ok ? `${repaired.username}@${CLIENT_EMAIL_DOMAIN}` : null };
   });
