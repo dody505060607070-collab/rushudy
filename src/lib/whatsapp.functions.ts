@@ -86,73 +86,21 @@ async function bridgeSend(to: string, body: string): Promise<TwilioResult | null
   }
 }
 
-export async function twilioSend(input: {
-  to: string;
-  body: string;
-  contentSid?: string;
-  contentVariables?: Record<string, string>;
-}): Promise<TwilioResult> {
-  // الأولوية للجسر المجاني (الرقم المرتبط بالـQR)، وإن فشل نرجع لـTwilio.
-  if (!input.contentSid) {
-    const viaBridge = await bridgeSend(input.to, input.body);
-    if (viaBridge?.ok) return viaBridge;
-  }
-
-  const sid = process.env["TWILIO_ACCOUNT_SID"];
-  const token = process.env["TWILIO_AUTH_TOKEN"];
-  const from = process.env["TWILIO_WHATSAPP_FROM"] ?? "whatsapp:+17372212163";
-  if (!sid || !token) return { ok: false, error: "بيانات Twilio غير مكتملة في النظام" };
-
+/** إرسال رسالة واتساب عبر الرقم المرتبط (Evolution API). */
+export async function whatsappSend(input: { to: string; body: string }): Promise<TwilioResult> {
   const to = toE164(input.to);
   if (!to.startsWith("+") || to.length < 8) {
     return { ok: false, error: `رقم الجوال غير صالح: ${input.to}` };
   }
-
-  const form = new URLSearchParams({ To: `whatsapp:${to}`, From: from });
-  if (input.contentSid) {
-    form.set("ContentSid", input.contentSid);
-    if (input.contentVariables) form.set("ContentVariables", JSON.stringify(input.contentVariables));
-  } else {
-    form.set("Body", input.body);
+  const result = await bridgeSend(to, input.body);
+  if (!result) {
+    return { ok: false, error: "خدمة واتساب غير مُعدّة — تأكد من إعدادات الربط" };
   }
-
-  let res: Response;
-  try {
-    res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: form,
-    });
-  } catch (e) {
-    return { ok: false, error: `تعذر الاتصال بـ Twilio: ${(e as Error).message}` };
-  }
-
-  if (res.ok) {
-    const data = (await res.json()) as { sid?: string };
-    return { ok: true, sid: data.sid ?? "" };
-  }
-
-  const text = await res.text();
-  let message = `Twilio ${res.status}`;
-  try {
-    const parsed = JSON.parse(text) as { message?: string; code?: number };
-    if (parsed.message) message = `Twilio ${parsed.code ?? res.status}: ${parsed.message}`;
-    // 63016 = خارج نافذة الـ 24 ساعة → يجب استخدام قالب معتمد
-    if (parsed.code === 63016) {
-      return {
-        ok: false,
-        needsTemplate: true,
-        error: "العميل خارج نافذة الـ24 ساعة — يلزم قالب واتساب معتمد لهذه الرسالة",
-      };
-    }
-  } catch {
-    message = `Twilio ${res.status}: ${text.slice(0, 200)}`;
-  }
-  return { ok: false, error: message };
+  return result;
 }
+
+/** اسم قديم محفوظ للتوافق مع بقية الكود. */
+export const twilioSend = whatsappSend;
 
 export const sendWhatsAppMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
