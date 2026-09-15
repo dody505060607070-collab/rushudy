@@ -18,7 +18,7 @@ export async function notifyTaskAssigneesNow(
   onlyUserIds?: string[],
 ): Promise<NotifyResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { twilioSend } = await import("@/lib/whatsapp.functions");
+  const { whatsappSend } = await import("@/lib/whatsapp.functions");
 
   const result: NotifyResult = { ok: true, sent: 0, failed: 0, skipped: 0, errors: [] };
 
@@ -56,7 +56,7 @@ export async function notifyTaskAssigneesNow(
       dueDate: task.due_date,
       dueTime: task.due_time,
     });
-    const sendResult = await twilioSend({ to: phone, body });
+    const sendResult = await whatsappSend({ to: phone, body });
     if (sendResult.ok) result.sent += 1;
     else {
       result.failed += 1;

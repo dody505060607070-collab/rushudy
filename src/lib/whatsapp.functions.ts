@@ -19,7 +19,7 @@ export function toE164(raw: string): string {
   return digits.startsWith("00") ? `+${digits.slice(2)}` : `+${digits}`;
 }
 
-type TwilioResult =
+type WhatsAppResult =
   | { ok: true; sid: string }
   | { ok: false; error: string; needsTemplate?: boolean };
 
@@ -66,7 +66,7 @@ export async function cloudEnsureInstance(): Promise<void> {
 }
 
 /** إرسال عبر Evolution API من الرقم المرتبط بالـQR. */
-async function bridgeSend(to: string, body: string): Promise<TwilioResult | null> {
+async function bridgeSend(to: string, body: string): Promise<WhatsAppResult | null> {
   const cfg = evoConfig();
   if (!cfg) return null;
   try {
@@ -87,7 +87,7 @@ async function bridgeSend(to: string, body: string): Promise<TwilioResult | null
 }
 
 /** إرسال رسالة واتساب عبر الرقم المرتبط (Evolution API). */
-export async function whatsappSend(input: { to: string; body: string }): Promise<TwilioResult> {
+export async function whatsappSend(input: { to: string; body: string }): Promise<WhatsAppResult> {
   const to = toE164(input.to);
   if (!to.startsWith("+") || to.length < 8) {
     return { ok: false, error: `رقم الجوال غير صالح: ${input.to}` };
@@ -99,8 +99,6 @@ export async function whatsappSend(input: { to: string; body: string }): Promise
   return result;
 }
 
-/** اسم قديم محفوظ للتوافق مع بقية الكود. */
-export const twilioSend = whatsappSend;
 
 export const sendWhatsAppMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -113,10 +111,10 @@ export const sendWhatsAppMessage = createServerFn({ method: "POST" })
         })
         .parse(input),
   )
-  .handler(async ({ data }): Promise<TwilioResult> => {
+  .handler(async ({ data }): Promise<WhatsAppResult> => {
     const { requireUnlocked } = await import("@/lib/kill-switch.server");
     await requireUnlocked();
-    const result = await twilioSend({ to: data.to, body: data.body });
+    const result = await whatsappSend({ to: data.to, body: data.body });
     const { dispatchAutomation } = await import("@/lib/automation.server");
     await dispatchAutomation("whatsapp.sent", {
       to: data.to,
