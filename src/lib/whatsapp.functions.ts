@@ -128,13 +128,11 @@ export const sendWhatsAppMessage = createServerFn({ method: "POST" })
     return result;
   });
 
-export const checkTwilioConfig = createServerFn({ method: "GET" })
+export const checkWhatsAppConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
-    return {
-      configured: Boolean(process.env["TWILIO_ACCOUNT_SID"] && process.env["TWILIO_AUTH_TOKEN"]),
-      from: process.env["TWILIO_WHATSAPP_FROM"] ?? null,
-    };
+    const cfg = evoConfig();
+    return { configured: Boolean(cfg), instance: cfg?.instance ?? null };
   });
 
 /** حالة ربط واتساب + رمز QR للمسح (Evolution API). */
