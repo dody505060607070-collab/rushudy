@@ -637,8 +637,8 @@ export const remindTenantWhatsApp = createServerFn({ method: "POST" })
       String(data.message ?? "").trim() ||
       `مرحبًا ${row.tenant?.full_name ?? ""}، تذكير بدفعة رقم ${payment.data.payment_number} بمبلغ ${remaining.toLocaleString("en-US")} ر.س المستحقة بتاريخ ${payment.data.due_date}${row.unit?.unit_number ? ` للوحدة ${row.unit.unit_number}` : ""}. شكرًا لتعاونكم — ${contact?.full_name ?? "المالك"}.`;
 
-    const { twilioSend } = await import("./whatsapp.functions");
-    const result = await twilioSend({ to, body });
+    const { whatsappSend } = await import("./whatsapp.functions");
+    const result = await whatsappSend({ to, body });
 
     await db.from("message_log").insert({
       body,

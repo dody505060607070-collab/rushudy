@@ -160,7 +160,7 @@ function PaymentReminderPage() {
       if (!phone) throw new Error("لا يوجد رقم جوال محفوظ للمستأجر");
       const option = repeatOptions.find((o) => o.key === repeat) ?? { key: "once", label: "مرة واحدة", hours: 0 };
 
-      // إرسال مباشر عبر Twilio من الرقم الموحّد
+      // إرسال مباشر عبر واتساب من الرقم المربوط
       const result = await sendWhatsAppMessage({ data: { to: phone, body: message } });
       if (!result.ok) throw new Error(result.error);
 

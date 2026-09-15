@@ -72,8 +72,8 @@ export const Route = createFileRoute("/api/public/n8n")({
             const to = String(body["to"] ?? "");
             const text = String(body["body"] ?? "");
             if (!/^\+?[0-9]{8,15}$/.test(to.replace(/[\s()-]/g, "")) || !text.trim() || text.length > 4000) return json({ ok: false, error: "بيانات الرسالة غير صالحة" }, 400);
-            const { twilioSend } = await import("@/lib/whatsapp.functions");
-            const result = await twilioSend({ to, body: text });
+            const { whatsappSend } = await import("@/lib/whatsapp.functions");
+            const result = await whatsappSend({ to, body: text });
             await supabaseAdmin.from("automation_events").insert({
               event: "whatsapp.inbound_request",
               direction: "in",

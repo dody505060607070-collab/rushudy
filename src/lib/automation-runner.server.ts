@@ -83,7 +83,7 @@ export function taskMessage(input: {
 
 export async function runHourlyAutomation(): Promise<RunResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { twilioSend } = await import("@/lib/whatsapp.functions");
+  const { whatsappSend } = await import("@/lib/whatsapp.functions");
   const now = new Date();
   const nowIso = now.toISOString();
 
@@ -131,7 +131,7 @@ export async function runHourlyAutomation(): Promise<RunResult> {
         .maybeSingle();
       if (existing?.result === "sent") continue;
 
-      const result = await twilioSend({ to: reminder.recipient_phone, body: reminder.message_body });
+      const result = await whatsappSend({ to: reminder.recipient_phone, body: reminder.message_body });
       if (result.ok) sent += 1;
       else failed += 1;
 
@@ -231,7 +231,7 @@ export async function runHourlyAutomation(): Promise<RunResult> {
         dueDate: task.due_date,
         dueTime: task.due_time,
       });
-      const result = await twilioSend({ to: phone, body });
+      const result = await whatsappSend({ to: phone, body });
       if (result.ok) taskSent += 1;
       else taskFailed += 1;
 
