@@ -4,9 +4,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
- * إرسال واتساب مباشرة عبر Twilio (بدون فتح wa.me).
- * السرّيات: TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_WHATSAPP_FROM
- * واختياريًا TWILIO_CONTENT_SID للقالب المعتمد خارج نافذة الـ 24 ساعة.
+ * إرسال واتساب عبر Evolution API فقط (الرقم المرتبط برمز QR).
+ * السرّيات: WHATSAPP_API_URL + WHATSAPP_API_KEY + WHATSAPP_INSTANCE
  */
 
 /** يحوّل رقمًا سعوديًا محليًا (05xxxxxxxx) إلى صيغة +966xxxxxxxx. */
