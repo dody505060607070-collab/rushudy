@@ -385,15 +385,16 @@ export const analyzeContractPdf = createServerFn({ method: "POST" })
   });
 
 
-const PUBLIC_PROMPT = `أنت "مساعد الرشودي للعقارات" — مساعد ذكي على الموقع العام لشركة الرشودي للعقارات في بريدة، السعودية.
-مهمتك مساعدة الزوار في العثور على العقار المناسب (إيجار أو بيع) من مخزون الشركة المتاح، والإجابة عن أسئلة عامة.
+const PUBLIC_PROMPT = `أنت "مساعد الرشودي للعقارات" — مستشار عقاري ذكي على الموقع العام لشركة الرشودي للعقارات في بريدة، السعودية.
+افهم احتياج الزائر ثم رشّح له من قائمة العقارات المنشورة المرفقة فقط. استخرج الغرض (إيجار/بيع)، الميزانية، الحي أو المنطقة، ونوع العقار. إذا نقصت معلومة مهمة فاسأل سؤال متابعة واحدًا واضحًا بدل إجابة عامة.
 
 قواعد الاستجابة:
-1. استخدم قائمة العقارات المتاحة المرفقة أدناه لتقديم توصيات دقيقة بناءً على (الميزانية، الحي، الغرض).
-2. عندما تقترح عقاراً، اذكره بالتنسيق التالي ليكون قابلاً للضغط: [اسم العقار](/properties/CODE). مثال: [شقة فاخرة بحي الريان](/properties/A101).
-3. إذا لم تجد طلباً مطابقاً تماماً، اقترح أقرب البدائل المتاحة.
-4. أجب بالعربية الفصحى المبسطة وبشكل ودود ومختصر.
-5. في نهاية ردك، اقترح 2-3 أسئلة متابعة قصيرة لمساعدة الزائر، وضعها بعد هذا الفاصل بالضبط: ---suggestions--- (سؤال واحد لكل سطر).
+1. رشّح حتى 3 عقارات مناسبة، واذكر الاسم والسعر والموقع وسبب ملاءمة كل عقار.
+2. اكتب رابط كل عقار هكذا: [اسم العقار](/properties/CODE)، ولا تخترع عقارًا أو سعرًا أو رابطًا.
+3. إذا لم توجد مطابقة كاملة، اقترح الأقرب واشرح الاختلاف بوضوح.
+4. لا تذكر بيانات داخلية أو أسماء ملاك أو وسطاء.
+5. أجب بالعربية الفصحى المبسطة وبشكل ودود ومختصر.
+6. في نهاية الرد اقترح 2-3 أسئلة متابعة قصيرة بعد الفاصل ---suggestions---، سؤال واحد بكل سطر.
 
 ${SCOPE_RULE}`;
 
@@ -405,72 +406,44 @@ export const askPublicAi = createServerFn({ method: "POST" })
     const { requireUnlocked } = await import("./kill-switch.server");
     await requireUnlocked();
 
-    const { data: properties } = await supabase.rpc("get_public_properties", { _limit: 30 });
-    const inventoryText = (properties as any[])?.map(p =>
-      `- [${p.name}](/properties/${p.code}) | ${p.property_type} لل${p.purpose === 'rent' ? 'إيجار' : 'بيع'} | حي ${p.district} | السعر: ${p.price_text || p.price_value || 'تواصل معنا'}`
-    ).join('\n') || "لا يوجد عقارات متاحة حالياً.";
-
-    const items: Item[] = [
-      { role: "system", content: [{ type: "input_text", text: PUBLIC_PROMPT }] },
-      { role: "system", content: [{ type: "input_text", text: `قائمة العقارات الحالية المتاحة:\n${inventoryText}` }] },
-    ];
-    for (const m of data.messages.slice(-12)) {
-      items.push({
-        role: m.role,
-        content: [{ type: "input_text", text: m.content.slice(0, 2000) }],
-      });
-    }
-    const text = await callGateway(items);
-    const [mainText, suggestionsPart] = text.split('---suggestions---');
-    return {
-      text: mainText.trim(),
-      suggestions: suggestionsPart ? suggestionsPart.trim().split('\n').map(s => s.replace(/^[-\d\.]+\s*/, '').trim()).filter(Boolean) : []
-    };
-  });
-
-    }
-    const text = await callGateway(items);
-    const [mainText, suggestionsPart] = text.split('---suggestions---');
-    return {
-      text: mainText.trim(),
-      suggestions: suggestionsPart ? suggestionsPart.trim().split('\\n').map(s => s.replace(/^[-\\d\\.]+\\s*/, '').trim()).filter(Boolean) : []
-    };
-  });
-
-    const inventoryResult = await publicDb.rpc("get_public_properties", { _limit: 60 });
-    if (inventoryResult.error) throw new Error("تعذّر قراءة العقارات المتاحة حاليًا.");
-    const inventory = (Array.isArray(inventoryResult.data) ? inventoryResult.data : []).map((row) => {
-      const property = row as Record<string, unknown>;
-      const code = String(property["code"] ?? "");
-      return {
-        code,
-        name: property["name"],
-        purpose: property["purpose"],
-        type: property["property_type"],
-        city: property["city"],
-        district: property["district"],
-        price: property["price_value"] ?? property["price_text"],
-        rent_period: property["rent_period"],
-        description: String(property["description"] ?? "").slice(0, 240),
-        link: `/properties/${encodeURIComponent(code)}`,
-      };
+    const url = process.env["SUPABASE_URL"];
+    const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
+    if (!url || !publishableKey) throw new Error("خدمة العقارات غير مهيأة حاليًا.");
+    const inventoryResponse = await fetch(`${url}/rest/v1/rpc/get_public_properties`, {
+      method: "POST",
+      headers: { apikey: publishableKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ _limit: 60 }),
     });
+    if (!inventoryResponse.ok) throw new Error("تعذّر قراءة العقارات المتاحة حاليًا.");
+    const inventoryData: unknown = await inventoryResponse.json();
+    const inventoryText = (Array.isArray(inventoryData) ? inventoryData : [])
+      .map((row) => {
+        const property = row as Record<string, unknown>;
+        const purpose = property["purpose"] === "rent" ? "إيجار" : "بيع";
+        const price = property["price_text"] ?? property["price_value"] ?? "السعر عند الطلب";
+        return `- [${String(property["name"] ?? "عقار")}](/properties/${encodeURIComponent(String(property["code"] ?? ""))}) | ${String(property["property_type"] ?? "عقار")} | ${purpose} | ${String(property["district"] ?? "")}, ${String(property["city"] ?? "بريدة")} | السعر: ${String(price)} | ${String(property["description"] ?? "").slice(0, 200)}`;
+      })
+      .join("\n") || "لا توجد عقارات منشورة حاليًا.";
+
     const items: Item[] = [
       { role: "system", content: [{ type: "input_text", text: PUBLIC_PROMPT }] },
-      {
-        role: "user",
-        content: [{
-          type: "input_text",
-          text: `العقارات المنشورة والمتاحة حاليًا (هذه هي المرجع الوحيد للترشيحات):\n${JSON.stringify(inventory).slice(0, 30000)}`,
-        }],
-      },
+      { role: "system", content: [{ type: "input_text", text: `العقارات المنشورة والمتاحة حاليًا:\n${inventoryText.slice(0, 30000)}` }] },
     ];
-    for (const m of data.messages.slice(-12)) {
+    for (const message of data.messages.slice(-12)) {
       items.push({
-        role: m.role,
-        content: [{ type: "input_text", text: m.content.slice(0, 2000) }],
+        role: message.role,
+        content: [{ type: "input_text", text: message.content.slice(0, 2000) }],
       });
     }
     const text = await callGateway(items);
-    return { text };
+    const [mainText = "", suggestionsPart = ""] = text.split("---suggestions---");
+    return {
+      text: mainText.trim(),
+      suggestions: suggestionsPart
+        .trim()
+        .split("\n")
+        .map((suggestion) => suggestion.replace(/^[-\d.]+\s*/, "").trim())
+        .filter(Boolean)
+        .slice(0, 3),
+    };
   });
