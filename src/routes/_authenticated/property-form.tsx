@@ -36,7 +36,7 @@ import { approveListingRequest } from "@/lib/requests.functions";
 export const Route = createFileRoute("/_authenticated/property-form")({
   validateSearch: (search: Record<string, unknown>) => ({
     id: typeof search["id"] === "string" ? (search["id"] as string) : "",
-    requestId: typeof search["requestId"] === "string" ? (search["requestId"] as string) : "",
+    ...(typeof search["requestId"] === "string" ? { requestId: search["requestId"] as string } : {}),
   }),
   head: () => ({
     meta: [
@@ -132,7 +132,7 @@ function SectionCard({
 }
 
 function PropertyFormPage() {
-  const { id, requestId } = Route.useSearch();
+  const { id, requestId = "" } = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -481,7 +481,7 @@ function PropertyFormPage() {
     onSuccess: (newId) => {
       invalidateAll();
       toast.success(id ? "تم تحديث العقار" : "تم إضافة العقار");
-      if (!id) navigate({ to: "/property-form", search: { id: newId } });
+      if (!id) navigate({ to: "/property-form", search: requestId ? { id: newId, requestId } : { id: newId } });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
   });

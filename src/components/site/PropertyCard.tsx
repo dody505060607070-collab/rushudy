@@ -126,7 +126,12 @@ export function PropertyGrid({
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {properties.map((property) => (
-        <PropertyCard key={property.id} property={property} comparing={compareIds?.includes(property.id)} onCompare={onCompare} />
+        <PropertyCard
+          key={property.id}
+          property={property}
+          {...(compareIds ? { comparing: compareIds.includes(property.id) } : {})}
+          {...(onCompare ? { onCompare } : {})}
+        />
       ))}
     </div>
   );

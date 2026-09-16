@@ -48,7 +48,7 @@ export function PropertyCompare({ properties, open, onOpenChange, onRemove, onCl
                 <X className="size-5" />
               </Button>
             </header>
-            <div className="grid min-w-[680px] gap-px bg-border" style={{ gridTemplateColumns: `repeat(${properties.length}, minmax(0, 1fr))` }}>
+            <div className={`grid min-w-[680px] gap-px bg-border ${properties.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
               {properties.map((property) => {
                 const image = coverImage(property);
                 const price = property.price_text ?? (property.price_value ? `${property.price_value.toLocaleString("ar-SA")} ريال` : "السعر عند الطلب");
