@@ -19,12 +19,14 @@ import {
   ChevronRight,
   GripVertical,
   Maximize2,
+  Crop,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Field, inputClass, textareaClass } from "@/components/kit/Modal";
 import { Lightbox } from "@/components/kit/Lightbox";
+import { ImageEditorDialog } from "@/components/media/ImageEditorDialog";
 import { LocationPicker } from "@/components/kit/LocationPicker";
 import { SOCIAL_PLATFORMS, SocialGlyph } from "@/components/site/SocialIcons";
 import { PageHero } from "@/components/kit/PageHero";
@@ -137,6 +139,7 @@ function PropertyFormPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [imageUrl, setImageUrl] = useState("");
+  const [editingImage, setEditingImage] = useState<{ id: string; url: string } | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoTitle, setVideoTitle] = useState("");
   const [uploading, setUploading] = useState(false);
