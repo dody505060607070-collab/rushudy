@@ -138,7 +138,7 @@ function SettingsPage() {
         id: true,
         company_name: form.company_name?.trim() || "الرشودي للعقارات",
         logo_url: form.logo_url?.trim() || null,
-        phone: form.phone?.trim() || null,
+        phone: form.whatsapp_number?.trim() || null,
         whatsapp_number: form.whatsapp_number?.trim() || null,
         email: form.email?.trim() || null,
         address: form.address?.trim() || null,
@@ -247,22 +247,14 @@ function SettingsPage() {
 
           {tab === "contact" ? (
             <>
-              <Note text="أرقام التواصل تُستخدم في أزرار الاتصال والواتساب على الموقع وفي التذكيرات." />
+               <Note text="هذا الرقم يُستخدم معًا لأيقونة واتساب وأزرار الاتصال في الموقع." />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="رقم الهاتف">
-                  <input
-                    className={inputClass}
-                    dir="ltr"
-                    value={form.phone ?? ""}
-                    onChange={(e) => set({ phone: e.target.value })}
-                  />
-                </Field>
-                <Field label="رقم الواتساب">
+                 <Field label="رقم واتساب والمكالمات">
                   <input
                     className={inputClass}
                     dir="ltr"
                     value={form.whatsapp_number ?? ""}
-                    onChange={(e) => set({ whatsapp_number: e.target.value })}
+                     onChange={(e) => set({ whatsapp_number: e.target.value, phone: e.target.value })}
                   />
                 </Field>
                 <Field label="البريد الإلكتروني">

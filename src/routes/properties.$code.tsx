@@ -13,7 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { recordView } from "@/lib/favorites";
 
 import {
-  COMPANY_PHONE,
   galleryImages,
   publicPropertiesQuery,
   publicPropertyQuery,
@@ -276,7 +275,7 @@ function PropertyPage() {
                     تواصل عبر واتساب
                   </a>
                 <a
-                  href={`tel:${COMPANY_PHONE}`}
+                  href={`tel:${property.whatsapp_number ?? "0550818020"}`}
                     className="flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-[14px] font-bold text-primary-foreground"
                 >
                     <Phone className="size-5" />

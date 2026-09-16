@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Clock, Heart, Mail, MapPin, Menu, Phone, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import footerImage from "@/assets/bg-footer.jpg";
 import logoWhiteAsset from "@/assets/rashudi-logo-navbar.png.asset.json";
@@ -8,7 +9,7 @@ import { FloatingActions, ScrollProgress } from "@/components/site/Chrome";
 import { AiWidget } from "@/components/site/AiWidget";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/hooks/useAuth";
-import { COMPANY_EMAIL, COMPANY_PHONE } from "@/lib/site-data";
+import { COMPANY_EMAIL, COMPANY_PHONE, publicSettingsQuery } from "@/lib/site-data";
 import { ThemeToggle } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -143,6 +144,8 @@ function SiteHeader() {
 }
 
 function SiteFooter() {
+  const settings = useQuery(publicSettingsQuery);
+  const phone = settings.data?.whatsapp_number ?? COMPANY_PHONE;
   return (
     <footer className="relative isolate overflow-hidden text-white">
       <img
@@ -162,9 +165,9 @@ function SiteFooter() {
         </p>
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-[13.5px] text-white/90">
-          <a href={`tel:${COMPANY_PHONE}`} dir="ltr" className="flex items-center gap-2 hover:text-gold">
+          <a href={`tel:${phone}`} dir="ltr" className="flex items-center gap-2 hover:text-gold">
             <Phone className="size-4 text-gold" />
-            {COMPANY_PHONE}
+            {phone}
           </a>
           <a href={`mailto:${COMPANY_EMAIL}`} dir="ltr" className="flex items-center gap-2 hover:text-gold">
             <Mail className="size-4 text-gold" />

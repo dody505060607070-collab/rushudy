@@ -7,6 +7,7 @@ import ctaImage from "@/assets/cta-deal.jpg";
 import socialCard from "@/assets/rushdy-social-card.jpg.asset.json";
 import { HeroVideo } from "@/components/site/HeroVideo";
 import { PropertyGrid } from "@/components/site/PropertyCard";
+import { PropertyCompare } from "@/components/site/PropertyCompare";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { PropertyMapSection } from "@/components/site/PropertyMapSection";
 import { Reveal } from "@/components/site/Reveal";
@@ -65,6 +66,8 @@ function HomePage() {
   const [district, setDistrict] = useState("");
   const [rentPeriod, setRentPeriod] = useState("");
   const [searchSubmitted, setSearchSubmitted] = useState(false);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   const types = useMemo(
     () => [...new Set((all.data ?? []).map((p) => p.property_type).filter(Boolean))] as string[],
@@ -91,6 +94,14 @@ function HomePage() {
   const recent = (all.data ?? []).filter((p) => recentCodes.includes(p.code)).slice(0, 3);
 
   const shownServices = services.data?.length ? services.data : fallbackServices;
+  const compareProperties = (all.data ?? []).filter((property) => compareIds.includes(property.id));
+  const toggleCompare = (property: (typeof compareProperties)[number]) => {
+    setCompareIds((current) => {
+      if (current.includes(property.id)) return current.filter((id) => id !== property.id);
+      if (current.length >= 3) return current;
+      return [...current, property.id];
+    });
+  };
 
   return (
     <SiteLayout>
@@ -119,6 +130,8 @@ function HomePage() {
             loading={all.isLoading}
             error={all.error}
             emptyText="لا توجد عقارات مطابقة لبحثك حالياً."
+            compareIds={compareIds}
+            onCompare={toggleCompare}
           />
         </section>
       ) : null}
@@ -135,6 +148,8 @@ function HomePage() {
           loading={rent.isLoading}
           error={rent.error}
           emptyText="لا توجد عقارات إيجار معروضة حالياً."
+          compareIds={compareIds}
+          onCompare={toggleCompare}
         />
       </Reveal>
 
@@ -151,6 +166,8 @@ function HomePage() {
             loading={sale.isLoading}
             error={sale.error}
             emptyText="لا توجد عقارات بيع معروضة حالياً."
+            compareIds={compareIds}
+            onCompare={toggleCompare}
           />
         </div>
       </Reveal>
@@ -215,6 +232,13 @@ function HomePage() {
           </Link>
         </div>
       </section>
+      <PropertyCompare
+        properties={compareProperties}
+        open={compareOpen}
+        onOpenChange={setCompareOpen}
+        onRemove={(id) => setCompareIds((current) => current.filter((item) => item !== id))}
+        onClear={() => { setCompareIds([]); setCompareOpen(false); }}
+      />
     </SiteLayout>
   );
 }

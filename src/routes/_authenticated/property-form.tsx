@@ -31,10 +31,12 @@ import { PageHero } from "@/components/kit/PageHero";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
 import { resolvePropertyCoordinates } from "@/lib/geo.functions";
+import { approveListingRequest } from "@/lib/requests.functions";
 
 export const Route = createFileRoute("/_authenticated/property-form")({
   validateSearch: (search: Record<string, unknown>) => ({
     id: typeof search["id"] === "string" ? (search["id"] as string) : "",
+    ...(typeof search["requestId"] === "string" ? { requestId: search["requestId"] as string } : {}),
   }),
   head: () => ({
     meta: [
@@ -130,7 +132,7 @@ function SectionCard({
 }
 
 function PropertyFormPage() {
-  const { id } = Route.useSearch();
+  const { id, requestId = "" } = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -479,9 +481,23 @@ function PropertyFormPage() {
     onSuccess: (newId) => {
       invalidateAll();
       toast.success(id ? "تم تحديث العقار" : "تم إضافة العقار");
-      if (!id) navigate({ to: "/property-form", search: { id: newId } });
+      if (!id) navigate({ to: "/property-form", search: requestId ? { id: newId, requestId } : { id: newId } });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
+  });
+
+  const approve = useMutation({
+    mutationFn: async () => {
+      if (!requestId) throw new Error("طلب العرض غير مرتبط بهذا العقار");
+      await save.mutateAsync();
+      return approveListingRequest({ data: { requestId, notifyWhatsapp: true } });
+    },
+    onSuccess: (result) => {
+      invalidateAll();
+      toast.success(result.whatsapp.ok ? "تم اعتماد العقار ونشره وإشعار المالك عبر واتساب" : "تم اعتماد العقار ونشره");
+      void navigate({ to: "/listing-requests/$requestId", params: { requestId } });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الاعتماد والنشر"),
   });
 
   const addImage = useMutation({
@@ -666,15 +682,6 @@ function PropertyFormPage() {
           <ArrowRight className="size-4" />
           رجوع لقائمة العقارات
         </Link>
-        <button
-          type="button"
-          onClick={() => save.mutate()}
-          disabled={save.isPending}
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-[13px] font-bold text-primary-foreground disabled:opacity-60"
-        >
-          {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-          {id ? "حفظ التعديلات" : "حفظ العقار"}
-        </button>
       </div>
 
       <nav aria-label="خطوات نموذج العقار" className="surface-card grid grid-cols-2 gap-2 p-3 sm:grid-cols-4">
@@ -1316,6 +1323,12 @@ function PropertyFormPage() {
           {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
           {id ? "حفظ التعديلات" : "حفظ العقار"}
         </button>
+        {requestId && step === steps.length - 1 ? (
+          <button type="button" onClick={() => approve.mutate()} disabled={approve.isPending || save.isPending} className="inline-flex items-center gap-2 rounded-lg bg-success px-6 py-3 text-[13.5px] font-bold text-success-foreground disabled:opacity-60">
+            {approve.isPending ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+            اعتماد ونشر العقار
+          </button>
+        ) : null}
         <Link
           to="/properties"
           className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-3 text-[13.5px] font-semibold"

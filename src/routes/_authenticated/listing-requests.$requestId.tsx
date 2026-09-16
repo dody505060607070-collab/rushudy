@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import { requestStatusLabels } from "@/lib/labels";
-import { approveListingRequest } from "@/lib/requests.functions";
+import { prepareListingRequestProperty } from "@/lib/requests.functions";
 
 export const Route = createFileRoute("/_authenticated/listing-requests/$requestId")({
   head: () => ({
@@ -93,6 +93,7 @@ function ListingRequestDetail() {
     admin_notes: "",
     status: "new",
   });
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const row = query.data;
@@ -142,26 +143,21 @@ function ListingRequestDetail() {
       queryClient.invalidateQueries({ queryKey: ["listing_requests"] });
       queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
       toast.success("تم حفظ الطلب");
+      setSaved(true);
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
   });
 
-  const approve = useMutation({
-    mutationFn: async () => {
-      await save.mutateAsync();
-      return approveListingRequest({ data: { requestId, notifyWhatsapp: true } });
-    },
+  const prepare = useMutation({
+    mutationFn: () => prepareListingRequestProperty({ data: { requestId } }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["listing_request", requestId] });
       queryClient.invalidateQueries({ queryKey: ["listing_requests"] });
       queryClient.invalidateQueries({ queryKey: ["properties"] });
-      toast.success(
-        result.whatsapp.ok
-          ? "تم اعتماد العقار ونشره، وأُرسل إشعار واتساب للمالك"
-          : "تم اعتماد العقار ونشره (لم يُرسل إشعار واتساب)",
-      );
+      toast.success("تم تجهيز مسودة العقار — أكمل بياناتها ثم اعتمدها في الخطوة الأخيرة");
+      window.location.href = `/property-form?id=${encodeURIComponent(result.propertyId)}&requestId=${encodeURIComponent(requestId)}`;
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الاعتماد"),
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر تجهيز العقار"),
   });
 
   if (query.isLoading) {
@@ -186,8 +182,6 @@ function ListingRequestDetail() {
   }
 
   const waPhone = (form.phone).replace(/[^0-9]/g, "");
-  const approved = query.data.status === "approved" || query.data.status === "converted";
-
   return (
     <>
       <PageHero
@@ -204,44 +198,6 @@ function ListingRequestDetail() {
           <ArrowRight className="size-4" />
           كل الطلبات
         </Link>
-        {waPhone ? (
-          <a
-            href={`https://wa.me/${waPhone}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground hover:bg-muted"
-          >
-            <MessageCircle className="size-4" />
-            تواصل واتساب
-          </a>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => save.mutate()}
-          disabled={save.isPending}
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground hover:bg-muted disabled:opacity-60"
-        >
-          {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-          حفظ التعديلات
-        </button>
-        <button
-          type="button"
-          onClick={() => approve.mutate()}
-          disabled={approve.isPending}
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-[13px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
-        >
-          {approve.isPending ? <Loader2 className="size-4 animate-spin" /> : <BadgeCheck className="size-4" />}
-          {approved ? "إعادة الاعتماد والنشر" : "اعتماد ونشر العقار"}
-        </button>
-        {query.data.property_id ? (
-          <Link
-            to="/property-form"
-            search={{ id: query.data.property_id }}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground hover:bg-muted"
-          >
-            فتح العقار في النظام
-          </Link>
-        ) : null}
       </div>
 
       <section className="surface-card mt-4 p-5">
@@ -309,6 +265,24 @@ function ListingRequestDetail() {
             <textarea rows={5} className="w-full rounded-lg border border-border bg-card p-3 text-[13px] text-foreground outline-none focus:border-primary" value={form.admin_notes} onChange={(e) => setForm((f) => ({ ...f, admin_notes: e.target.value }))} />
           </Field>
         </div>
+      </section>
+
+      <section className="surface-card mt-4 flex flex-wrap items-center justify-end gap-2 p-4">
+        {waPhone ? (
+          <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground hover:bg-muted">
+            <MessageCircle className="size-4" /> تواصل واتساب
+          </a>
+        ) : null}
+        <button type="button" onClick={() => save.mutate()} disabled={save.isPending} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-[13px] font-semibold text-primary-foreground disabled:opacity-60">
+          {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} حفظ التعديلات
+        </button>
+        {query.data.property_id ? (
+          <Link to="/property-form" search={{ id: query.data.property_id, requestId }} className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground hover:bg-muted">فتح العقار في النظام</Link>
+        ) : saved ? (
+          <button type="button" onClick={() => prepare.mutate()} disabled={prepare.isPending} className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground disabled:opacity-60">
+            {prepare.isPending ? <Loader2 className="size-4 animate-spin" /> : <BadgeCheck className="size-4" />} فتح العقار في النظام
+          </button>
+        ) : null}
       </section>
 
       <section className="surface-card mt-4 p-5">
