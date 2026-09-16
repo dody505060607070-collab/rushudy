@@ -19,12 +19,14 @@ import {
   ChevronRight,
   GripVertical,
   Maximize2,
+  Crop,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Field, inputClass, textareaClass } from "@/components/kit/Modal";
 import { Lightbox } from "@/components/kit/Lightbox";
+import { ImageEditorDialog } from "@/components/media/ImageEditorDialog";
 import { LocationPicker } from "@/components/kit/LocationPicker";
 import { SOCIAL_PLATFORMS, SocialGlyph } from "@/components/site/SocialIcons";
 import { PageHero } from "@/components/kit/PageHero";
@@ -137,6 +139,7 @@ function PropertyFormPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [imageUrl, setImageUrl] = useState("");
+  const [editingImage, setEditingImage] = useState<{ id: string; url: string } | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoTitle, setVideoTitle] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -587,6 +590,24 @@ function PropertyFormPage() {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["property-images", id] }),
+  });
+
+  const replaceImage = useMutation({
+    mutationFn: async ({ rowId, file }: { rowId: string; file: File }) => {
+      if (!id) throw new Error("احفظ العقار أولًا");
+      const path = `${id}/${Date.now()}-edited.jpg`;
+      const { url } = await uploadMedia("property-media", path, file);
+      const { error } = await supabase
+        .from("property_images")
+        .update({ url, focal_x: 50, focal_y: 50 })
+        .eq("id", rowId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["property-images", id] });
+      toast.success("تم حفظ تعديل الصورة");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر حفظ الصورة"),
   });
 
   const quickAddLookup = useMutation({
@@ -1204,6 +1225,13 @@ function PropertyFormPage() {
                   <div className="space-y-1 border-t border-border px-3 py-2">
                     <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">موضع أفقي<input type="range" min="0" max="100" defaultValue={img.focal_x ?? 50} className="min-w-0 flex-1 accent-primary" onPointerUp={(event) => updateFocalPoint.mutate({ rowId: img.id, focalX: Number(event.currentTarget.value), focalY: img.focal_y ?? 50 })} /></label>
                     <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">موضع رأسي<input type="range" min="0" max="100" defaultValue={img.focal_y ?? 50} className="min-w-0 flex-1 accent-primary" onPointerUp={(event) => updateFocalPoint.mutate({ rowId: img.id, focalX: img.focal_x ?? 50, focalY: Number(event.currentTarget.value) })} /></label>
+                    <button
+                      type="button"
+                      onClick={() => setEditingImage({ id: img.id, url: img.url })}
+                      className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-border py-1 text-[11px] font-semibold text-primary"
+                    >
+                      <Crop className="size-3.5" /> قص وتكبير
+                    </button>
                   </div>
                   <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-[12px]">
                     <GripVertical className="size-4 cursor-grab text-muted-foreground" aria-label="اسحب لترتيب الصورة" />
@@ -1233,6 +1261,16 @@ function PropertyFormPage() {
           </div>
         )}
       </SectionCard>
+      {editingImage ? (
+        <ImageEditorDialog
+          open
+          url={editingImage.url}
+          onClose={() => setEditingImage(null)}
+          onSave={async (file) => {
+            await replaceImage.mutateAsync({ rowId: editingImage.id, file });
+          }}
+        />
+      ) : null}
       {lightboxIndex != null ? <Lightbox images={(images.data ?? []).map((row) => row.url)} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} /> : null}
 
       <SectionCard
