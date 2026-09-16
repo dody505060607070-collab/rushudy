@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://friendly-fellow-kit.lovable.app/sitemap.xml
+Sitemap: https://alrashudi.sa/sitemap.xml

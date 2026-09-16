@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { SiteLayout } from "@/components/site/SiteLayout";
 
-const BASE = "https://friendly-fellow-kit.lovable.app";
+const BASE = "https://alrashudi.sa";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({

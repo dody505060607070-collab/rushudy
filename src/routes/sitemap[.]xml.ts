@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const BASE_URL = "https://friendly-fellow-kit.lovable.app";
+import { SITE_URL } from "@/lib/site-meta";
 
 /** الصفحات العامة القابلة للأرشفة فقط (لا لوحة تحكم ولا بوابة عميل). */
 const STATIC_PATHS = [
@@ -28,44 +28,31 @@ export const Route = createFileRoute("/sitemap.xml")({
         const paths = new Set(STATIC_PATHS);
 
         try {
-          const { createClient } = await import("@supabase/supabase-js");
-          const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
-          const supabase = createClient(process.env["SUPABASE_URL"]!, key, {
-            auth: { persistSession: false, autoRefreshToken: false },
-            global: {
-              fetch: (input, init) => {
-                const headers = new Headers(init?.headers);
-                if (key.startsWith("sb_") && headers.get("Authorization") === `Bearer ${key}`)
-                  headers.delete("Authorization");
-                headers.set("apikey", key);
-                return fetch(input, { ...init, headers });
-              },
-            },
-          });
-
-          const pageSize = 1000;
-          for (let offset = 0; ; ) {
-            const { data, error } = await supabase
-              .from("properties")
-              .select("code")
-              .eq("is_visible", true)
-              .order("code")
-              .range(offset, offset + pageSize - 1);
-            if (error) throw error;
-            if (!data || data.length === 0) break;
-            for (const row of data)
-              if (row.code) paths.add(`/properties/${encodeURIComponent(row.code)}`);
-            offset += data.length;
+          const apiUrl = process.env["SUPABASE_URL"];
+          const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+          if (apiUrl && key) {
+            const response = await fetch(`${apiUrl}/rest/v1/rpc/get_public_properties`, {
+              method: "POST",
+              headers: { apikey: key, "Content-Type": "application/json" },
+              body: JSON.stringify({ _limit: 1000 }),
+            });
+            if (response.ok) {
+              const data: unknown = await response.json();
+              if (Array.isArray(data)) {
+                for (const row of data) {
+                  if (row && typeof row === "object" && "code" in row && typeof row.code === "string") {
+                    paths.add(`/properties/${encodeURIComponent(row.code)}`);
+                  }
+                }
+              }
+            }
           }
-        } catch (error) {
-          return new Response(`Sitemap generation failed: ${String(error)}`, {
-            status: 500,
-            headers: { "Cache-Control": "no-store" },
-          });
+        } catch {
+          // Keep the static sitemap available if the property inventory is temporarily unavailable.
         }
 
         const urls = [...paths]
-          .map((path) => `<url><loc>${xmlEscape(new URL(path, BASE_URL).href)}</loc></url>`)
+          .map((path) => `<url><loc>${xmlEscape(new URL(path, SITE_URL).href)}</loc></url>`)
           .join("");
 
         return new Response(

@@ -27,9 +27,9 @@ export const Route = createFileRoute("/sale")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:url", content: "https://friendly-fellow-kit.lovable.app/sale" },
+      { property: "og:url", content: "https://alrashudi.sa/sale" },
     ],
-    links: [{ rel: "canonical", href: "https://friendly-fellow-kit.lovable.app/sale" }],
+    links: [{ rel: "canonical", href: "https://alrashudi.sa/sale" }],
   }),
   component: SalePage,
 });
