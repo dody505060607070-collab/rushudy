@@ -592,6 +592,24 @@ function PropertyFormPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["property-images", id] }),
   });
 
+  const replaceImage = useMutation({
+    mutationFn: async ({ rowId, file }: { rowId: string; file: File }) => {
+      if (!id) throw new Error("احفظ العقار أولًا");
+      const path = `${id}/${Date.now()}-edited.jpg`;
+      const { url } = await uploadMedia("property-media", path, file);
+      const { error } = await supabase
+        .from("property_images")
+        .update({ url, focal_x: 50, focal_y: 50 })
+        .eq("id", rowId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["property-images", id] });
+      toast.success("تم حفظ تعديل الصورة");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر حفظ الصورة"),
+  });
+
   const quickAddLookup = useMutation({
     mutationFn: async (input: { kind: "type" | "district"; name: string }) => {
       if (!input.name.trim()) throw new Error("اكتب الاسم أولًا");
