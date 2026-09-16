@@ -22,6 +22,7 @@ function FormattedText({ text }: { text: string }) {
         const match = part.match(/\[(.*?)\]\((.*?)\)/);
         if (match) {
           const [, label, href] = match;
+          if (!href) return part;
           const isExternal = href.startsWith("http");
           if (isExternal) {
             return (

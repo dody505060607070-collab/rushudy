@@ -283,6 +283,7 @@ export const finalizeContractImport = createServerFn({ method: "POST" })
         .limit(1);
       if (dup.data?.length) {
         const existing = dup.data[0];
+        if (!existing) throw new Error(`العقد رقم ${contractNumber} مسجَّل مسبقًا في النظام.`);
         const property = Array.isArray(existing.property) ? existing.property[0] : existing.property;
         throw new Error(
           `العقد موجود بالفعل باسم «${property?.name ?? existing.contract_number ?? "عقد مسجّل"}» ورقم ${existing.contract_number ?? contractNumber} — تم رفض الترحيل لمنع التكرار.`,

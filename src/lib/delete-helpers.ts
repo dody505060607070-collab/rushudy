@@ -10,11 +10,15 @@ async function deleteContractImports(contractIds: string[]) {
 
   const paths = (imports.data ?? [])
     .map((row) => row.file_path)
-    .filter((path): path is string => Boolean(path));
-  if (paths.length) await supabase.storage.from("contract-files").remove(paths);
-
-  const ids = (imports.data ?? []).map((row) => row.id);
-  if (ids.length) {
+export async function deleteContractsOfOwners(ids: string[]) {
+  if (!ids.length) return;
+  const { data: contracts } = await supabase.from("contracts").select("id").in("owner_id", ids);
+  if (contracts?.length) {
+    await supabase.from("contract_imports").delete().in("contract_id", contracts.map(c => c.id));
+  }
+  const { error } = await supabase.from("contracts").delete().in("owner_id", ids);
+  if (error) throw error;
+}
     const removed = await supabase.from("contract_imports").delete().in("id", ids);
     if (removed.error) throw removed.error;
   }
@@ -26,11 +30,12 @@ async function detachOwner(ids: string[]) {
   for (const table of tables) {
     const { error } = await supabase.from(table).update({ owner_id: null }).in("owner_id", ids);
     if (error) throw error;
-  }
+export async function deleteContractWithOwner(contractId: string, ownerId: string | null, alsoOwner: boolean) {
+  await supabase.from("contract_imports").delete().eq("contract_id", contractId);
+  const { error } = await supabase.from("contracts").delete().eq("id", contractId);
+  if (error) throw error;
+  if (alsoOwner && ownerId) await deleteOwners([ownerId], true);
 }
-
-/** حذف العقود المرتبطة بالملاك المحددين */
-export async function deleteContractsOfOwners(ids: string[]) {
   if (!ids.length) return;
   const contracts = await supabase.from("contracts").select("id").in("owner_id", ids);
   if (contracts.error) throw contracts.error;
