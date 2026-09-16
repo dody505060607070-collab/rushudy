@@ -13,9 +13,27 @@ import { PropertyMapSection } from "@/components/site/PropertyMapSection";
 import { Reveal } from "@/components/site/Reveal";
 import { useRecentlyViewed } from "@/lib/favorites";
 import { publicPropertiesQuery, publicServicesQuery } from "@/lib/site-data";
+import { SITE_NAME, SITE_URL, absoluteSiteUrl } from "@/lib/site-meta";
 
-const SITE_URL = "https://mitharfinale.lovable.app";
-const SOCIAL_IMAGE = `${SITE_URL}${socialCard.url}`;
+const SOCIAL_IMAGE = absoluteSiteUrl(socialCard.url);
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": ["RealEstateAgent", "LocalBusiness"],
+  "@id": `${SITE_URL}/#organization`,
+  name: SITE_NAME,
+  alternateName: ["الرشيدي للعقارات", "Alrashudi Real Estate"],
+  url: SITE_URL,
+  logo: absoluteSiteUrl("/favicon.png"),
+  image: SOCIAL_IMAGE,
+  description: "مؤسسة عقارية متخصصة في الإيجار والبيع وإدارة الأملاك في بريدة والقصيم.",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "بريدة",
+    addressRegion: "القصيم",
+    addressCountry: "SA",
+  },
+  areaServed: ["بريدة", "القصيم"],
+};
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -42,6 +60,12 @@ export const Route = createFileRoute("/")({
       { property: "og:url", content: `${SITE_URL}/` },
     ],
     links: [{ rel: "canonical", href: `${SITE_URL}/` }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(organizationSchema),
+      },
+    ],
   }),
   component: HomePage,
 });

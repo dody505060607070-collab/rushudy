@@ -7,6 +7,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/portal")({
   ssr: false,
+  head: () => ({
+    meta: [
+      { title: "بوابة العملاء | الرشودي للعقارات" },
+      { name: "description", content: "بوابة عملاء وملاك الرشودي للعقارات لمتابعة العقود والفواتير." },
+      { property: "og:title", content: "بوابة العملاء | الرشودي للعقارات" },
+      { property: "og:description", content: "متابعة عقود وفواتير عملاء الرشودي للعقارات." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });

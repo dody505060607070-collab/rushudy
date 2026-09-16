@@ -35,7 +35,11 @@ export const Route = createFileRoute("/properties/$code")({
         content: "تفاصيل كاملة للعقار مع صور وموقع وتواصل مباشر عبر واتساب.",
       },
       { property: "og:type", content: "article" },
+      { property: "og:url", content: `https://alrashudi.sa/properties/${encodeURIComponent(params.code)}` },
       { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [
+      { rel: "canonical", href: `https://alrashudi.sa/properties/${encodeURIComponent(params.code)}` },
     ],
   }),
   component: PropertyPage,

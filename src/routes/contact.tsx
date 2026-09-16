@@ -27,9 +27,10 @@ export const Route = createFileRoute("/contact")({
         content: "أرسل استفسارك العقاري وسيتواصل معك فريق الرشودي للعقارات.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://alrashudi.sa/contact" },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://friendly-fellow-kit.lovable.app/contact" }],
+    links: [{ rel: "canonical", href: "https://alrashudi.sa/contact" }],
   }),
   component: ContactPage,
 });

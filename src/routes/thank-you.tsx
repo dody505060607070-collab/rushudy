@@ -4,7 +4,7 @@ import { CheckCircle2, Home, MessageCircle, Phone } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { COMPANY_PHONE, whatsappLink } from "@/lib/site-data";
 
-const BASE = "https://friendly-fellow-kit.lovable.app";
+const BASE = "https://alrashudi.sa";
 
 export const Route = createFileRoute("/thank-you")({
   head: () => ({
