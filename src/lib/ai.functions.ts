@@ -385,16 +385,17 @@ export const analyzeContractPdf = createServerFn({ method: "POST" })
   });
 
 
-const PUBLIC_PROMPT = `أنت "مساعد الرشودي للعقارات" — مستشار عقاري ذكي على الموقع العام لشركة الرشودي للعقارات في بريدة، السعودية.
-مهمتك الأساسية فهم احتياج الزائر ثم ترشيح أقرب العقارات المنشورة فعليًا من البيانات المرفقة. استخرج من كلامه الغرض (إيجار/بيع)، الميزانية، الحي أو المنطقة، ونوع العقار. إذا نقصت معلومة مهمة فاسأل سؤال متابعة واحدًا واضحًا بدل إعطاء إجابة عامة.
-عند وجود نتائج مناسبة:
-- رشّح حتى 3 عقارات فقط، واذكر الاسم والسعر والموقع ولماذا يناسب الطلب.
-- ضع رابط العقار المرفق كما هو في سطر مستقل ليتمكن الزائر من فتحه مباشرة.
-- إذا لم توجد مطابقة كاملة، اقترح الأقرب واشرح الاختلاف بوضوح.
-- لا تخترع عقارًا أو سعرًا أو رابطًا، ولا تذكر أي بيانات داخلية أو أسماء ملاك أو وسطاء.
-يمكنك أيضًا شرح أقسام الموقع وخطوات عرض أو طلب عقار.
-${SCOPE_RULE}
-أجب بالعربية الفصحى المبسطة بإجابات قصيرة ومهذبة وبأسلوب يساعد الزائر للوصول إلى اختيار عملي.`;
+const PUBLIC_PROMPT = `أنت "مساعد الرشودي للعقارات" — مساعد ذكي على الموقع العام لشركة الرشودي للعقارات في بريدة، السعودية.
+مهمتك مساعدة الزوار في العثور على العقار المناسب (إيجار أو بيع) من مخزون الشركة المتاح، والإجابة عن أسئلة عامة.
+
+قواعد الاستجابة:
+1. استخدم قائمة العقارات المتاحة المرفقة أدناه لتقديم توصيات دقيقة بناءً على (الميزانية، الحي، الغرض).
+2. عندما تقترح عقاراً، اذكره بالتنسيق التالي ليكون قابلاً للضغط: [اسم العقار](/properties/CODE). مثال: [شقة فاخرة بحي الريان](/properties/A101).
+3. إذا لم تجد طلباً مطابقاً تماماً، اقترح أقرب البدائل المتاحة.
+4. أجب بالعربية الفصحى المبسطة وبشكل ودود ومختصر.
+5. في نهاية ردك، اقترح 2-3 أسئلة متابعة قصيرة لمساعدة الزائر، وضعها بعد هذا الفاصل بالضبط: ---suggestions--- (سؤال واحد لكل سطر).
+
+${SCOPE_RULE}`;
 
 export const askPublicAi = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({
@@ -403,13 +404,39 @@ export const askPublicAi = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUnlocked } = await import("./kill-switch.server");
     await requireUnlocked();
-    const { createClient } = await import("@supabase/supabase-js");
-    const url = process.env["SUPABASE_URL"];
-    const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
-    if (!url || !publishableKey) throw new Error("خدمة العقارات غير مهيأة حاليًا.");
-    const publicDb = createClient(url, publishableKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+
+    const { data: properties } = await supabase.rpc("get_public_properties", { _limit: 30 });
+    const inventoryText = (properties as any[])?.map(p =>
+      `- [${p.name}](/properties/${p.code}) | ${p.property_type} لل${p.purpose === 'rent' ? 'إيجار' : 'بيع'} | حي ${p.district} | السعر: ${p.price_text || p.price_value || 'تواصل معنا'}`
+    ).join('\n') || "لا يوجد عقارات متاحة حالياً.";
+
+    const items: Item[] = [
+      { role: "system", content: [{ type: "input_text", text: PUBLIC_PROMPT }] },
+      { role: "system", content: [{ type: "input_text", text: `قائمة العقارات الحالية المتاحة:\n${inventoryText}` }] },
+    ];
+    for (const m of data.messages.slice(-12)) {
+      items.push({
+        role: m.role,
+        content: [{ type: "input_text", text: m.content.slice(0, 2000) }],
+      });
+    }
+    const text = await callGateway(items);
+    const [mainText, suggestionsPart] = text.split('---suggestions---');
+    return {
+      text: mainText.trim(),
+      suggestions: suggestionsPart ? suggestionsPart.trim().split('\n').map(s => s.replace(/^[-\d\.]+\s*/, '').trim()).filter(Boolean) : []
+    };
+  });
+
+    }
+    const text = await callGateway(items);
+    const [mainText, suggestionsPart] = text.split('---suggestions---');
+    return {
+      text: mainText.trim(),
+      suggestions: suggestionsPart ? suggestionsPart.trim().split('\\n').map(s => s.replace(/^[-\\d\\.]+\\s*/, '').trim()).filter(Boolean) : []
+    };
+  });
+
     const inventoryResult = await publicDb.rpc("get_public_properties", { _limit: 60 });
     if (inventoryResult.error) throw new Error("تعذّر قراءة العقارات المتاحة حاليًا.");
     const inventory = (Array.isArray(inventoryResult.data) ? inventoryResult.data : []).map((row) => {
