@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { supabase } from "@/integrations/supabase/client";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/responses";
@@ -384,10 +385,16 @@ export const analyzeContractPdf = createServerFn({ method: "POST" })
   });
 
 
-const PUBLIC_PROMPT = `أنت "مساعد الرشودي للعقارات" — مساعد ذكي على الموقع العام لشركة الرشودي للعقارات في بريدة، السعودية.
-مهمتك مساعدة الزوار: شرح أقسام الموقع (الإيجار، البيع، من نحن، تواصل معنا، اعرض/اطلب عقارك)، توضيح خطوات عرض عقار أو طلب عقار، والإجابة عن أسئلة عامة عن العقارات في بريدة.
+const PUBLIC_PROMPT = `أنت "مساعد الرشودي للعقارات" — مستشار عقاري ذكي على الموقع العام لشركة الرشودي للعقارات في بريدة، السعودية.
+مهمتك الأساسية فهم احتياج الزائر ثم ترشيح أقرب العقارات المنشورة فعليًا من البيانات المرفقة. استخرج من كلامه الغرض (إيجار/بيع)، الميزانية، الحي أو المنطقة، ونوع العقار. إذا نقصت معلومة مهمة فاسأل سؤال متابعة واحدًا واضحًا بدل إعطاء إجابة عامة.
+عند وجود نتائج مناسبة:
+- رشّح حتى 3 عقارات فقط، واذكر الاسم والسعر والموقع ولماذا يناسب الطلب.
+- ضع رابط العقار المرفق كما هو في سطر مستقل ليتمكن الزائر من فتحه مباشرة.
+- إذا لم توجد مطابقة كاملة، اقترح الأقرب واشرح الاختلاف بوضوح.
+- لا تخترع عقارًا أو سعرًا أو رابطًا، ولا تذكر أي بيانات داخلية أو أسماء ملاك أو وسطاء.
+يمكنك أيضًا شرح أقسام الموقع وخطوات عرض أو طلب عقار.
 ${SCOPE_RULE}
-أجب بالعربية الفصحى المبسطة بإجابات قصيرة ومهذبة. لا تذكر بيانات داخلية أو أسعار غير مؤكدة، وإن لزم التفاصيل اطلب من الزائر التواصل عبر صفحة «تواصل معنا» أو الواتساب.`;
+أجب بالعربية الفصحى المبسطة بإجابات قصيرة ومهذبة وبأسلوب يساعد الزائر للوصول إلى اختيار عملي.`;
 
 export const askPublicAi = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({
@@ -396,8 +403,40 @@ export const askPublicAi = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUnlocked } = await import("./kill-switch.server");
     await requireUnlocked();
+    const { createClient } = await import("@supabase/supabase-js");
+    const url = process.env["SUPABASE_URL"];
+    const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
+    if (!url || !publishableKey) throw new Error("خدمة العقارات غير مهيأة حاليًا.");
+    const publicDb = createClient(url, publishableKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const inventoryResult = await publicDb.rpc("get_public_properties", { _limit: 60 });
+    if (inventoryResult.error) throw new Error("تعذّر قراءة العقارات المتاحة حاليًا.");
+    const inventory = (Array.isArray(inventoryResult.data) ? inventoryResult.data : []).map((row) => {
+      const property = row as Record<string, unknown>;
+      const code = String(property["code"] ?? "");
+      return {
+        code,
+        name: property["name"],
+        purpose: property["purpose"],
+        type: property["property_type"],
+        city: property["city"],
+        district: property["district"],
+        price: property["price_value"] ?? property["price_text"],
+        rent_period: property["rent_period"],
+        description: String(property["description"] ?? "").slice(0, 240),
+        link: `/properties/${encodeURIComponent(code)}`,
+      };
+    });
     const items: Item[] = [
       { role: "system", content: [{ type: "input_text", text: PUBLIC_PROMPT }] },
+      {
+        role: "user",
+        content: [{
+          type: "input_text",
+          text: `العقارات المنشورة والمتاحة حاليًا (هذه هي المرجع الوحيد للترشيحات):\n${JSON.stringify(inventory).slice(0, 30000)}`,
+        }],
+      },
     ];
     for (const m of data.messages.slice(-12)) {
       items.push({

@@ -21,6 +21,7 @@ import { StatusLegend } from "@/components/kit/StatusLegend";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeContractPdf } from "@/lib/ai.functions";
 import { finalizeContractImport } from "@/lib/contracts.functions";
+import { deleteContractWithOwner } from "@/lib/delete-helpers";
 import { ensureClientAccount } from "@/lib/portal.functions";
 import { contractStatusLabels, importStatusLabels } from "@/lib/labels";
 import { rowTone, toneRowClass } from "@/lib/status-tone";
@@ -242,8 +243,8 @@ function ContractsPage() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("contracts").delete().eq("id", id);
-      if (error) throw error;
+      const contract = rows.find((row) => row.id === id);
+      await deleteContractWithOwner(id, contract?.owner_id ?? null, false);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
@@ -681,16 +682,44 @@ export function ImportDialog({
       const fileHash = Array.from(new Uint8Array(digest))
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
-      const dupImport = await supabase
+      const duplicateImports = await supabase
         .from("contract_imports")
-        .select("id, file_name, contract_id, created_at")
+        .select("id, file_name, file_path, contract_id, created_at")
         .eq("file_hash", fileHash)
-        .limit(1);
-      if (dupImport.data?.length) {
-        const prev = dupImport.data[0]!;
+        .limit(20);
+      if (duplicateImports.error) throw duplicateImports.error;
+
+      const linkedContractIds = (duplicateImports.data ?? [])
+        .map((item) => item.contract_id)
+        .filter((id): id is string => Boolean(id));
+      const existingContracts = linkedContractIds.length
+        ? await supabase
+            .from("contracts")
+            .select("id, contract_number, property:property_id(name)")
+            .in("id", linkedContractIds)
+            .limit(1)
+        : { data: [], error: null };
+      if (existingContracts.error) throw existingContracts.error;
+      const existing = existingContracts.data?.[0];
+      if (existing) {
+        const property = Array.isArray(existing.property) ? existing.property[0] : existing.property;
         throw new Error(
-          `هذا العقد مرفوع مسبقًا (${prev.file_name}) بتاريخ ${new Date(prev.created_at).toLocaleDateString("ar-SA")}${prev.contract_id ? " وتم ترحيله بالفعل" : ""} — تم رفض الملف.`,
+          `العقد موجود بالفعل باسم «${property?.name ?? existing.contract_number ?? "عقد مسجّل"}» ورقم ${existing.contract_number ?? "غير محدد"} — تم رفض الملف لمنع التكرار.`,
         );
+      }
+
+      // سجلات التحليل التي فقدت عقدها لا تمنع إعادة رفعه بعد الحذف.
+      const staleImports = duplicateImports.data ?? [];
+      const stalePaths = staleImports
+        .map((item) => item.file_path)
+        .filter((path): path is string => Boolean(path));
+      if (stalePaths.length) await supabase.storage.from("contract-files").remove(stalePaths);
+      if (staleImports.length) {
+        const removed = await supabase
+          .from("contract_imports")
+          .delete()
+          .in("id", staleImports.map((item) => item.id));
+        if (removed.error) throw removed.error;
       }
 
       setAnalysisStage("جاري قراءة نص العقد…");

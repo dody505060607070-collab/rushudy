@@ -7,10 +7,31 @@ import { cn } from "@/lib/utils";
 
 type Message = { role: "user" | "assistant"; content: string };
 
+function MessageContent({ content }: { content: string }) {
+  const parts = content.split(/(\/properties\/[A-Za-z0-9%._~-]+)/g);
+  return (
+    <>
+      {parts.map((part, index) =>
+        part.startsWith("/properties/") ? (
+          <a
+            key={`${part}-${index}`}
+            href={part}
+            className="font-bold text-primary underline underline-offset-4"
+          >
+            فتح العقار
+          </a>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
 const starters = [
-  "كيف أعرض عقاري للإيجار عندكم؟",
-  "ما الفرق بين قسم الإيجار وقسم البيع؟",
-  "أبحث عن شقة في بريدة، من أين أبدأ؟",
+  "أبحث عن شقة للإيجار في بريدة بميزانية 30 ألف ريال سنويًا",
+  "ما العقارات المتاحة للبيع حاليًا؟",
+  "ساعدني أختار عقارًا مناسبًا لميزانيتي",
 ];
 
 export function AiWidget() {
@@ -128,7 +149,7 @@ export function AiWidget() {
                     : "bg-muted text-foreground",
                 )}
               >
-                {message.content}
+                <MessageContent content={message.content} />
               </p>
             ))}
             {ask.isPending ? (

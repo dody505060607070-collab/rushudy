@@ -277,13 +277,15 @@ export const finalizeContractImport = createServerFn({ method: "POST" })
     if (extractedNumber) {
       const dup = await db
         .from("contracts")
-        .select("id, contract_number")
+        .select("id, contract_number, property:property_id(name)")
         .eq("contract_number", contractNumber)
         .eq("contract_type", contractType)
         .limit(1);
       if (dup.data?.length) {
+        const existing = dup.data[0];
+        const property = Array.isArray(existing.property) ? existing.property[0] : existing.property;
         throw new Error(
-          `العقد رقم ${contractNumber} مسجَّل مسبقًا في النظام — تم رفض الترحيل لمنع التكرار.`,
+          `العقد موجود بالفعل باسم «${property?.name ?? existing.contract_number ?? "عقد مسجّل"}» ورقم ${existing.contract_number ?? contractNumber} — تم رفض الترحيل لمنع التكرار.`,
         );
       }
     }
