@@ -1,7 +1,8 @@
 import { ArrowUp } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import { whatsappLink } from "@/lib/site-data";
+import { publicSettingsQuery, whatsappLink } from "@/lib/site-data";
 
 /** شريط تقدّم التمرير أعلى الصفحة. */
 export function ScrollProgress() {
@@ -27,6 +28,7 @@ export function ScrollProgress() {
 /** زر الرجوع لأعلى + واتساب سريع. */
 export function FloatingActions() {
   const [show, setShow] = useState(false);
+  const settings = useQuery(publicSettingsQuery);
 
   useEffect(() => {
     const onScroll = () => setShow(window.scrollY > 500);
@@ -48,7 +50,7 @@ export function FloatingActions() {
         </button>
       ) : null}
       <a
-        href={whatsappLink(null, "السلام عليكم، أرغب في الاستفسار عن عقار")}
+        href={whatsappLink(settings.data?.whatsapp_number, "السلام عليكم، أرغب في الاستفسار عن عقار")}
         target="_blank"
         rel="noreferrer"
         aria-label="تواصل واتساب"

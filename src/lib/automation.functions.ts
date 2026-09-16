@@ -13,13 +13,19 @@ export const reportPublicRequest = createServerFn({ method: "POST" })
         purpose: z.string().trim().max(30).optional(),
         city: z.string().trim().max(80).optional(),
         property_type: z.string().trim().max(80).optional(),
+        request_kind: z.enum(["supply", "listing"]),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
     const { dispatchAutomation } = await import("@/lib/automation.server");
     await dispatchAutomation("request.created", data);
-    return { ok: true as const };
+    const { whatsappSend } = await import("@/lib/whatsapp.functions");
+    const body = data.request_kind === "supply"
+      ? `مرحبًا ${data.full_name}، وصل طلبك للرشودي للعقارات، وسنتواصل معك في أقرب وقت لتوفير العقار المناسب بالمواصفات التي طلبتها.`
+      : `مرحبًا ${data.full_name}، وصلنا طلب عرض عقارك لدى الرشودي للعقارات، وسيراجعه فريقنا ويتواصل معك في أقرب وقت.`;
+    const whatsapp = await whatsappSend({ to: data.phone, body });
+    return { ok: true as const, whatsapp };
   });
 
 /** يُستدعى بعد إرسال تذكير دفعة عبر واتساب. */

@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, MapPin } from "lucide-react";
+import { Building2, GitCompareArrows, MapPin } from "lucide-react";
 
 import { FavoriteButton } from "@/components/site/FavoriteButton";
 import { coverImage, purposeLabels, whatsappLink, type PublicProperty } from "@/lib/site-data";
 
-export function PropertyCard({ property }: { property: PublicProperty }) {
+export function PropertyCard({ property, comparing = false, onCompare }: { property: PublicProperty; comparing?: boolean; onCompare?: (property: PublicProperty) => void }) {
   const cover = coverImage(property);
   const price =
     property.price_text ??
@@ -12,7 +12,7 @@ export function PropertyCard({ property }: { property: PublicProperty }) {
 
   return (
     <article className="lift group overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-shadow hover:shadow-float">
-      <div className="relative h-48 bg-muted">
+      <div className="relative h-60 bg-muted sm:h-64">
         {cover ? (
           <img
             src={cover}
@@ -29,6 +29,16 @@ export function PropertyCard({ property }: { property: PublicProperty }) {
           {purposeLabels[property.purpose] ?? property.purpose}
         </span>
         <FavoriteButton code={property.code} className="absolute bottom-3 end-3" />
+        {onCompare ? (
+          <button
+            type="button"
+            onClick={() => onCompare(property)}
+            aria-label={comparing ? "إزالة العقار من المقارنة" : "إضافة العقار للمقارنة"}
+            className={`absolute bottom-3 start-3 grid size-9 place-items-center rounded-full border shadow-card transition-colors ${comparing ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}
+          >
+            <GitCompareArrows className="size-4" />
+          </button>
+        ) : null}
         {property.is_featured ? (
           <span className="absolute start-3 top-3 rounded-lg bg-gold px-3 py-1 text-[12px] font-bold text-gold-foreground">
             مميز
@@ -77,11 +87,15 @@ export function PropertyGrid({
   loading,
   error,
   emptyText = "لا توجد عقارات معروضة حالياً.",
+  compareIds,
+  onCompare,
 }: {
   properties: PublicProperty[] | undefined;
   loading?: boolean;
   error?: unknown;
   emptyText?: string;
+  compareIds?: string[];
+  onCompare?: (property: PublicProperty) => void;
 }) {
   if (loading) {
     return (
@@ -112,7 +126,7 @@ export function PropertyGrid({
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {properties.map((property) => (
-        <PropertyCard key={property.id} property={property} />
+        <PropertyCard key={property.id} property={property} comparing={compareIds?.includes(property.id)} onCompare={onCompare} />
       ))}
     </div>
   );
