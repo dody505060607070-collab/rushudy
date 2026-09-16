@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { DashboardInsights } from "@/components/dashboard/DashboardInsights";
 import { Chip } from "@/components/kit/Chip";
 import { formatCurrency, formatDate } from "@/components/kit/LiveTable";
 import { PageHero } from "@/components/kit/PageHero";
@@ -616,6 +617,8 @@ function DashboardPage() {
       </div>
 
 
+
+      <DashboardInsights />
 
       <section className="surface-card overflow-hidden">
         <header className="flex items-center justify-between border-b border-border p-5"><div><p className="text-[11.5px] font-bold text-primary">مباشر</p><h2 className="mt-1 text-[15px] font-bold">آخر أنشطة النظام</h2></div><Link to="/activity-log" className="text-xs font-bold text-primary">متابعة الموظفين</Link></header>
