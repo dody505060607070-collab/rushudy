@@ -1225,6 +1225,13 @@ function PropertyFormPage() {
                   <div className="space-y-1 border-t border-border px-3 py-2">
                     <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">موضع أفقي<input type="range" min="0" max="100" defaultValue={img.focal_x ?? 50} className="min-w-0 flex-1 accent-primary" onPointerUp={(event) => updateFocalPoint.mutate({ rowId: img.id, focalX: Number(event.currentTarget.value), focalY: img.focal_y ?? 50 })} /></label>
                     <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">موضع رأسي<input type="range" min="0" max="100" defaultValue={img.focal_y ?? 50} className="min-w-0 flex-1 accent-primary" onPointerUp={(event) => updateFocalPoint.mutate({ rowId: img.id, focalX: img.focal_x ?? 50, focalY: Number(event.currentTarget.value) })} /></label>
+                    <button
+                      type="button"
+                      onClick={() => setEditingImage({ id: img.id, url: img.url })}
+                      className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-border py-1 text-[11px] font-semibold text-primary"
+                    >
+                      <Crop className="size-3.5" /> قص وتكبير
+                    </button>
                   </div>
                   <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-[12px]">
                     <GripVertical className="size-4 cursor-grab text-muted-foreground" aria-label="اسحب لترتيب الصورة" />
@@ -1254,6 +1261,16 @@ function PropertyFormPage() {
           </div>
         )}
       </SectionCard>
+      {editingImage ? (
+        <ImageEditorDialog
+          open
+          url={editingImage.url}
+          onClose={() => setEditingImage(null)}
+          onSave={async (file) => {
+            await replaceImage.mutateAsync({ rowId: editingImage.id, file });
+          }}
+        />
+      ) : null}
       {lightboxIndex != null ? <Lightbox images={(images.data ?? []).map((row) => row.url)} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} /> : null}
 
       <SectionCard
