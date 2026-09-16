@@ -1,38 +1,46 @@
 import { useMutation } from "@tanstack/react-query";
-import { Bot, Loader2, Send, Sparkles } from "lucide-react";
+import { Bot, Loader2, Send, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
 
 import { askPublicAi } from "@/lib/ai.functions";
 import { cn } from "@/lib/utils";
 
-type Message = { role: "user" | "assistant"; content: string };
+type Message = { role: "user" | "assistant"; content: string; suggestions?: string[] };
 
-function MessageContent({ content }: { content: string }) {
-  const parts = content.split(/(\/properties\/[A-Za-z0-9%._~-]+)/g);
+const starters = [
+  "أبحث عن شقة للإيجار في بريدة",
+  "هل لديكم فلل للبيع بحي الريان؟",
+  "كيف أعرض عقاري عندكم؟",
+];
+
+function FormattedText({ text }: { text: string }) {
+  const parts = text.split(/(\[.*?\]\(.*?\))/g);
   return (
     <>
-      {parts.map((part, index) =>
-        part.startsWith("/properties/") ? (
-          <a
-            key={`${part}-${index}`}
-            href={part}
-            className="font-bold text-primary underline underline-offset-4"
-          >
-            فتح العقار
-          </a>
-        ) : (
-          part
-        ),
-      )}
+      {parts.map((part, i) => {
+        const match = part.match(/\[(.*?)\]\((.*?)\)/);
+        if (match) {
+          const [, label, href] = match;
+          const isExternal = href.startsWith("http");
+          if (isExternal) {
+            return (
+              <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="text-gold underline hover:text-gold/80">
+                {label}
+              </a>
+            );
+          }
+          return (
+            <Link key={i} to={href as any} className="text-gold font-bold underline hover:text-gold/80">
+              {label}
+            </Link>
+          );
+        }
+        return part;
+      })}
     </>
   );
 }
-
-const starters = [
-  "أبحث عن شقة للإيجار في بريدة بميزانية 30 ألف ريال سنويًا",
-  "ما العقارات المتاحة للبيع حاليًا؟",
-  "ساعدني أختار عقارًا مناسبًا لميزانيتي",
-];
 
 export function AiWidget() {
   const [open, setOpen] = useState(false);
@@ -40,7 +48,7 @@ export function AiWidget() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "مرحبًا بك في الرشودي للعقارات 👋 أنا المساعد الذكي، كيف أخدمك اليوم؟",
+      content: "مرحبًا بك في الرشودي للعقارات 👋 أنا مساعدك الذكي، كيف أساعدك في العثور على عقارك اليوم؟",
     },
   ]);
   const scroller = useRef<HTMLDivElement>(null);
@@ -54,17 +62,23 @@ export function AiWidget() {
   } | null>(null);
 
   useEffect(() => {
-    scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
+    if (open) {
+      setTimeout(() => {
+        scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
+      }, 100);
+    }
   }, [messages, open]);
 
   const ask = useMutation({
     mutationFn: async (text: string) => {
       const next: Message[] = [...messages, { role: "user", content: text }];
       setMessages(next);
-      const res = await askPublicAi({ data: { messages: next } });
-      return res.text;
+      const res = await askPublicAi({ data: { messages: next.map(({ role, content }) => ({ role, content })) } });
+      return res;
     },
-    onSuccess: (text) => setMessages((prev) => [...prev, { role: "assistant", content: text }]),
+    onSuccess: (res) => {
+      setMessages((prev) => [...prev, { role: "assistant", content: res.text, suggestions: res.suggestions }]);
+    },
     onError: (err) =>
       setMessages((prev) => [
         ...prev,
@@ -131,35 +145,54 @@ export function AiWidget() {
       {open ? (
         <section
           style={{ transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }}
-          className="glass-panel fixed bottom-44 start-4 z-50 flex h-[min(30rem,70vh)] w-[min(23rem,calc(100vw-2rem))] flex-col overflow-hidden"
+          className="glass-panel fixed bottom-44 start-4 z-50 flex h-[min(35rem,80vh)] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden shadow-2xl"
         >
-          <header className="flex items-center gap-2 bg-primary px-4 py-3 text-primary-foreground">
-            <Sparkles className="size-4 text-gold" />
-            <h2 className="text-[13.5px] font-bold">مساعد الرشودي للعقارات الذكي</h2>
+          <header className="flex items-center justify-between bg-primary px-4 py-3 text-primary-foreground">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-gold" />
+              <h2 className="text-[13.5px] font-bold">مساعد الرشودي الذكي</h2>
+            </div>
+            <button type="button" onClick={() => setOpen(false)} className="hover:opacity-80">
+              <X className="size-4" />
+            </button>
           </header>
 
-          <div ref={scroller} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
+          <div ref={scroller} className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
             {messages.map((message, index) => (
-              <p
-                key={index}
-                className={cn(
-                  "max-w-[85%] whitespace-pre-wrap rounded-xl px-3 py-2 text-[12.5px] leading-6",
-                  message.role === "user"
-                    ? "ms-auto bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground",
+              <div key={index} className="space-y-2">
+                <div
+                  className={cn(
+                    "max-w-[85%] whitespace-pre-wrap rounded-xl px-3 py-2 text-[12.5px] leading-6",
+                    message.role === "user"
+                      ? "ms-auto bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground",
+                  )}
+                >
+                  <FormattedText text={message.content} />
+                </div>
+                {message.suggestions && message.suggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {message.suggestions.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => send(s)}
+                        className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 )}
-              >
-                <MessageContent content={message.content} />
-              </p>
+              </div>
             ))}
             {ask.isPending ? (
               <p className="inline-flex items-center gap-2 rounded-xl bg-muted px-3 py-2 text-[12.5px]">
                 <Loader2 className="size-4 animate-spin text-primary" />
-                يكتب…
+                جاري البحث في العقارات…
               </p>
             ) : null}
-            {messages.length === 1 ? (
-              <div className="flex flex-wrap gap-2 pt-1">
+            {messages.length === 1 && (
+              <div className="flex flex-wrap gap-2 pt-2">
                 {starters.map((item) => (
                   <button
                     key={item}
@@ -171,7 +204,7 @@ export function AiWidget() {
                   </button>
                 ))}
               </div>
-            ) : null}
+            )}
           </div>
 
           <form
@@ -179,12 +212,12 @@ export function AiWidget() {
               e.preventDefault();
               send(input);
             }}
-            className="flex items-center gap-2 border-t border-border px-3 py-2.5"
+            className="flex items-center gap-2 border-t border-border px-3 py-3"
           >
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="اكتب سؤالك…"
+              placeholder="اكتب ميزانيتك أو الحي المفضل…"
               className="h-10 flex-1 rounded-lg border border-border bg-card px-3 text-[12.5px] outline-none focus:border-primary/40"
             />
             <button
