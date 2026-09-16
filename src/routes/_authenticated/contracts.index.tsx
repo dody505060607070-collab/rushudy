@@ -248,6 +248,7 @@ function ContractsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["contract_imports"] });
       toast.success("تم حذف العقد");
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحذف"),
@@ -357,6 +358,27 @@ function ContractsPage() {
             },
             { header: "تحذيرات", cell: (r) => (r.warnings?.length ?? 0) || "—" },
             { header: "التاريخ", sortable: true, value: (r) => r.created_at, cell: (r) => formatDate(r.created_at) },
+            {
+              header: "إجراءات",
+              cell: (r) => (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm("حذف سجل الاستيراد هذا؟")) {
+                      const { error } = await supabase.from("contract_imports").delete().eq("id", r.id);
+                      if (error) toast.error(error.message);
+                      else {
+                        toast.success("تم حذف السجل");
+                        queryClient.invalidateQueries({ queryKey: ["contract_imports"] });
+                      }
+                    }
+                  }}
+                  className="text-destructive hover:underline"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              ),
+            },
           ]}
           />
         </div>
