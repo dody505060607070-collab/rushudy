@@ -670,6 +670,12 @@ function TaskFormPage() {
         )}
       </SectionCard>
 
+      {id && nextSend ? (
+        <p className="mx-auto w-fit rounded-lg bg-secondary/70 px-4 py-2 text-center text-[12.5px] text-muted-foreground">
+          {`رسالة التذكير القادمة على واتساب بعد ${remainingLabel(nextSend)} (${new Date(nextSend).toLocaleString("ar-SA")}) — التكرار كل ${intervalLabel(form.priority)} حتى إنهاء المهمة`}
+        </p>
+      ) : null}
+
       <div className="flex flex-wrap items-center justify-center gap-3 pb-4">
         <button
           type="button"
@@ -689,6 +695,21 @@ function TaskFormPage() {
           >
             {sendTask.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
             إرسال المهمة على واتساب
+          </button>
+        ) : null}
+        {id ? (
+          <button
+            type="button"
+            onClick={() => completeTask.mutate()}
+            disabled={completeTask.isPending}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-3 text-[13.5px] font-bold text-success disabled:opacity-60"
+          >
+            {completeTask.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Check className="size-4" />
+            )}
+            المهمة خلصت
           </button>
         ) : null}
         <Link
