@@ -126,7 +126,7 @@ export function PaymentRecorder({
       subtitle={
         payment
           ? `المستحق ${formatCurrency(due)} · المسدّد ${formatCurrency(paid)} · المتبقي ${formatCurrency(remaining)}`
-          : undefined
+          : ""
       }
       footer={
         <>
