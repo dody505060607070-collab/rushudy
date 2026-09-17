@@ -2,7 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { Building2, GitCompareArrows, MapPin } from "lucide-react";
 
 import { FavoriteButton } from "@/components/site/FavoriteButton";
-import { coverImage, purposeLabels, whatsappLink, type PublicProperty } from "@/lib/site-data";
+import {
+  coverImage,
+  propertyEnquiryText,
+  purposeLabels,
+  whatsappLink,
+  type PublicProperty,
+} from "@/lib/site-data";
 
 export function PropertyCard({ property, comparing = false, onCompare }: { property: PublicProperty; comparing?: boolean; onCompare?: (property: PublicProperty) => void }) {
   const cover = coverImage(property);
