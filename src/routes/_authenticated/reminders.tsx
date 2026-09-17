@@ -178,6 +178,38 @@ function RemindersPage() {
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الإيقاف"),
   });
 
+  const markPaid = useMutation({
+    mutationFn: async (row: FollowupRow) => {
+      if (row.payment_id) {
+        const { data: payment, error: payErr } = await supabase
+          .from("contract_payments")
+          .select("amount_due")
+          .eq("id", row.payment_id)
+          .maybeSingle();
+        if (payErr) throw payErr;
+        const { error: updErr } = await supabase
+          .from("contract_payments")
+          .update({ status: "paid", amount_paid: payment?.amount_due ?? 0 })
+          .eq("id", row.payment_id);
+        if (updErr) throw updErr;
+      }
+      const { error } = await supabase
+        .from("reminder_followups")
+        .update({ status: "done", next_send_at: null })
+        .eq("id", row.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reminder_followups"] });
+      queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["contract_payments"] });
+      toast.success("تم تسجيل الدفع وإيقاف التذكير");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر التحديث"),
+  });
+
+
+
   const sendNow = useMutation({
     mutationFn: async (row: FollowupRow) => {
       const result = await sendWhatsAppMessage({
