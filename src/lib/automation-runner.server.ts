@@ -221,9 +221,12 @@ export async function runHourlyAutomation(): Promise<RunResult> {
         { onConflict: "idempotency_key" },
       );
 
+      // النجاح: الموعد التالي حسب التكرار الذي اختاره المستخدم فقط.
+      // الفشل: إعادة المحاولة بعد 6 ساعات كحد أدنى — وليس كل ساعة.
+      const interval = reminder.repeat_interval ?? "once";
       const next = result.ok
-        ? nextSendDate(new Date(scheduledAt), reminder.repeat_interval ?? "once")
-        : new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+        ? nextSendDate(new Date(scheduledAt), interval, now)
+        : new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString();
       await supabaseAdmin
         .from("reminder_followups")
         .update({
