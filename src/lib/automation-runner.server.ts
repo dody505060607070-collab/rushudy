@@ -16,43 +16,50 @@ const JOB_NAME = "hourly_automation";
 const REMINDER_BATCH = 40;
 const TASK_BATCH = 40;
 
-function nextSendDate(from: Date, interval: string): string | null {
-  const d = new Date(from);
+function intervalHours(interval: string): number | null {
   switch (interval) {
     case "6h":
-      d.setHours(d.getHours() + 6);
-      return d.toISOString();
+      return 6;
     case "8h":
-      d.setHours(d.getHours() + 8);
-      return d.toISOString();
+      return 8;
     case "12h":
     case "12_hours":
-      d.setHours(d.getHours() + 12);
-      return d.toISOString();
+      return 12;
     case "24h":
     case "daily":
-      d.setDate(d.getDate() + 1);
-      return d.toISOString();
+      return 24;
     case "3d":
     case "three_days":
-      d.setDate(d.getDate() + 3);
-      return d.toISOString();
+      return 72;
     case "weekly":
-      d.setDate(d.getDate() + 7);
-      return d.toISOString();
+      return 24 * 7;
     case "biweekly":
-      d.setDate(d.getDate() + 14);
-      return d.toISOString();
+      return 24 * 14;
     case "monthly":
-      d.setMonth(d.getMonth() + 1);
-      return d.toISOString();
+      return 24 * 30;
     case "yearly":
-      d.setFullYear(d.getFullYear() + 1);
-      return d.toISOString();
+      return 24 * 365;
     default:
       return null;
   }
 }
+
+/**
+ * يحسب الموعد التالي بحيث يكون دائمًا في المستقبل.
+ * هذا يمنع الإرسال المتكرر كل ساعة عندما يتأخر التشغيل عن موعد سابق.
+ */
+function nextSendDate(from: Date, interval: string, now: Date): string | null {
+  const step = intervalHours(interval);
+  if (step === null) return null;
+  const d = new Date(from);
+  let guard = 0;
+  do {
+    d.setHours(d.getHours() + step);
+    guard += 1;
+  } while (d.getTime() <= now.getTime() && guard < 1000);
+  return d.toISOString();
+}
+
 
 export function taskIntervalHours(priority: string): number {
   if (priority === "urgent") return 12;
@@ -214,9 +221,12 @@ export async function runHourlyAutomation(): Promise<RunResult> {
         { onConflict: "idempotency_key" },
       );
 
+      // النجاح: الموعد التالي حسب التكرار الذي اختاره المستخدم فقط.
+      // الفشل: إعادة المحاولة بعد 6 ساعات كحد أدنى — وليس كل ساعة.
+      const interval = reminder.repeat_interval ?? "once";
       const next = result.ok
-        ? nextSendDate(new Date(scheduledAt), reminder.repeat_interval ?? "once")
-        : new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+        ? nextSendDate(new Date(scheduledAt), interval, now)
+        : new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString();
       await supabaseAdmin
         .from("reminder_followups")
         .update({

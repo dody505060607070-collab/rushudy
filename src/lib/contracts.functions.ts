@@ -353,21 +353,10 @@ export const finalizeContractImport = createServerFn({ method: "POST" })
       if (!c.data?.national_id) warnings.push("لا يوجد رقم هوية للمستأجر — لن يُفعّل حساب البوابة قبل إضافته.");
       if (!tenantPhone) warnings.push("لا يوجد رقم جوال للمستأجر — لن تُرسل التذكيرات.");
     }
-    if (firstPayment && tenantPhone && tenantId) {
-      const body = `تحية طيبة ${tenantName}،\nنذكّركم بموعد سداد الدفعة رقم ${firstPayment.payment_number} بقيمة ${firstPayment.amount_due} ريال بتاريخ ${firstPayment.due_date} عن العقد ${contractIns.data.contract_number}.\nالرشودي للعقارات`;
-      await db.from("reminder_followups").insert({
-        contract_id: contractId,
-        payment_id: null,
-        recipient_contact_id: tenantId,
-        recipient_name: tenantName,
-        recipient_phone: tenantPhone,
-        message_body: body,
-        repeat_interval: "monthly",
-        status: "pending",
-        next_send_at: new Date(firstPayment.due_date).toISOString(),
-        created_by: context.userId,
-      });
-      created.push("تذكير سداد مجدول");
+    // لا تُنشأ تذكيرات تلقائية عند ترحيل العقد — التذكير يُنشأ يدويًا فقط
+    // من صفحة الدفعة بالتكرار الذي يختاره المستخدم.
+    if (firstPayment && !tenantPhone && tenantId) {
+      warnings.push("لا يوجد رقم جوال للمستأجر — لن تتمكن من إرسال تذكيرات السداد.");
     }
 
     // حسابا بوابة المالك والمستأجر
