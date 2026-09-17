@@ -16,7 +16,51 @@ const JOB_NAME = "hourly_automation";
 const REMINDER_BATCH = 40;
 const TASK_BATCH = 40;
 
-function nextSendDate(from: Date, interval: string): string | null {
+function intervalHours(interval: string): number | null {
+  switch (interval) {
+    case "6h":
+      return 6;
+    case "8h":
+      return 8;
+    case "12h":
+    case "12_hours":
+      return 12;
+    case "24h":
+    case "daily":
+      return 24;
+    case "3d":
+    case "three_days":
+      return 72;
+    case "weekly":
+      return 24 * 7;
+    case "biweekly":
+      return 24 * 14;
+    case "monthly":
+      return 24 * 30;
+    case "yearly":
+      return 24 * 365;
+    default:
+      return null;
+  }
+}
+
+/**
+ * يحسب الموعد التالي بحيث يكون دائمًا في المستقبل.
+ * هذا يمنع الإرسال المتكرر كل ساعة عندما يتأخر التشغيل عن موعد سابق.
+ */
+function nextSendDate(from: Date, interval: string, now: Date): string | null {
+  const step = intervalHours(interval);
+  if (step === null) return null;
+  const d = new Date(from);
+  let guard = 0;
+  do {
+    d.setHours(d.getHours() + step);
+    guard += 1;
+  } while (d.getTime() <= now.getTime() && guard < 1000);
+  return d.toISOString();
+}
+
+function legacyUnused(from: Date, interval: string): string | null {
   const d = new Date(from);
   switch (interval) {
     case "6h":
