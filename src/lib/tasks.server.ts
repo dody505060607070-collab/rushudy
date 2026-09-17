@@ -1,9 +1,9 @@
 /**
- * إرسال فوري لتفاصيل المهمة على واتساب لكل موظف مكلّف،
- * ثم جدولة التذكير التالي حسب الأولوية (عاجلة 12س، عالية 24س، غيرها 72س).
+ * إرسال فوري لتفاصيل المهمة على واتساب عند ضغط المستخدم زر الإرسال فقط.
+ * لا ينشئ هذا المسار أي تذكير دوري لاحق.
  * server-only.
  */
-import { taskIntervalHours, taskMessage } from "@/lib/automation-runner.server";
+import { taskMessage } from "@/lib/automation-runner.server";
 
 export type NotifyResult = {
   ok: boolean;
@@ -39,7 +39,6 @@ export async function notifyTaskAssigneesNow(
 
   const now = new Date();
   const nowIso = now.toISOString();
-  const hours = taskIntervalHours(task.priority);
 
   for (const row of rows ?? []) {
     const profile = Array.isArray(row.profile) ? row.profile[0] : row.profile;
@@ -79,18 +78,6 @@ export async function notifyTaskAssigneesNow(
       { onConflict: "idempotency_key" },
     );
 
-    await supabaseAdmin.from("task_reminder_state").upsert(
-      {
-        task_id: taskId,
-        user_id: row.user_id,
-        next_send_at: new Date(
-          now.getTime() + (sendResult.ok ? hours : 1) * 60 * 60 * 1000,
-        ).toISOString(),
-        last_sent_at: sendResult.ok ? nowIso : null,
-        last_error: sendResult.ok ? null : sendResult.error,
-      },
-      { onConflict: "task_id,user_id" },
-    );
   }
 
   result.ok = result.failed === 0;
