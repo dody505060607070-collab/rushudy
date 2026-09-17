@@ -142,18 +142,11 @@ async function callGemini(input: Item[], opts: CallOpts = {}): Promise<string> {
 
 
 /**
- * ترتيب المزوّدين: بوابة Lovable أولًا عند توفر مفتاحها (تدعم النص والملفات)،
- * ثم Google Gemini، ثم Groq كاحتياط أخير. أي مزوّد بمفتاح غير صالح يُتجاوز تلقائيًا.
+ * ترتيب المزوّدين: Google Gemini أولًا، ثم Groq، وبوابة Lovable هي الملاذ الأخير دائمًا.
+ * أي مزوّد بمفتاح غير صالح يُتجاوز تلقائيًا.
  */
 async function callGateway(input: Item[], opts: CallOpts = {}): Promise<string> {
   const errors: string[] = [];
-  if (process.env["LOVABLE_API_KEY"]) {
-    try {
-      return await callLovable(input);
-    } catch (e) {
-      errors.push(e instanceof Error ? e.message : String(e));
-    }
-  }
   try {
     return await callGemini(input, opts);
   } catch (e) {
@@ -164,8 +157,16 @@ async function callGateway(input: Item[], opts: CallOpts = {}): Promise<string> 
   } catch (e) {
     errors.push(e instanceof Error ? e.message : String(e));
   }
+  if (process.env["LOVABLE_API_KEY"]) {
+    try {
+      return await callLovable(input);
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+    }
+  }
   throw new Error(`تعذّر الوصول لأي مزوّد ذكاء اصطناعي. (${errors.join(" | ").slice(0, 400)})`);
 }
+
 
 
 async function callLovable(input: Item[]): Promise<string> {
