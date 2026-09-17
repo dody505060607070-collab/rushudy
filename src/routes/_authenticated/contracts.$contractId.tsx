@@ -9,6 +9,7 @@ import { GhostButton, Modal, PrimaryButton } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
 import { SignaturePad } from "@/components/kit/SignaturePad";
 import { Toggle } from "@/components/kit/Toggle";
+import { PaymentRecorder, type RecorderPayment } from "@/components/payments/PaymentRecorder";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteContractWithOwner } from "@/lib/delete-helpers";
 
@@ -60,6 +61,7 @@ function ContractViewPage() {
   const [signatureOpen, setSignatureOpen] = useState(false);
   const [signature, setSignature] = useState("");
   const [signerName, setSignerName] = useState("");
+  const [payingPayment, setPayingPayment] = useState<RecorderPayment | null>(null);
 
 
 
@@ -458,6 +460,13 @@ function ContractViewPage() {
 
         </div>
       )}
+
+      <PaymentRecorder
+        open={Boolean(payingPayment)}
+        payment={payingPayment}
+        onClose={() => setPayingPayment(null)}
+        onChanged={() => void payments.refetch()}
+      />
     </>
   );
 }
