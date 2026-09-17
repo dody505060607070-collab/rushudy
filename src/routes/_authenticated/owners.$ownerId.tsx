@@ -733,7 +733,7 @@ function OwnerDetailPage() {
 
       <RecordSection title="العقارات والوحدات" icon={House} count={groups.reduce((s, g) => s + g.items.length, 0)}>
         <p className="mb-3 text-[12px] text-muted-foreground">اسحب الوحدة أو العقار بين المباني، أو اسحب عقدًا نشطًا من قسم العقود وأسقطه على وحدة شاغرة.</p>
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid w-full grid-cols-1 gap-4">
           {groups.map((group) => {
             const collapsed = collapsedGroups[group.key];
             return (
