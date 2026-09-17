@@ -24,12 +24,12 @@ export const notifyTaskNow = createServerFn({ method: "POST" })
 export const finishTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ taskId: z.string().min(1) }).parse(input))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { stopTaskReminders } = await import("@/lib/tasks.server");
     const { error } = await supabaseAdmin
       .from("tasks")
-      .update({ status: "done", submitted_at: new Date().toISOString(), submitted_by: context.userId })
+      .update({ status: "done", submitted_at: new Date().toISOString() })
       .eq("id", data.taskId);
     if (error) throw new Error(error.message);
     await stopTaskReminders(data.taskId);
