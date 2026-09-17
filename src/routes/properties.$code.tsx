@@ -14,6 +14,7 @@ import { recordView } from "@/lib/favorites";
 
 import {
   galleryImages,
+  propertyEnquiryText,
   publicPropertiesQuery,
   publicPropertyQuery,
   purposeLabels,
@@ -267,10 +268,7 @@ function PropertyPage() {
               <div className="mt-6 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <a
-                    href={whatsappLink(
-                      property.whatsapp_number,
-                      `استفسار عن العقار ${property.code} — ${property.name}`,
-                    )}
+                    href={whatsappLink(property.whatsapp_number, propertyEnquiryText(property))}
                     target="_blank"
                     rel="noreferrer"
                     className="flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-center text-[14px] font-bold text-primary-foreground"

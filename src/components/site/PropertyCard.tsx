@@ -66,10 +66,7 @@ export function PropertyCard({ property, comparing = false, onCompare }: { prope
             عرض التفاصيل
           </Link>
           <a
-            href={whatsappLink(
-              property.whatsapp_number,
-              `استفسار عن العقار ${property.code} — ${property.name}`,
-            )}
+            href={whatsappLink(property.whatsapp_number, propertyEnquiryText(property))}
             target="_blank"
             rel="noreferrer"
             className="rounded-lg border border-border px-4 py-2 text-[13px] font-semibold text-foreground"
