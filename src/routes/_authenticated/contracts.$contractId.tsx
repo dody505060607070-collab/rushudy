@@ -367,6 +367,9 @@ function ContractViewPage() {
                       <td className="p-2">{money(p.amount_due)}</td>
                       <td className="p-2">{money(p.amount_paid)}</td>
                       <td className="p-2">
+                        {money(Math.max(0, Number(p.amount_due ?? 0) - Number(p.amount_paid ?? 0)))}
+                      </td>
+                      <td className="p-2">
                         <Chip
                           tone={
                             p.status === "paid"
@@ -379,11 +382,20 @@ function ContractViewPage() {
                           {statusLabels[p.status] ?? p.status}
                         </Chip>
                       </td>
+                      <td className="p-2">
+                        <button
+                          type="button"
+                          onClick={() => setPayingPayment(p)}
+                          className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-[12px] font-semibold text-primary"
+                        >
+                          {p.status === "paid" ? "تعديل السداد" : "تسجيل سداد"}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {!payments.data?.length ? (
                     <tr>
-                      <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                      <td colSpan={7} className="p-4 text-center text-muted-foreground">
                         لا توجد أقساط مسجلة على هذا العقد.
                       </td>
                     </tr>
