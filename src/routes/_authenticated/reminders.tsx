@@ -25,6 +25,7 @@ type FollowupRow = {
   last_sent_at: string | null;
   next_send_at: string | null;
   status: string;
+  payment_id: string | null;
   contract: { contract_number: string | null } | null;
 };
 
