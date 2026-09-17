@@ -97,6 +97,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "theme-color", content: "#8c1d18" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "الرشودي" },
     ],
     links: [
       {
@@ -111,6 +115,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/favicon.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
@@ -136,6 +141,15 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // تسجيل عامل الخدمة لتفعيل العمل دون اتصال والتثبيت كأيقونة على الجهاز.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+    const timer = window.setTimeout(() => {
+      navigator.serviceWorker.register("/push-sw.js", { scope: "/" }).catch(() => undefined);
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
