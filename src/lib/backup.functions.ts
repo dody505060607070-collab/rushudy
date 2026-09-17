@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const TABLES = ["properties", "contacts", "contracts", "contract_payments", "invoices", "invoice_items", "tasks", "opportunities", "reservations", "listing_requests", "supply_requests"] as const;
+const TABLES = ["activity_log", "activity_messages", "app_settings", "buildings", "cities", "client_accounts", "contacts", "contract_payments", "contract_signatures", "contracts", "crm_activities", "districts", "employee_activities", "invoice_items", "invoice_payments", "invoices", "listing_requests", "message_log", "message_templates", "notifications", "opportunities", "opportunity_properties", "opportunity_stage_history", "owner_delegates", "owner_requests", "partners", "payment_transactions", "profiles", "properties", "property_guarantees", "property_images", "property_types", "property_videos", "reminder_followups", "request_status_history", "reservations", "sale_guarantees", "services", "supply_requests", "task_assignees", "task_attachments", "task_history", "tasks", "unit_documents", "unit_expenses", "units", "user_permissions", "user_roles"] as const;
 
 export const createSystemBackup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
