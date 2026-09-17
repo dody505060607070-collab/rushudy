@@ -78,7 +78,7 @@ function RemindersPage() {
   const followups = useTableRows<FollowupRow>({
     table: "reminder_followups",
     select:
-      "id, recipient_name, recipient_phone, message_body, repeat_interval, sent_count, last_sent_at, next_send_at, status, contract:contract_id(contract_number)",
+      "id, recipient_name, recipient_phone, message_body, repeat_interval, sent_count, last_sent_at, next_send_at, status, payment_id, contract:contract_id(contract_number)",
     orderBy: { column: "next_send_at", ascending: true },
     queryKey: ["reminder_followups"],
   });
