@@ -761,7 +761,7 @@ function OwnerDetailPage() {
                   </div>
                 </header>
                 {collapsed ? null : (
-                  <div className="space-y-3 p-3">
+                  <div className="grid gap-3 p-3 xl:grid-cols-2 2xl:grid-cols-3">
                     {group.items.map((item) => {
                       const contract = item.contract;
                       const list = contract ? (paymentsByContract.get(contract.id) ?? []) : [];
