@@ -354,7 +354,9 @@ function ContractViewPage() {
                     <th className="p-2 text-start">تاريخ الاستحقاق</th>
                     <th className="p-2 text-start">المستحق</th>
                     <th className="p-2 text-start">المدفوع</th>
+                    <th className="p-2 text-start">المتبقي</th>
                     <th className="p-2 text-start">الحالة</th>
+                    <th className="p-2 text-start">السداد</th>
                   </tr>
                 </thead>
                 <tbody>
