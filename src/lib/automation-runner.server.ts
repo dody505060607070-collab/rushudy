@@ -81,6 +81,52 @@ export function taskMessage(input: {
     .join("\n");
 }
 
+/**
+ * يتحقق إن كان ما زال هناك مستحق فعلي قبل إرسال التذكير.
+ * - تذكير مرتبط بدفعة: يتوقف إذا سُدّدت الدفعة.
+ * - تذكير مرتبط بعقد فقط: يتوقف إذا سُدّدت كل دفعات العقد أو انتهى/أُلغي العقد.
+ * - تذكير عام بلا عقد ولا دفعة: يستمر كما هو.
+ */
+async function hasOutstandingPayment(
+  db: { from: (t: string) => any },
+  ref: { paymentId?: string | null; contractId?: string | null },
+): Promise<boolean> {
+  const isUnpaid = (row: { status?: string | null; amount_due?: number | null; amount_paid?: number | null }) =>
+    row.status !== "paid" &&
+    row.status !== "cancelled" &&
+    Number(row.amount_paid ?? 0) < Number(row.amount_due ?? 0);
+
+  if (ref.paymentId) {
+    const { data } = await db
+      .from("contract_payments")
+      .select("status, amount_due, amount_paid")
+      .eq("id", ref.paymentId)
+      .maybeSingle();
+    if (!data) return false;
+    return isUnpaid(data);
+  }
+
+  if (ref.contractId) {
+    const { data: contract } = await db
+      .from("contracts")
+      .select("status")
+      .eq("id", ref.contractId)
+      .maybeSingle();
+    if (!contract) return false;
+    if (["cancelled", "terminated", "ended", "expired", "closed"].includes(String(contract.status))) return false;
+
+    const { data: payments } = await db
+      .from("contract_payments")
+      .select("status, amount_due, amount_paid")
+      .eq("contract_id", ref.contractId)
+      .limit(200);
+    if (!payments || payments.length === 0) return true;
+    return payments.some(isUnpaid);
+  }
+
+  return true;
+}
+
 export async function runHourlyAutomation(): Promise<RunResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { whatsappSend } = await import("@/lib/whatsapp.functions");
@@ -121,7 +167,21 @@ export async function runHourlyAutomation(): Promise<RunResult> {
 
     let sent = 0;
     let failed = 0;
+    let skippedPaid = 0;
     for (const reminder of due ?? []) {
+      // لا تُرسل تذكير سداد لمن سدّد بالفعل أو لعقد منتهٍ/ملغي
+      const stillOwes = await hasOutstandingPayment(supabaseAdmin, {
+        paymentId: reminder.payment_id,
+        contractId: reminder.contract_id,
+      });
+      if (!stillOwes) {
+        skippedPaid += 1;
+        await supabaseAdmin
+          .from("reminder_followups")
+          .update({ status: "done", next_send_at: null })
+          .eq("id", reminder.id);
+        continue;
+      }
       const scheduledAt = reminder.next_send_at ?? nowIso;
       const idempotencyKey = `followup:${reminder.id}:${scheduledAt}`;
       const { data: existing } = await supabaseAdmin
