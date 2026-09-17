@@ -21,7 +21,7 @@ import { Field, inputClass, textareaClass } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import { priorityLabels, taskStatusLabels } from "@/lib/labels";
-import { notifyTaskNow } from "@/lib/tasks.functions";
+import { finishTask, notifyTaskNow } from "@/lib/tasks.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/task-form")({
