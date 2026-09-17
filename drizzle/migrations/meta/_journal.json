@@ -134,6 +134,13 @@
       "when": 1789664095812,
       "tag": "0018_schedule_hourly_automation_cron",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789677833705,
+      "tag": "0019_payment_transaction_edit_policies",
+      "breakpoints": true
     }
   ]
 }
