@@ -415,6 +415,17 @@ function RemindersPage() {
                     <Send className="size-4" />
                     إرسال الآن
                   </button>
+                  {r.status !== "done" && r.status !== "stopped" ? (
+                    <button
+                      type="button"
+                      onClick={() => markPaid.mutate(r)}
+                      disabled={markPaid.isPending}
+                      className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-success"
+                    >
+                      <CheckCircle2 className="size-4" />
+                      تم الدفع
+                    </button>
+                  ) : null}
                   {r.status !== "stopped" ? (
                     <button
                       type="button"
