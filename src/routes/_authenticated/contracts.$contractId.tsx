@@ -9,6 +9,7 @@ import { GhostButton, Modal, PrimaryButton } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
 import { SignaturePad } from "@/components/kit/SignaturePad";
 import { Toggle } from "@/components/kit/Toggle";
+import { PaymentRecorder, type RecorderPayment } from "@/components/payments/PaymentRecorder";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteContractWithOwner } from "@/lib/delete-helpers";
 
@@ -60,6 +61,7 @@ function ContractViewPage() {
   const [signatureOpen, setSignatureOpen] = useState(false);
   const [signature, setSignature] = useState("");
   const [signerName, setSignerName] = useState("");
+  const [payingPayment, setPayingPayment] = useState<RecorderPayment | null>(null);
 
 
 
@@ -354,7 +356,9 @@ function ContractViewPage() {
                     <th className="p-2 text-start">تاريخ الاستحقاق</th>
                     <th className="p-2 text-start">المستحق</th>
                     <th className="p-2 text-start">المدفوع</th>
+                    <th className="p-2 text-start">المتبقي</th>
                     <th className="p-2 text-start">الحالة</th>
+                    <th className="p-2 text-start">السداد</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -364,6 +368,9 @@ function ContractViewPage() {
                       <td className="p-2">{p.due_date}</td>
                       <td className="p-2">{money(p.amount_due)}</td>
                       <td className="p-2">{money(p.amount_paid)}</td>
+                      <td className="p-2">
+                        {money(Math.max(0, Number(p.amount_due ?? 0) - Number(p.amount_paid ?? 0)))}
+                      </td>
                       <td className="p-2">
                         <Chip
                           tone={
@@ -377,11 +384,20 @@ function ContractViewPage() {
                           {statusLabels[p.status] ?? p.status}
                         </Chip>
                       </td>
+                      <td className="p-2">
+                        <button
+                          type="button"
+                          onClick={() => setPayingPayment(p)}
+                          className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-[12px] font-semibold text-primary"
+                        >
+                          {p.status === "paid" ? "تعديل السداد" : "تسجيل سداد"}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {!payments.data?.length ? (
                     <tr>
-                      <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                      <td colSpan={7} className="p-4 text-center text-muted-foreground">
                         لا توجد أقساط مسجلة على هذا العقد.
                       </td>
                     </tr>
@@ -444,6 +460,13 @@ function ContractViewPage() {
 
         </div>
       )}
+
+      <PaymentRecorder
+        open={Boolean(payingPayment)}
+        payment={payingPayment}
+        onClose={() => setPayingPayment(null)}
+        onChanged={() => void payments.refetch()}
+      />
     </>
   );
 }

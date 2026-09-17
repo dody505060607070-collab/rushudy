@@ -231,11 +231,78 @@ export async function runHourlyAutomation(): Promise<RunResult> {
         .eq("id", reminder.id);
     }
 
-    // المهام لا تدخل أي دورة إرسال تلقائي. تُرسل فقط من زر واتساب الصريح في شاشة المهمة.
-    const taskSent = 0;
-    const taskFailed = 0;
-    const skippedNoPhone = 0;
-    const taskDue = 0;
+    // المهام: تتكرر الرسالة فقط للمهام التي كُلّف بها موظف فعليًا (يوجد لها سجل تذكير)
+    // وحسب أولويتها، وتتوقف فورًا عند إغلاق المهمة.
+    const { CLOSED_TASK_STATUSES, taskIntervalHours } = await import("@/lib/tasks.server");
+    const { data: dueTasks, error: taskError } = await supabaseAdmin
+      .from("task_reminder_state")
+      .select(
+        "id, task_id, user_id, sent_count, next_send_at, task:task_id(title, details, priority, status, due_date, due_time), profile:user_id(full_name, phone, whatsapp, whatsapp_notify, is_active)",
+      )
+      .lte("next_send_at", nowIso)
+      .order("next_send_at", { ascending: true })
+      .limit(40);
+    if (taskError) throw taskError;
+
+    let taskSent = 0;
+    let taskFailed = 0;
+    let skippedNoPhone = 0;
+    const taskDue = (dueTasks ?? []).length;
+
+    for (const state of dueTasks ?? []) {
+      const task = Array.isArray(state.task) ? state.task[0] : state.task;
+      const profile = Array.isArray(state.profile) ? state.profile[0] : state.profile;
+      if (!task || CLOSED_TASK_STATUSES.includes(String(task.status))) {
+        await supabaseAdmin.from("task_reminder_state").delete().eq("id", state.id);
+        continue;
+      }
+      const phone = profile?.whatsapp ?? profile?.phone ?? "";
+      if (!profile?.is_active || !profile.whatsapp_notify || !phone) {
+        skippedNoPhone += 1;
+        await supabaseAdmin.from("task_reminder_state").delete().eq("id", state.id);
+        continue;
+      }
+      const body = taskMessage({
+        employeeName: profile.full_name || "زميلنا",
+        title: task.title,
+        details: task.details,
+        priority: task.priority,
+        dueDate: task.due_date,
+        dueTime: task.due_time,
+      });
+      const scheduledAt = state.next_send_at ?? nowIso;
+      const idempotencyKey = `task-cycle:${state.id}:${scheduledAt}`;
+      const sendResult = await whatsappSend({ to: phone, body });
+      if (sendResult.ok) taskSent += 1;
+      else taskFailed += 1;
+
+      await supabaseAdmin.from("message_log").upsert(
+        {
+          task_id: state.task_id,
+          recipient_name: profile.full_name,
+          recipient_phone: phone,
+          body,
+          channel: "whatsapp",
+          result: sendResult.ok ? "sent" : "failed",
+          failure_reason: sendResult.ok ? null : sendResult.error,
+          provider_message_id: sendResult.ok ? sendResult.sid : null,
+          sent_by_system: true,
+          idempotency_key: idempotencyKey,
+        },
+        { onConflict: "idempotency_key" },
+      );
+
+      const stepHours = sendResult.ok ? taskIntervalHours(task.priority) : 6;
+      await supabaseAdmin
+        .from("task_reminder_state")
+        .update({
+          sent_count: (state.sent_count ?? 0) + (sendResult.ok ? 1 : 0),
+          last_sent_at: sendResult.ok ? nowIso : state.next_send_at,
+          last_error: sendResult.ok ? null : sendResult.error,
+          next_send_at: new Date(now.getTime() + stepHours * 3600_000).toISOString(),
+        })
+        .eq("id", state.id);
+    }
 
     const today = nowIso.slice(0, 10);
     const { data: overdue, error: overdueError } = await supabaseAdmin

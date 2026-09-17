@@ -1,6 +1,7 @@
 /**
- * إرسال فوري لتفاصيل المهمة على واتساب عند ضغط المستخدم زر الإرسال فقط.
- * لا ينشئ هذا المسار أي تذكير دوري لاحق.
+ * إرسال تفاصيل المهمة على واتساب.
+ * الإرسال يحدث فقط عند تكليف موظف جديد بالمهمة أو ضغط زر الإرسال،
+ * ثم تتكرر الرسالة حسب أولوية المهمة إلى أن تُغلق المهمة.
  * server-only.
  */
 import { taskMessage } from "@/lib/automation-runner.server";
@@ -13,9 +14,19 @@ export type NotifyResult = {
   errors: string[];
 };
 
+/** فترة تكرار رسالة المهمة حسب الأولوية. */
+export function taskIntervalHours(priority: string | null | undefined): number {
+  if (priority === "urgent") return 12;
+  if (priority === "high") return 24;
+  return 72;
+}
+
+export const CLOSED_TASK_STATUSES = ["approved", "done", "cancelled", "rejected"];
+
 export async function notifyTaskAssigneesNow(
   taskId: string,
   onlyUserIds?: string[],
+  options?: { schedule?: boolean },
 ): Promise<NotifyResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { whatsappSend } = await import("@/lib/whatsapp.functions");
@@ -28,7 +39,7 @@ export async function notifyTaskAssigneesNow(
     .eq("id", taskId)
     .maybeSingle();
   if (!task) return { ...result, ok: false, errors: ["المهمة غير موجودة"] };
-  if (["approved", "done", "cancelled"].includes(task.status)) return result;
+  if (CLOSED_TASK_STATUSES.includes(task.status)) return result;
 
   let q = supabaseAdmin
     .from("task_assignees")
@@ -39,6 +50,8 @@ export async function notifyTaskAssigneesNow(
 
   const now = new Date();
   const nowIso = now.toISOString();
+  const stepHours = taskIntervalHours(task.priority);
+  const nextIso = new Date(now.getTime() + stepHours * 3600_000).toISOString();
 
   for (const row of rows ?? []) {
     const profile = Array.isArray(row.profile) ? row.profile[0] : row.profile;
@@ -78,8 +91,33 @@ export async function notifyTaskAssigneesNow(
       { onConflict: "idempotency_key" },
     );
 
+    if (options?.schedule) {
+      const { data: state } = await supabaseAdmin
+        .from("task_reminder_state")
+        .select("id, sent_count")
+        .eq("task_id", taskId)
+        .eq("user_id", row.user_id)
+        .maybeSingle();
+      const patch = {
+        task_id: taskId,
+        user_id: row.user_id,
+        last_sent_at: sendResult.ok ? nowIso : null,
+        last_error: sendResult.ok ? null : sendResult.error,
+        next_send_at: sendResult.ok ? nextIso : new Date(now.getTime() + 6 * 3600_000).toISOString(),
+        sent_count: (state?.sent_count ?? 0) + (sendResult.ok ? 1 : 0),
+      };
+      if (state?.id) await supabaseAdmin.from("task_reminder_state").update(patch).eq("id", state.id);
+      else await supabaseAdmin.from("task_reminder_state").insert(patch);
+    }
   }
 
   result.ok = result.failed === 0;
   return result;
+}
+
+/** يوقف كل رسائل واتساب المتكررة الخاصة بمهمة. */
+export async function stopTaskReminders(taskId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await supabaseAdmin.from("task_reminder_state").delete().eq("task_id", taskId);
+  return { ok: true };
 }

@@ -32,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { askAdminAi } from "@/lib/ai.functions";
 import { exportWorkbook, type ExportRow } from "@/lib/export";
 import { contractStatusLabels, invoiceStatusLabels } from "@/lib/labels";
+import { PaymentRecorder } from "@/components/payments/PaymentRecorder";
 import { ImportDialog } from "@/routes/_authenticated/contracts.index";
 import { assignOwnerContract, moveOwnerAsset } from "@/lib/owner-operations.functions";
 import { issueClientAccess } from "@/lib/portal.functions";
@@ -74,6 +75,7 @@ function OwnerDetailPage() {
   const [dragAsset, setDragAsset] = useState<{ id: string; type: "unit" | "property" } | null>(null);
   const [dragContractId, setDragContractId] = useState<string | null>(null);
   const [ownerAccess, setOwnerAccess] = useState<{ username: string; password: string } | null>(null);
+  const [payingPayment, setPayingPayment] = useState<PaymentRow | null>(null);
 
   const dossier = useQuery({
     queryKey: ["owner-dossier", ownerId],
@@ -169,26 +171,6 @@ function OwnerDetailPage() {
 
   const activeContracts = data?.contracts.filter((c) => c.status === "active") ?? [];
 
-  const recordPayment = useMutation({
-    mutationFn: async (payment: PaymentRow) => {
-      const amount = Math.max(Number(payment.amount_due) - Number(payment.amount_paid), 0);
-      if (amount <= 0) throw new Error("لا يوجد مبلغ متبقٍ على هذه الدفعة");
-      const { data: auth } = await supabase.auth.getUser();
-      const { error } = await supabase.from("payment_transactions").insert({
-        payment_id: payment.id,
-        amount,
-        paid_at: today(),
-        method: "manual",
-        recorded_by: auth.user?.id ?? null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("تم تسجيل السداد");
-      queryClient.invalidateQueries({ queryKey: ["owner-dossier", ownerId] });
-    },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر تسجيل السداد"),
-  });
 
   const moveAsset = useMutation({
     mutationFn: (buildingId: string | null) => {
@@ -884,24 +866,20 @@ function OwnerDetailPage() {
                                           <td className="p-2">
                                             <Chip tone={paymentTone(p)}>{paymentLabel(p)}</Chip>
                                           </td>
-                                          <td className="p-2">
-                                            {p.status === "paid" ? (
-                                              <span className="inline-flex items-center gap-1 text-success">
-                                                <CheckCircle2 className="size-3.5" />
-                                                مسددة
-                                              </span>
-                                            ) : (
-                                              <button
-                                                type="button"
-                                                disabled={recordPayment.isPending}
-                                                onClick={() => recordPayment.mutate(p)}
-                                                className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-50"
-                                              >
-                                                <CheckCircle2 className="size-3.5" />
-                                                تسجيل سداد
-                                              </button>
-                                            )}
-                                          </td>
+                                           <td className="p-2">
+                                             <button
+                                               type="button"
+                                               onClick={() => setPayingPayment(p)}
+                                               className={
+                                                 p.status === "paid"
+                                                   ? "inline-flex h-8 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-semibold text-success"
+                                                   : "inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground"
+                                               }
+                                             >
+                                               <CheckCircle2 className="size-3.5" />
+                                               {p.status === "paid" ? "مسددة — تعديل" : "تسجيل سداد"}
+                                             </button>
+                                           </td>
                                           <td className="p-2">
                                             <Link
                                               to="/payment-reminder/$paymentId"
@@ -998,6 +976,16 @@ function OwnerDetailPage() {
         onExtracted={() => {
           setImportOpen(false);
           void navigate({ to: "/contracts" });
+        }}
+      />
+
+      <PaymentRecorder
+        open={Boolean(payingPayment)}
+        payment={payingPayment}
+        onClose={() => setPayingPayment(null)}
+        onChanged={() => {
+          queryClient.invalidateQueries({ queryKey: ["owner-dossier", ownerId] });
+          queryClient.invalidateQueries({ queryKey: ["contract_payments"] });
         }}
       />
     </>

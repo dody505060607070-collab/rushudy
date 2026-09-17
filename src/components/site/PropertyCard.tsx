@@ -2,7 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { Building2, GitCompareArrows, MapPin } from "lucide-react";
 
 import { FavoriteButton } from "@/components/site/FavoriteButton";
-import { coverImage, purposeLabels, whatsappLink, type PublicProperty } from "@/lib/site-data";
+import {
+  coverImage,
+  propertyEnquiryText,
+  purposeLabels,
+  whatsappLink,
+  type PublicProperty,
+} from "@/lib/site-data";
 
 export function PropertyCard({ property, comparing = false, onCompare }: { property: PublicProperty; comparing?: boolean; onCompare?: (property: PublicProperty) => void }) {
   const cover = coverImage(property);
@@ -66,10 +72,7 @@ export function PropertyCard({ property, comparing = false, onCompare }: { prope
             عرض التفاصيل
           </Link>
           <a
-            href={whatsappLink(
-              property.whatsapp_number,
-              `استفسار عن العقار ${property.code} — ${property.name}`,
-            )}
+            href={whatsappLink(property.whatsapp_number, propertyEnquiryText(property))}
             target="_blank"
             rel="noreferrer"
             className="rounded-lg border border-border px-4 py-2 text-[13px] font-semibold text-foreground"

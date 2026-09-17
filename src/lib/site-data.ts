@@ -43,6 +43,38 @@ export function whatsappLink(number?: string | null, text?: string) {
   return `https://wa.me/${normalized}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 }
 
+/** رسالة واتساب جاهزة للاستفسار عن عقار، تتضمن الكود ورابط صفحة العقار. */
+export function propertyEnquiryText(property: {
+  code: string;
+  name: string;
+  city?: string | null;
+  district?: string | null;
+  price_text?: string | null;
+  price_value?: number | null;
+}) {
+  const place = [property.district, property.city].filter(Boolean).join(" — ");
+  const price =
+    property.price_text ??
+    (property.price_value ? `${property.price_value.toLocaleString("ar-SA")} ريال` : null);
+  const url =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/properties/${encodeURIComponent(property.code)}`
+      : `https://alrashudi.sa/properties/${encodeURIComponent(property.code)}`;
+  return [
+    "السلام عليكم ورحمة الله 🌿",
+    "أرغب في الاستفسار عن هذا العقار:",
+    `• الاسم: ${property.name}`,
+    `• الكود: ${property.code}`,
+    place ? `• الموقع: ${place}` : null,
+    price ? `• السعر: ${price}` : null,
+    `• الرابط: ${url}`,
+    "",
+    "برجاء تزويدي بالتفاصيل وموعد المعاينة. وشكرًا لكم.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export function coverImage(property: Pick<PublicProperty, "property_images">) {
   const images = [...(property.property_images ?? [])].sort(
     (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order,

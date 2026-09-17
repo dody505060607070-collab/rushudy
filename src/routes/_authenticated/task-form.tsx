@@ -21,8 +21,26 @@ import { Field, inputClass, textareaClass } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import { priorityLabels, taskStatusLabels } from "@/lib/labels";
-import { notifyTaskNow } from "@/lib/tasks.functions";
+import { finishTask, notifyTaskNow } from "@/lib/tasks.functions";
 import { cn } from "@/lib/utils";
+
+/** الوقت المتبقي حتى الرسالة القادمة بصيغة عربية مختصرة. */
+function remainingLabel(iso: string) {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return "أقل من دقيقة";
+  const hours = Math.floor(diff / 3_600_000);
+  const minutes = Math.floor((diff % 3_600_000) / 60_000);
+  if (hours >= 24) return `${Math.floor(hours / 24)} يوم و${hours % 24} ساعة`;
+  if (hours > 0) return `${hours} ساعة و${minutes} دقيقة`;
+  return `${minutes} دقيقة`;
+}
+
+/** فترة تكرار رسالة المهمة حسب الأولوية. */
+function intervalLabel(priority: string) {
+  if (priority === "urgent") return "12 ساعة";
+  if (priority === "high") return "24 ساعة";
+  return "3 أيام";
+}
 
 export const Route = createFileRoute("/_authenticated/task-form")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -240,30 +258,77 @@ function TaskFormPage() {
           .in("user_id", toRemove);
         if (error) throw error;
       }
-      return { taskId };
+      return { taskId, added: toAdd };
     },
-    onSuccess: ({ taskId: newId }) => {
+    onSuccess: async ({ taskId: newId, added }) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
       queryClient.invalidateQueries({ queryKey: ["task-assignees", newId] });
       toast.success(id ? "تم تحديث المهمة" : "تم إنشاء المهمة وتكليف الفريق");
+      if (added.length && newId) {
+        try {
+          const result = await notifyTaskNow({
+            data: { taskId: newId, userIds: added, schedule: true },
+          });
+          if (result.sent > 0) toast.success(`تم إرسال المهمة على واتساب لـ ${result.sent} موظف`);
+          if (result.failed > 0) toast.error(`تعذّر إرسال واتساب لـ ${result.failed} موظف`);
+          queryClient.invalidateQueries({ queryKey: ["task-reminder-state", newId] });
+        } catch {
+          toast.error("تعذّر إرسال المهمة على واتساب");
+        }
+      }
       if (!id && newId) navigate({ to: "/task-form", search: { id: newId } });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
   });
 
+  const reminderState = useQuery({
+    queryKey: ["task-reminder-state", id],
+    enabled: Boolean(id),
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("task_reminder_state")
+        .select("id, user_id, next_send_at, sent_count")
+        .eq("task_id", id!);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const nextSend = (reminderState.data ?? [])
+    .map((r) => r.next_send_at)
+    .filter(Boolean)
+    .sort()[0] as string | undefined;
+
   const sendTask = useMutation({
     mutationFn: async () => {
       if (!id) throw new Error("احفظ المهمة أولًا قبل إرسالها");
       if (!assignees.length) throw new Error("اختر موظفًا واحدًا على الأقل");
-      return notifyTaskNow({ data: { taskId: id, userIds: assignees } });
+      return notifyTaskNow({ data: { taskId: id, userIds: assignees, schedule: true } });
     },
     onSuccess: (result) => {
       if (result.sent > 0) toast.success(`تم إرسال المهمة على واتساب لـ ${result.sent} موظف`);
       if (result.failed > 0) toast.error(`تعذّر إرسال واتساب لـ ${result.failed} موظف`);
       if (result.skipped > 0) toast.warning(`${result.skipped} موظف بدون رقم واتساب مفعّل`);
+      queryClient.invalidateQueries({ queryKey: ["task-reminder-state", id] });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر إرسال المهمة"),
+  });
+
+  const completeTask = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error("احفظ المهمة أولًا");
+      return finishTask({ data: { taskId: id } });
+    },
+    onSuccess: () => {
+      toast.success("تم إنهاء المهمة وإيقاف رسائل واتساب المتكررة");
+      setForm((f) => ({ ...f, status: "done" }));
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["task-reminder-state", id] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر إنهاء المهمة"),
   });
 
   const upload = async (files: FileList | null) => {
@@ -623,6 +688,12 @@ function TaskFormPage() {
         )}
       </SectionCard>
 
+      {id && nextSend ? (
+        <p className="mx-auto w-fit rounded-lg bg-secondary/70 px-4 py-2 text-center text-[12.5px] text-muted-foreground">
+          {`رسالة التذكير القادمة على واتساب بعد ${remainingLabel(nextSend)} (${new Date(nextSend).toLocaleString("ar-SA")}) — التكرار كل ${intervalLabel(form.priority)} حتى إنهاء المهمة`}
+        </p>
+      ) : null}
+
       <div className="flex flex-wrap items-center justify-center gap-3 pb-4">
         <button
           type="button"
@@ -642,6 +713,21 @@ function TaskFormPage() {
           >
             {sendTask.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
             إرسال المهمة على واتساب
+          </button>
+        ) : null}
+        {id ? (
+          <button
+            type="button"
+            onClick={() => completeTask.mutate()}
+            disabled={completeTask.isPending}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-3 text-[13.5px] font-bold text-success disabled:opacity-60"
+          >
+            {completeTask.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Check className="size-4" />
+            )}
+            المهمة خلصت
           </button>
         ) : null}
         <Link
