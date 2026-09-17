@@ -978,6 +978,16 @@ function OwnerDetailPage() {
           void navigate({ to: "/contracts" });
         }}
       />
+
+      <PaymentRecorder
+        open={Boolean(payingPayment)}
+        payment={payingPayment}
+        onClose={() => setPayingPayment(null)}
+        onChanged={() => {
+          queryClient.invalidateQueries({ queryKey: ["owner-dossier", ownerId] });
+          queryClient.invalidateQueries({ queryKey: ["contract_payments"] });
+        }}
+      />
     </>
   );
 }
