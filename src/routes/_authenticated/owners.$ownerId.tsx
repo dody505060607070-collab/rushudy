@@ -866,24 +866,20 @@ function OwnerDetailPage() {
                                           <td className="p-2">
                                             <Chip tone={paymentTone(p)}>{paymentLabel(p)}</Chip>
                                           </td>
-                                          <td className="p-2">
-                                            {p.status === "paid" ? (
-                                              <span className="inline-flex items-center gap-1 text-success">
-                                                <CheckCircle2 className="size-3.5" />
-                                                مسددة
-                                              </span>
-                                            ) : (
-                                              <button
-                                                type="button"
-                                                disabled={recordPayment.isPending}
-                                                onClick={() => recordPayment.mutate(p)}
-                                                className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-50"
-                                              >
-                                                <CheckCircle2 className="size-3.5" />
-                                                تسجيل سداد
-                                              </button>
-                                            )}
-                                          </td>
+                                           <td className="p-2">
+                                             <button
+                                               type="button"
+                                               onClick={() => setPayingPayment(p)}
+                                               className={
+                                                 p.status === "paid"
+                                                   ? "inline-flex h-8 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-semibold text-success"
+                                                   : "inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground"
+                                               }
+                                             >
+                                               <CheckCircle2 className="size-3.5" />
+                                               {p.status === "paid" ? "مسددة — تعديل" : "تسجيل سداد"}
+                                             </button>
+                                           </td>
                                           <td className="p-2">
                                             <Link
                                               to="/payment-reminder/$paymentId"
