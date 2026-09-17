@@ -24,6 +24,24 @@ import { priorityLabels, taskStatusLabels } from "@/lib/labels";
 import { finishTask, notifyTaskNow } from "@/lib/tasks.functions";
 import { cn } from "@/lib/utils";
 
+/** الوقت المتبقي حتى الرسالة القادمة بصيغة عربية مختصرة. */
+function remainingLabel(iso: string) {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return "أقل من دقيقة";
+  const hours = Math.floor(diff / 3_600_000);
+  const minutes = Math.floor((diff % 3_600_000) / 60_000);
+  if (hours >= 24) return `${Math.floor(hours / 24)} يوم و${hours % 24} ساعة`;
+  if (hours > 0) return `${hours} ساعة و${minutes} دقيقة`;
+  return `${minutes} دقيقة`;
+}
+
+/** فترة تكرار رسالة المهمة حسب الأولوية. */
+function intervalLabel(priority: string) {
+  if (priority === "urgent") return "12 ساعة";
+  if (priority === "high") return "24 ساعة";
+  return "3 أيام";
+}
+
 export const Route = createFileRoute("/_authenticated/task-form")({
   validateSearch: (search: Record<string, unknown>) => ({
     id: typeof search["id"] === "string" ? (search["id"] as string) : "",
