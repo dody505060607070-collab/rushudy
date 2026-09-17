@@ -32,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { askAdminAi } from "@/lib/ai.functions";
 import { exportWorkbook, type ExportRow } from "@/lib/export";
 import { contractStatusLabels, invoiceStatusLabels } from "@/lib/labels";
+import { PaymentRecorder } from "@/components/payments/PaymentRecorder";
 import { ImportDialog } from "@/routes/_authenticated/contracts.index";
 import { assignOwnerContract, moveOwnerAsset } from "@/lib/owner-operations.functions";
 import { issueClientAccess } from "@/lib/portal.functions";
@@ -74,6 +75,7 @@ function OwnerDetailPage() {
   const [dragAsset, setDragAsset] = useState<{ id: string; type: "unit" | "property" } | null>(null);
   const [dragContractId, setDragContractId] = useState<string | null>(null);
   const [ownerAccess, setOwnerAccess] = useState<{ username: string; password: string } | null>(null);
+  const [payingPayment, setPayingPayment] = useState<PaymentRow | null>(null);
 
   const dossier = useQuery({
     queryKey: ["owner-dossier", ownerId],
