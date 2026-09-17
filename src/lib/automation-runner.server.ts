@@ -60,43 +60,6 @@ function nextSendDate(from: Date, interval: string, now: Date): string | null {
   return d.toISOString();
 }
 
-function legacyUnused(from: Date, interval: string): string | null {
-  const d = new Date(from);
-  switch (interval) {
-    case "6h":
-      d.setHours(d.getHours() + 6);
-      return d.toISOString();
-    case "8h":
-      d.setHours(d.getHours() + 8);
-      return d.toISOString();
-    case "12h":
-    case "12_hours":
-      d.setHours(d.getHours() + 12);
-      return d.toISOString();
-    case "24h":
-    case "daily":
-      d.setDate(d.getDate() + 1);
-      return d.toISOString();
-    case "3d":
-    case "three_days":
-      d.setDate(d.getDate() + 3);
-      return d.toISOString();
-    case "weekly":
-      d.setDate(d.getDate() + 7);
-      return d.toISOString();
-    case "biweekly":
-      d.setDate(d.getDate() + 14);
-      return d.toISOString();
-    case "monthly":
-      d.setMonth(d.getMonth() + 1);
-      return d.toISOString();
-    case "yearly":
-      d.setFullYear(d.getFullYear() + 1);
-      return d.toISOString();
-    default:
-      return null;
-  }
-}
 
 export function taskIntervalHours(priority: string): number {
   if (priority === "urgent") return 12;
