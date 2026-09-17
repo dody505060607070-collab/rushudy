@@ -171,26 +171,6 @@ function OwnerDetailPage() {
 
   const activeContracts = data?.contracts.filter((c) => c.status === "active") ?? [];
 
-  const recordPayment = useMutation({
-    mutationFn: async (payment: PaymentRow) => {
-      const amount = Math.max(Number(payment.amount_due) - Number(payment.amount_paid), 0);
-      if (amount <= 0) throw new Error("لا يوجد مبلغ متبقٍ على هذه الدفعة");
-      const { data: auth } = await supabase.auth.getUser();
-      const { error } = await supabase.from("payment_transactions").insert({
-        payment_id: payment.id,
-        amount,
-        paid_at: today(),
-        method: "manual",
-        recorded_by: auth.user?.id ?? null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("تم تسجيل السداد");
-      queryClient.invalidateQueries({ queryKey: ["owner-dossier", ownerId] });
-    },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر تسجيل السداد"),
-  });
 
   const moveAsset = useMutation({
     mutationFn: (buildingId: string | null) => {
