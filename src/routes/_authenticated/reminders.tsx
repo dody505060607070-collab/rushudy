@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { BellRing, Loader2, MessageSquare, Send, StopCircle } from "lucide-react";
+import { BellRing, CheckCircle2, Loader2, MessageSquare, Send, StopCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
