@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { BellRing, Loader2, MessageSquare, Send, StopCircle } from "lucide-react";
+import { BellRing, CheckCircle2, Loader2, MessageSquare, Send, StopCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -25,6 +25,7 @@ type FollowupRow = {
   last_sent_at: string | null;
   next_send_at: string | null;
   status: string;
+  payment_id: string | null;
   contract: { contract_number: string | null } | null;
 };
 
@@ -77,7 +78,7 @@ function RemindersPage() {
   const followups = useTableRows<FollowupRow>({
     table: "reminder_followups",
     select:
-      "id, recipient_name, recipient_phone, message_body, repeat_interval, sent_count, last_sent_at, next_send_at, status, contract:contract_id(contract_number)",
+      "id, recipient_name, recipient_phone, message_body, repeat_interval, sent_count, last_sent_at, next_send_at, status, payment_id, contract:contract_id(contract_number)",
     orderBy: { column: "next_send_at", ascending: true },
     queryKey: ["reminder_followups"],
   });
@@ -176,6 +177,38 @@ function RemindersPage() {
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الإيقاف"),
   });
+
+  const markPaid = useMutation({
+    mutationFn: async (row: FollowupRow) => {
+      if (row.payment_id) {
+        const { data: payment, error: payErr } = await supabase
+          .from("contract_payments")
+          .select("amount_due")
+          .eq("id", row.payment_id)
+          .maybeSingle();
+        if (payErr) throw payErr;
+        const { error: updErr } = await supabase
+          .from("contract_payments")
+          .update({ status: "paid", amount_paid: payment?.amount_due ?? 0 })
+          .eq("id", row.payment_id);
+        if (updErr) throw updErr;
+      }
+      const { error } = await supabase
+        .from("reminder_followups")
+        .update({ status: "done", next_send_at: null })
+        .eq("id", row.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reminder_followups"] });
+      queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["contract_payments"] });
+      toast.success("تم تسجيل الدفع وإيقاف التذكير");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر التحديث"),
+  });
+
+
 
   const sendNow = useMutation({
     mutationFn: async (row: FollowupRow) => {
@@ -382,6 +415,17 @@ function RemindersPage() {
                     <Send className="size-4" />
                     إرسال الآن
                   </button>
+                  {r.status !== "done" && r.status !== "stopped" ? (
+                    <button
+                      type="button"
+                      onClick={() => markPaid.mutate(r)}
+                      disabled={markPaid.isPending}
+                      className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-success"
+                    >
+                      <CheckCircle2 className="size-4" />
+                      تم الدفع
+                    </button>
+                  ) : null}
                   {r.status !== "stopped" ? (
                     <button
                       type="button"
