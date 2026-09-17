@@ -14,7 +14,6 @@ type RunResult = {
 
 const JOB_NAME = "hourly_automation";
 const REMINDER_BATCH = 40;
-const TASK_BATCH = 40;
 
 function intervalHours(interval: string): number | null {
   switch (interval) {
@@ -60,12 +59,6 @@ function nextSendDate(from: Date, interval: string, now: Date): string | null {
   return d.toISOString();
 }
 
-
-export function taskIntervalHours(priority: string): number {
-  if (priority === "urgent") return 12;
-  if (priority === "high") return 24;
-  return 72;
-}
 
 export function taskMessage(input: {
   employeeName: string;
@@ -238,100 +231,11 @@ export async function runHourlyAutomation(): Promise<RunResult> {
         .eq("id", reminder.id);
     }
 
-    // أنشئ حالة مستقلة لكل موظف مكلّف؛ المفتاح الفريد يمنع التكرار بين التشغيلات.
-    const { data: assignments, error: assignmentError } = await supabaseAdmin
-      .from("task_assignees")
-      .select("task_id, user_id")
-      .limit(500);
-    if (assignmentError) throw assignmentError;
-    if (assignments?.length) {
-      await supabaseAdmin.from("task_reminder_state").upsert(
-        assignments.map((row) => ({ task_id: row.task_id, user_id: row.user_id })),
-        { onConflict: "task_id,user_id", ignoreDuplicates: true },
-      );
-    }
-
-    const assignmentKeys = new Set(
-      (assignments ?? []).map((row) => `${row.task_id}:${row.user_id}`),
-    );
-
-    const { data: taskStates, error: taskStateError } = await supabaseAdmin
-      .from("task_reminder_state")
-      .select(
-        "id, task_id, user_id, next_send_at, sent_count, task:task_id(id,title,details,priority,status,due_date,due_time), profile:user_id(full_name,phone,whatsapp,whatsapp_notify,is_active)",
-      )
-      .lte("next_send_at", nowIso)
-      .order("next_send_at", { ascending: true })
-      .limit(TASK_BATCH);
-    if (taskStateError) throw taskStateError;
-
-    let taskSent = 0;
-    let taskFailed = 0;
-    let skippedNoPhone = 0;
-    let taskDue = 0;
-    for (const state of taskStates ?? []) {
-      const task = Array.isArray(state.task) ? state.task[0] : state.task;
-      const profile = Array.isArray(state.profile) ? state.profile[0] : state.profile;
-      if (
-        !task ||
-        ["approved", "done", "cancelled"].includes(task.status) ||
-        !assignmentKeys.has(`${state.task_id}:${state.user_id}`)
-      ) {
-        await supabaseAdmin.from("task_reminder_state").delete().eq("id", state.id);
-        continue;
-      }
-      taskDue += 1;
-      const phone = profile?.whatsapp ?? profile?.phone ?? "";
-      if (!profile?.is_active || !profile.whatsapp_notify || !phone) {
-        skippedNoPhone += 1;
-        await supabaseAdmin
-          .from("task_reminder_state")
-          .update({ next_send_at: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(), last_error: "واتساب الموظف غير مفعّل أو الرقم غير موجود" })
-          .eq("id", state.id);
-        continue;
-      }
-
-      const scheduledAt = state.next_send_at;
-      const idempotencyKey = `task:${state.task_id}:${state.user_id}:${scheduledAt}`;
-      const body = taskMessage({
-        employeeName: profile.full_name || "زميلنا",
-        title: task.title,
-        details: task.details,
-        priority: task.priority,
-        dueDate: task.due_date,
-        dueTime: task.due_time,
-      });
-      const result = await whatsappSend({ to: phone, body });
-      if (result.ok) taskSent += 1;
-      else taskFailed += 1;
-
-      await supabaseAdmin.from("message_log").upsert(
-        {
-          task_id: state.task_id,
-          recipient_name: profile.full_name,
-          recipient_phone: phone,
-          body,
-          channel: "whatsapp",
-          result: result.ok ? "sent" : "failed",
-          failure_reason: result.ok ? null : result.error,
-          provider_message_id: result.ok ? result.sid : null,
-          sent_by_system: true,
-          idempotency_key: idempotencyKey,
-        },
-        { onConflict: "idempotency_key" },
-      );
-
-      const hours = result.ok ? taskIntervalHours(task.priority) : 1;
-      await supabaseAdmin
-        .from("task_reminder_state")
-        .update({
-          next_send_at: new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString(),
-          last_sent_at: result.ok ? nowIso : state.next_send_at,
-          sent_count: state.sent_count + (result.ok ? 1 : 0),
-          last_error: result.ok ? null : result.error,
-        })
-        .eq("id", state.id);
-    }
+    // المهام لا تدخل أي دورة إرسال تلقائي. تُرسل فقط من زر واتساب الصريح في شاشة المهمة.
+    const taskSent = 0;
+    const taskFailed = 0;
+    const skippedNoPhone = 0;
+    const taskDue = 0;
 
     const today = nowIso.slice(0, 10);
     const { data: overdue, error: overdueError } = await supabaseAdmin

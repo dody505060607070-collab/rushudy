@@ -12,6 +12,7 @@ import {
   UploadCloud,
   Users,
   MapPin,
+  Send,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -239,32 +240,30 @@ function TaskFormPage() {
           .in("user_id", toRemove);
         if (error) throw error;
       }
-      // إرسال فوري على واتساب للمكلّفين الجدد (أو كل المكلّفين عند الإنشاء).
-      const notifyIds = id ? toAdd : assignees;
-      let notified: { sent: number; failed: number; skipped: number } | null = null;
-      if (taskId && notifyIds.length) {
-        try {
-          const res = await notifyTaskNow({ data: { taskId, userIds: notifyIds } });
-          notified = { sent: res.sent, failed: res.failed, skipped: res.skipped };
-        } catch {
-          notified = null;
-        }
-      }
-      return { taskId, notified };
+      return { taskId };
     },
-    onSuccess: ({ taskId: newId, notified }) => {
+    onSuccess: ({ taskId: newId }) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
       queryClient.invalidateQueries({ queryKey: ["task-assignees", newId] });
       toast.success(id ? "تم تحديث المهمة" : "تم إنشاء المهمة وتكليف الفريق");
-      if (notified) {
-        if (notified.sent > 0) toast.success(`تم إرسال المهمة على واتساب لـ ${notified.sent} موظف`);
-        if (notified.failed > 0) toast.error(`تعذّر إرسال واتساب لـ ${notified.failed} موظف`);
-        if (notified.skipped > 0) toast.warning(`${notified.skipped} موظف بدون رقم واتساب مفعّل`);
-      }
       if (!id && newId) navigate({ to: "/task-form", search: { id: newId } });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
+  });
+
+  const sendTask = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error("احفظ المهمة أولًا قبل إرسالها");
+      if (!assignees.length) throw new Error("اختر موظفًا واحدًا على الأقل");
+      return notifyTaskNow({ data: { taskId: id, userIds: assignees } });
+    },
+    onSuccess: (result) => {
+      if (result.sent > 0) toast.success(`تم إرسال المهمة على واتساب لـ ${result.sent} موظف`);
+      if (result.failed > 0) toast.error(`تعذّر إرسال واتساب لـ ${result.failed} موظف`);
+      if (result.skipped > 0) toast.warning(`${result.skipped} موظف بدون رقم واتساب مفعّل`);
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر إرسال المهمة"),
   });
 
   const upload = async (files: FileList | null) => {
@@ -536,7 +535,7 @@ function TaskFormPage() {
 
       <SectionCard
         title="الموظفون المكلّفون"
-        subtitle="اختر موظفًا أو أكثر؛ كل مكلّف يرى المهمة في لوحته ويستطيع تحديث حالتها."
+        subtitle="اختيار الموظف يحفظ التكليف فقط؛ لن تُرسل أي رسالة إلا عند الضغط على زر واتساب."
         icon={Users}
       >
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -634,6 +633,17 @@ function TaskFormPage() {
           {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
           {id ? "حفظ التعديلات" : "حفظ المهمة"}
         </button>
+        {id ? (
+          <button
+            type="button"
+            onClick={() => sendTask.mutate()}
+            disabled={sendTask.isPending || assignees.length === 0}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-3 text-[13.5px] font-bold text-primary disabled:opacity-60"
+          >
+            {sendTask.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+            إرسال المهمة على واتساب
+          </button>
+        ) : null}
         <Link
           to="/tasks"
           className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-3 text-[13.5px] font-semibold"
