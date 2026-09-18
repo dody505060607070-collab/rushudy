@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, FileText, Loader2, Pencil, PenLine, Trash2 } from "lucide-react";
+import { ArrowRight, Banknote, Building2, CalendarDays, CheckCircle2, CircleDollarSign, FileText, Loader2, Pencil, PenLine, ReceiptText, ShieldCheck, Trash2, UserRound, WalletCards } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -10,10 +10,21 @@ import { PageHero } from "@/components/kit/PageHero";
 import { SignaturePad } from "@/components/kit/SignaturePad";
 import { Toggle } from "@/components/kit/Toggle";
 import { PaymentRecorder, type RecorderPayment } from "@/components/payments/PaymentRecorder";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteContractWithOwner } from "@/lib/delete-helpers";
 
 export const Route = createFileRoute("/_authenticated/contracts/$contractId")({
+  head: () => ({
+    meta: [
+      { title: "تفاصيل العقد | الرشودي للعقارات" },
+      { name: "description", content: "تفاصيل العقد وأطرافه والعقار والدفعات والفواتير والتوقيعات." },
+      { property: "og:title", content: "تفاصيل العقد | الرشودي للعقارات" },
+      { property: "og:description", content: "عرض إداري شامل للعقد وحالته المالية والتنفيذية." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: ContractViewPage,
 });
 
@@ -33,24 +44,30 @@ const statusLabels: Record<string, string> = {
   cancelled: "ملغي",
 };
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+function Row({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon?: typeof FileText }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3">
-      <p className="text-[12px] text-muted-foreground">{label}</p>
+    <div className="rounded-lg border border-border bg-muted/20 p-3.5">
+      <p className="flex items-center gap-2 text-[11.5px] text-muted-foreground">{Icon ? <Icon className="size-3.5 text-primary" /> : null}{label}</p>
       <p className="mt-1 text-[13.5px] font-semibold text-foreground">{value ?? "—"}</p>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, subtitle, icon: Icon, children }: { title: string; subtitle?: string; icon?: typeof FileText; children: React.ReactNode }) {
   return (
     <section className="surface-card overflow-hidden">
-      <header className="border-b border-border bg-accent/40 px-5 py-3">
-        <h2 className="text-[14px] font-bold text-foreground">{title}</h2>
+      <header className="flex items-center gap-3 border-b border-border bg-muted/30 px-5 py-4">
+        {Icon ? <span className="grid size-9 place-items-center rounded-lg bg-accent text-primary"><Icon className="size-4" /></span> : null}
+        <div><h2 className="text-[14px] font-black text-foreground">{title}</h2>{subtitle ? <p className="mt-0.5 text-[11.5px] text-muted-foreground">{subtitle}</p> : null}</div>
       </header>
-      <div className="p-4">{children}</div>
+      <div className="p-5">{children}</div>
     </section>
   );
+}
+
+function ContractMetric({ icon: Icon, label, value, hint, tone = "primary" }: { icon: typeof FileText; label: string; value: string; hint: string; tone?: "primary" | "success" | "danger" | "gold" }) {
+  const toneClass = tone === "success" ? "bg-success/15 text-success" : tone === "danger" ? "bg-destructive/15 text-destructive" : tone === "gold" ? "bg-gold/15 text-gold" : "bg-accent text-primary";
+  return <article className="surface-card p-4"><span className={`grid size-9 place-items-center rounded-lg ${toneClass}`}><Icon className="size-4" /></span><p className="mt-3 text-[11.5px] text-muted-foreground">{label}</p><b className="mt-1 block text-lg text-foreground">{value}</b><p className="mt-1 text-[11px] text-muted-foreground">{hint}</p></article>;
 }
 
 function ContractViewPage() {
@@ -168,6 +185,13 @@ function ContractViewPage() {
     { label: "عدد الدفعات", value: ex["payments_count"] },
   ].filter((f) => f.value != null && String(f.value).trim() !== "");
 
+  const paymentRows = payments.data ?? [];
+  const totalDue = paymentRows.reduce((sum, payment) => sum + Number(payment.amount_due ?? 0), 0);
+  const totalPaid = paymentRows.reduce((sum, payment) => sum + Number(payment.amount_paid ?? 0), 0);
+  const totalRemaining = Math.max(totalDue - totalPaid, 0);
+  const collectionRate = totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0;
+  const overdueCount = paymentRows.filter((payment) => payment.status === "overdue").length;
+
 
   const remove = useMutation({
     mutationFn: async (alsoOwner: boolean) =>
@@ -183,8 +207,14 @@ function ContractViewPage() {
     <>
       <PageHero
         title={c?.contract_number ? `العقد ${c.contract_number}` : "تفاصيل العقد"}
-        subtitle="عرض كامل لبيانات العقد وأطرافه والعقار والأقساط والفواتير — للاطلاع فقط."
+        subtitle="مركز متابعة العقد وأطرافه والعقار والتحصيل والفواتير والتوقيعات"
         icon={FileText}
+        stats={c ? [
+          { value: statusLabels[c.status] ?? c.status, label: "حالة العقد" },
+          { value: money(c.total_value), label: "قيمة العقد" },
+          { value: `${collectionRate}%`, label: "نسبة التحصيل" },
+          { value: String(paymentRows.length), label: "عدد الدفعات" },
+        ] : []}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -197,23 +227,16 @@ function ContractViewPage() {
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            to="/contracts"
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold hover:bg-muted"
-          >
-            <Pencil className="size-4" />
-            تعديل العقد
-          </Link>
-          <button type="button" onClick={() => setSignatureOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold hover:bg-muted"><PenLine className="size-4" />توقيع العقد</button>
-          <button
-            type="button"
+          <Button asChild variant="outline"><Link to="/contracts"><Pencil />تعديل العقد</Link></Button>
+          <Button type="button" variant="outline" onClick={() => setSignatureOpen(true)}><PenLine />توقيع العقد</Button>
+          <Button
+            variant="destructive"
             disabled={remove.isPending}
             onClick={() => setConfirmOpen(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-destructive px-4 text-[13px] font-semibold text-destructive-foreground disabled:opacity-60"
           >
             {remove.isPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
             حذف العقد
-          </button>
+          </Button>
 
           <Modal
             open={confirmOpen}
@@ -256,9 +279,16 @@ function ContractViewPage() {
         </p>
       ) : (
         <div className="space-y-5">
-          <Section title="بيانات العقد">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <ContractMetric icon={CircleDollarSign} label="إجمالي المستحق" value={money(totalDue)} hint={`${paymentRows.length} دفعة مسجلة`} tone="gold" />
+            <ContractMetric icon={CheckCircle2} label="إجمالي المحصل" value={money(totalPaid)} hint={`${collectionRate}% من قيمة الدفعات`} tone="success" />
+            <ContractMetric icon={Banknote} label="الرصيد المتبقي" value={money(totalRemaining)} hint={totalRemaining ? "يحتاج متابعة التحصيل" : "تم تحصيل جميع الدفعات"} tone={totalRemaining ? "danger" : "success"} />
+            <ContractMetric icon={CalendarDays} label="الدفعات المتأخرة" value={String(overdueCount)} hint={overdueCount ? "دفعات تحتاج إجراء" : "لا توجد دفعات متأخرة"} tone={overdueCount ? "danger" : "primary"} />
+          </div>
+
+          <Section title="بيانات العقد" subtitle="الهوية القانونية والمدة والقيمة المالية" icon={FileText}>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Row label="رقم العقد" value={c.contract_number} />
+              <Row icon={FileText} label="رقم العقد" value={c.contract_number} />
               <Row
                 label="الحالة"
                 value={
@@ -268,11 +298,11 @@ function ContractViewPage() {
                 }
               />
               <Row label="نوع العقد" value={c.contract_type === "sale" ? "بيع" : "إيجار"} />
-              <Row label="تاريخ البداية" value={c.start_date} />
-              <Row label="تاريخ النهاية" value={c.end_date} />
+              <Row icon={CalendarDays} label="تاريخ البداية" value={c.start_date} />
+              <Row icon={CalendarDays} label="تاريخ النهاية" value={c.end_date} />
               <Row label="دورة السداد" value={c.payment_cycle} />
               <Row label="الإيجار السنوي" value={money(c.annual_rent)} />
-              <Row label="القيمة الإجمالية" value={money(c.total_value)} />
+              <Row icon={CircleDollarSign} label="القيمة الإجمالية" value={money(c.total_value)} />
               <Row label="التأمين" value={money(c.deposit)} />
               <Row label="عدد الدفعات" value={c.payments_count} />
               <Row label="المصدر" value={c.source === "import" ? "استيراد PDF" : "إدخال يدوي"} />
@@ -284,7 +314,7 @@ function ContractViewPage() {
           </Section>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <Section title="المالك">
+            <Section title="المالك" subtitle="بيانات الطرف المالك" icon={UserRound}>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Row label="الاسم" value={c.owner?.full_name} />
                 <Row label="رقم الهوية" value={c.owner?.national_id} />
@@ -292,7 +322,7 @@ function ContractViewPage() {
                 <Row label="البريد" value={c.owner?.email} />
               </div>
             </Section>
-            <Section title="المستأجر / المشتري">
+            <Section title="المستأجر / المشتري" subtitle="بيانات الطرف المستفيد" icon={UserRound}>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Row label="الاسم" value={c.tenant?.full_name} />
                 <Row label="رقم الهوية" value={c.tenant?.national_id} />
@@ -302,7 +332,7 @@ function ContractViewPage() {
             </Section>
           </div>
 
-          <Section title="العقارات والوحدات">
+          <Section title="العقارات والوحدات" subtitle="الأصل العقاري المرتبط بهذا العقد" icon={Building2}>
             {c.property ? (
               <Link
                 to="/properties"
@@ -347,7 +377,8 @@ function ContractViewPage() {
           </Section>
 
 
-          <Section title={`جدول الأقساط (${payments.data?.length ?? 0})`}>
+          <Section title={`جدول الأقساط (${payments.data?.length ?? 0})`} subtitle={`محصل ${money(totalPaid)} من ${money(totalDue)} — المتبقي ${money(totalRemaining)}`} icon={WalletCards}>
+            <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center"><progress value={collectionRate} max={100} className="h-2.5 w-full overflow-hidden rounded-full accent-success" /><strong className="text-sm text-success">{collectionRate}% محصل</strong></div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-[13px]">
                 <thead className="bg-secondary/60 text-[12px] text-muted-foreground">
@@ -385,13 +416,14 @@ function ContractViewPage() {
                         </Chip>
                       </td>
                       <td className="p-2">
-                        <button
-                          type="button"
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setPayingPayment(p)}
-                          className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-[12px] font-semibold text-primary"
+                          className="text-primary"
                         >
                           {p.status === "paid" ? "تعديل السداد" : "تسجيل سداد"}
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -407,7 +439,7 @@ function ContractViewPage() {
             </div>
           </Section>
 
-          <Section title={`الفواتير (${invoices.data?.length ?? 0})`}>
+          <Section title={`الفواتير (${invoices.data?.length ?? 0})`} subtitle="كل المستندات المالية الصادرة على العقد" icon={ReceiptText}>
             <div className="space-y-2">
               {(invoices.data ?? []).map((inv) => (
                 <Link
@@ -432,7 +464,7 @@ function ContractViewPage() {
             </div>
           </Section>
 
-          <Section title={`التوقيعات الإلكترونية (${signatures.data?.length ?? 0})`}>
+          <Section title={`التوقيعات الإلكترونية (${signatures.data?.length ?? 0})`} subtitle="التوقيعات المثبتة وتاريخ كل توقيع" icon={ShieldCheck}>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{(signatures.data ?? []).map((row) => <article key={row.id} className="rounded-xl border border-border p-3"><img src={row.image_data} alt={`توقيع ${row.signer_name}`} className="h-24 w-full rounded-lg bg-card object-contain" /><p className="mt-2 text-[13px] font-bold">{row.signer_name}</p><p className="text-[11.5px] text-muted-foreground">{new Date(row.signed_at).toLocaleString("ar-SA")}</p></article>)}{!signatures.data?.length ? <p className="text-[12.5px] text-muted-foreground">لم يُضف أي توقيع بعد.</p> : null}</div>
           </Section>
 
