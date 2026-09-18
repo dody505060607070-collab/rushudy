@@ -70,13 +70,8 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "نظام CRM", to: "/crm", module: "crm" },
       { label: "العملاء", to: "/clients", countKey: "contacts", module: "contacts" },
-      { label: "الفرص", to: "/opportunities", countKey: "opportunities", module: "crm" },
-      { label: "عروض الأسعار", to: "/price-offers", module: "crm" },
       { label: "المتابعات والأنشطة", to: "/activities", module: "crm" },
       { label: "شات الموظفين", to: "/team-chat", module: "chat" },
-      { label: "التقارير", to: "/reports", module: "crm" },
-      { label: "التقرير التنفيذي", to: "/executive-report", module: "crm" },
-      { label: "التقييم والعائد", to: "/valuation", module: "crm" },
     ],
   },
   {

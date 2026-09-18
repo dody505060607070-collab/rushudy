@@ -413,13 +413,14 @@ function OwnerDetailPage() {
     p.status === "paid" ? "success" : daysBetween(p.due_date) < 0 ? "danger" : "warning";
   const paymentLabel = (p: PaymentRow) =>
     p.status === "paid" ? "مدفوع" : daysBetween(p.due_date) < 0 ? "متأخر" : "قادمة";
-  const reminderLink = (contract: any, payment?: PaymentRow) => {
-    const to = (contract?.tenant?.whatsapp || contract?.tenant?.phone || "").replace(/\D/g, "");
-    if (!to) return null;
-    const text = payment
-      ? `تذكير بسداد الدفعة رقم ${payment.payment_number} بمبلغ ${remainingOf(payment)} ريال بتاريخ استحقاق ${payment.due_date} — عقد ${contract.contract_number}.`
-      : `تذكير بخصوص عقد ${contract?.contract_number ?? ""}.`;
-    return `https://wa.me/${to}?text=${encodeURIComponent(text)}`;
+  /** التذكير يفتح صفحة قالب التذكير الجاهز بدل الإرسال المباشر على واتساب. */
+  const reminderPaymentId = (contract: { id: string } | null | undefined) => {
+    if (!contract) return null;
+    const list = paymentsByContract.get(contract.id) ?? [];
+    const next = [...list]
+      .filter((p) => p.status !== "paid" && p.status !== "cancelled")
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+    return next?.id ?? null;
   };
 
   return (
@@ -753,7 +754,7 @@ function OwnerDetailPage() {
                       const shown = openUnits[item.key];
                       const paid = list.filter((p) => p.status === "paid").length;
                       const totalRemaining = list.reduce((s, p) => s + remainingOf(p), 0);
-                      const link = reminderLink(contract);
+                      const reminderId = reminderPaymentId(contract);
                       return (
                         <div
                           key={item.key}
@@ -791,16 +792,16 @@ function OwnerDetailPage() {
                                   {formatCurrency(contract.annual_rent ?? contract.total_value)}
                                 </span>
                               ) : null}
-                              {link ? (
-                                <a
-                                  href={link}
-                                  target="_blank"
-                                  rel="noreferrer"
+                              {reminderId ? (
+                                <Link
+                                  to="/payment-reminder/$paymentId"
+                                  params={{ paymentId: reminderId }}
                                   className="inline-flex h-8 items-center gap-2 rounded-md border border-success/30 px-3 text-[12px] font-semibold text-success"
+                                  title="فتح قالب التذكير"
                                 >
                                   <MessageCircle className="size-3.5" />
                                   تذكير
-                                </a>
+                                </Link>
                               ) : null}
                               {contract ? (
                                 <>
@@ -856,7 +857,6 @@ function OwnerDetailPage() {
                                   </thead>
                                   <tbody>
                                     {list.map((p) => {
-                                      const payLink = reminderLink(contract, p);
                                       return (
                                         <tr key={p.id} className="border-t border-border">
                                           <td className="p-2 font-semibold">{p.payment_number}</td>

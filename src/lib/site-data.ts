@@ -31,8 +31,13 @@ export type PublicProperty = {
   building_id?: string | null;
   building_code?: string | null;
   building_name?: string | null;
-  property_images: { url: string; is_cover: boolean; sort_order: number; focal_x?: number; focal_y?: number }[];
-
+  property_images: {
+    url: string;
+    is_cover: boolean;
+    sort_order: number;
+    focal_x?: number;
+    focal_y?: number;
+  }[];
 };
 
 const PROPERTY_FIELDS =
@@ -97,7 +102,9 @@ async function fetchProperties(purpose?: "rent" | "sale", limit = 60) {
   const args = purpose ? { _purpose: purpose, _limit: limit } : { _limit: limit };
   const { data, error } = await supabase.rpc("get_public_properties", args);
   if (error) throw error;
-  return (Array.isArray(data) ? data : []) as unknown as PublicProperty[];
+  const rows = (Array.isArray(data) ? data : []) as unknown as PublicProperty[];
+  // في الموقع العام تظهر العمارة كإعلان واحد، ولا تظهر شققها منفردة.
+  return rows.filter((row) => !row.building_id);
 }
 
 export const publicPropertiesQuery = (purpose?: "rent" | "sale", limit?: number) =>
@@ -160,8 +167,14 @@ export type PublicBuilding = {
   units: PublicBuildingUnit[];
 };
 
-async function fetchBuildings(args: { code?: string | undefined; purpose?: "rent" | "sale" | undefined; limit?: number }) {
-  const params: { _code?: string; _purpose?: string; _limit?: number } = { _limit: args.limit ?? 60 };
+async function fetchBuildings(args: {
+  code?: string | undefined;
+  purpose?: "rent" | "sale" | undefined;
+  limit?: number;
+}) {
+  const params: { _code?: string; _purpose?: string; _limit?: number } = {
+    _limit: args.limit ?? 60,
+  };
   if (args.code) params._code = args.code;
   if (args.purpose) params._purpose = args.purpose;
   const { data, error } = await supabase.rpc("get_public_buildings", params);
@@ -197,7 +210,9 @@ export function buildingCover(building: PublicBuilding) {
 /** نسبة إشغال العمارة من حالات شققها. */
 export function buildingOccupancy(units: { status: string }[]) {
   const total = units.length;
-  const busy = units.filter((u) => u.status === "rented" || u.status === "sold" || u.status === "reserved").length;
+  const busy = units.filter(
+    (u) => u.status === "rented" || u.status === "sold" || u.status === "reserved",
+  ).length;
   return { total, busy, free: total - busy, rate: total ? Math.round((busy / total) * 100) : 0 };
 }
 
@@ -210,7 +225,6 @@ export function groupUnitsByFloor(units: PublicBuildingUnit[]) {
   }
   return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0], "ar", { numeric: true }));
 }
-
 
 export const publicServicesQuery = queryOptions({
   queryKey: ["public-services"],
@@ -232,7 +246,7 @@ export const publicSettingsQuery = queryOptions({
     const { data, error } = await supabase.rpc("get_public_settings");
     if (error) throw error;
     return data && typeof data === "object" && !Array.isArray(data)
-      ? data as {
+      ? (data as {
           company_name?: string;
           phone?: string | null;
           whatsapp_number?: string | null;
@@ -241,7 +255,7 @@ export const publicSettingsQuery = queryOptions({
           about?: string | null;
           stats?: Record<string, unknown>;
           social_links?: Record<string, unknown>;
-        }
+        })
       : null;
   },
   staleTime: 300_000,

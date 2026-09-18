@@ -38,21 +38,17 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedEmployeeFormRouteImport } from './routes/_authenticated/employee-form'
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated/employees'
 import { Route as AuthenticatedErrorLogRouteImport } from './routes/_authenticated/error-log'
-import { Route as AuthenticatedExecutiveReportRouteImport } from './routes/_authenticated/executive-report'
 import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
 import { Route as AuthenticatedInvoiceFormRouteImport } from './routes/_authenticated/invoice-form'
 import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
 import { Route as AuthenticatedMarketingRouteImport } from './routes/_authenticated/marketing'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
-import { Route as AuthenticatedOpportunitiesRouteImport } from './routes/_authenticated/opportunities'
 import { Route as AuthenticatedOwnerFormRouteImport } from './routes/_authenticated/owner-form'
 import { Route as AuthenticatedPartnersRouteImport } from './routes/_authenticated/partners'
-import { Route as AuthenticatedPriceOffersRouteImport } from './routes/_authenticated/price-offers'
 import { Route as AuthenticatedPropertiesRouteImport } from './routes/_authenticated/properties'
 import { Route as AuthenticatedPropertyFormRouteImport } from './routes/_authenticated/property-form'
 import { Route as AuthenticatedRemindersRouteImport } from './routes/_authenticated/reminders'
 import { Route as AuthenticatedRenewalsRouteImport } from './routes/_authenticated/renewals'
-import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedReservationsRouteImport } from './routes/_authenticated/reservations'
 import { Route as AuthenticatedReserveRouteImport } from './routes/_authenticated/reserve'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
@@ -61,7 +57,6 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedTaskFormRouteImport } from './routes/_authenticated/task-form'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedTeamChatRouteImport } from './routes/_authenticated/team-chat'
-import { Route as AuthenticatedValuationRouteImport } from './routes/_authenticated/valuation'
 import { Route as AuthenticatedWhatsappLinkRouteImport } from './routes/_authenticated/whatsapp-link'
 import { Route as BuildingsCodeRouteImport } from './routes/buildings.$code'
 import { Route as OwnerReportTokenRouteImport } from './routes/owner-report.$token'
@@ -239,12 +234,6 @@ const AuthenticatedErrorLogRoute = AuthenticatedErrorLogRouteImport.update({
   path: '/error-log',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedExecutiveReportRoute =
-  AuthenticatedExecutiveReportRouteImport.update({
-    id: '/executive-report',
-    path: '/executive-report',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedGoalsRoute = AuthenticatedGoalsRouteImport.update({
   id: '/goals',
   path: '/goals',
@@ -273,12 +262,6 @@ const AuthenticatedNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedOpportunitiesRoute =
-  AuthenticatedOpportunitiesRouteImport.update({
-    id: '/opportunities',
-    path: '/opportunities',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedOwnerFormRoute = AuthenticatedOwnerFormRouteImport.update({
   id: '/owner-form',
   path: '/owner-form',
@@ -289,12 +272,6 @@ const AuthenticatedPartnersRoute = AuthenticatedPartnersRouteImport.update({
   path: '/partners',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPriceOffersRoute =
-  AuthenticatedPriceOffersRouteImport.update({
-    id: '/price-offers',
-    path: '/price-offers',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedPropertiesRoute = AuthenticatedPropertiesRouteImport.update({
   id: '/properties',
   path: '/properties',
@@ -314,11 +291,6 @@ const AuthenticatedRemindersRoute = AuthenticatedRemindersRouteImport.update({
 const AuthenticatedRenewalsRoute = AuthenticatedRenewalsRouteImport.update({
   id: '/renewals',
   path: '/renewals',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReservationsRoute =
@@ -360,11 +332,6 @@ const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
 const AuthenticatedTeamChatRoute = AuthenticatedTeamChatRouteImport.update({
   id: '/team-chat',
   path: '/team-chat',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedValuationRoute = AuthenticatedValuationRouteImport.update({
-  id: '/valuation',
-  path: '/valuation',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedWhatsappLinkRoute =
@@ -561,21 +528,17 @@ export interface FileRoutesByFullPath {
   '/employee-form': typeof AuthenticatedEmployeeFormRoute
   '/employees': typeof AuthenticatedEmployeesRoute
   '/error-log': typeof AuthenticatedErrorLogRoute
-  '/executive-report': typeof AuthenticatedExecutiveReportRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/invoice-form': typeof AuthenticatedInvoiceFormRoute
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/marketing': typeof AuthenticatedMarketingRouteWithChildren
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/opportunities': typeof AuthenticatedOpportunitiesRoute
   '/owner-form': typeof AuthenticatedOwnerFormRoute
   '/partners': typeof AuthenticatedPartnersRoute
-  '/price-offers': typeof AuthenticatedPriceOffersRoute
   '/properties': typeof AuthenticatedPropertiesRoute
   '/property-form': typeof AuthenticatedPropertyFormRoute
   '/reminders': typeof AuthenticatedRemindersRoute
   '/renewals': typeof AuthenticatedRenewalsRoute
-  '/reports': typeof AuthenticatedReportsRoute
   '/reservations': typeof AuthenticatedReservationsRoute
   '/reserve': typeof AuthenticatedReserveRoute
   '/roles': typeof AuthenticatedRolesRoute
@@ -584,7 +547,6 @@ export interface FileRoutesByFullPath {
   '/task-form': typeof AuthenticatedTaskFormRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/team-chat': typeof AuthenticatedTeamChatRoute
-  '/valuation': typeof AuthenticatedValuationRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
   '/owner-report/$token': typeof OwnerReportTokenRoute
@@ -644,21 +606,17 @@ export interface FileRoutesByTo {
   '/employee-form': typeof AuthenticatedEmployeeFormRoute
   '/employees': typeof AuthenticatedEmployeesRoute
   '/error-log': typeof AuthenticatedErrorLogRoute
-  '/executive-report': typeof AuthenticatedExecutiveReportRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/invoice-form': typeof AuthenticatedInvoiceFormRoute
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/marketing': typeof AuthenticatedMarketingRouteWithChildren
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/opportunities': typeof AuthenticatedOpportunitiesRoute
   '/owner-form': typeof AuthenticatedOwnerFormRoute
   '/partners': typeof AuthenticatedPartnersRoute
-  '/price-offers': typeof AuthenticatedPriceOffersRoute
   '/properties': typeof AuthenticatedPropertiesRoute
   '/property-form': typeof AuthenticatedPropertyFormRoute
   '/reminders': typeof AuthenticatedRemindersRoute
   '/renewals': typeof AuthenticatedRenewalsRoute
-  '/reports': typeof AuthenticatedReportsRoute
   '/reservations': typeof AuthenticatedReservationsRoute
   '/reserve': typeof AuthenticatedReserveRoute
   '/roles': typeof AuthenticatedRolesRoute
@@ -667,7 +625,6 @@ export interface FileRoutesByTo {
   '/task-form': typeof AuthenticatedTaskFormRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/team-chat': typeof AuthenticatedTeamChatRoute
-  '/valuation': typeof AuthenticatedValuationRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
   '/owner-report/$token': typeof OwnerReportTokenRoute
@@ -730,21 +687,17 @@ export interface FileRoutesById {
   '/_authenticated/employee-form': typeof AuthenticatedEmployeeFormRoute
   '/_authenticated/employees': typeof AuthenticatedEmployeesRoute
   '/_authenticated/error-log': typeof AuthenticatedErrorLogRoute
-  '/_authenticated/executive-report': typeof AuthenticatedExecutiveReportRoute
   '/_authenticated/goals': typeof AuthenticatedGoalsRoute
   '/_authenticated/invoice-form': typeof AuthenticatedInvoiceFormRoute
   '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/marketing': typeof AuthenticatedMarketingRouteWithChildren
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
-  '/_authenticated/opportunities': typeof AuthenticatedOpportunitiesRoute
   '/_authenticated/owner-form': typeof AuthenticatedOwnerFormRoute
   '/_authenticated/partners': typeof AuthenticatedPartnersRoute
-  '/_authenticated/price-offers': typeof AuthenticatedPriceOffersRoute
   '/_authenticated/properties': typeof AuthenticatedPropertiesRoute
   '/_authenticated/property-form': typeof AuthenticatedPropertyFormRoute
   '/_authenticated/reminders': typeof AuthenticatedRemindersRoute
   '/_authenticated/renewals': typeof AuthenticatedRenewalsRoute
-  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/reservations': typeof AuthenticatedReservationsRoute
   '/_authenticated/reserve': typeof AuthenticatedReserveRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
@@ -753,7 +706,6 @@ export interface FileRoutesById {
   '/_authenticated/task-form': typeof AuthenticatedTaskFormRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/team-chat': typeof AuthenticatedTeamChatRoute
-  '/_authenticated/valuation': typeof AuthenticatedValuationRoute
   '/_authenticated/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
   '/owner-report/$token': typeof OwnerReportTokenRoute
@@ -816,21 +768,17 @@ export interface FileRouteTypes {
     | '/employee-form'
     | '/employees'
     | '/error-log'
-    | '/executive-report'
     | '/goals'
     | '/invoice-form'
     | '/maintenance'
     | '/marketing'
     | '/notifications'
-    | '/opportunities'
     | '/owner-form'
     | '/partners'
-    | '/price-offers'
     | '/properties'
     | '/property-form'
     | '/reminders'
     | '/renewals'
-    | '/reports'
     | '/reservations'
     | '/reserve'
     | '/roles'
@@ -839,7 +787,6 @@ export interface FileRouteTypes {
     | '/task-form'
     | '/tasks'
     | '/team-chat'
-    | '/valuation'
     | '/whatsapp-link'
     | '/buildings/$code'
     | '/owner-report/$token'
@@ -899,21 +846,17 @@ export interface FileRouteTypes {
     | '/employee-form'
     | '/employees'
     | '/error-log'
-    | '/executive-report'
     | '/goals'
     | '/invoice-form'
     | '/maintenance'
     | '/marketing'
     | '/notifications'
-    | '/opportunities'
     | '/owner-form'
     | '/partners'
-    | '/price-offers'
     | '/properties'
     | '/property-form'
     | '/reminders'
     | '/renewals'
-    | '/reports'
     | '/reservations'
     | '/reserve'
     | '/roles'
@@ -922,7 +865,6 @@ export interface FileRouteTypes {
     | '/task-form'
     | '/tasks'
     | '/team-chat'
-    | '/valuation'
     | '/whatsapp-link'
     | '/buildings/$code'
     | '/owner-report/$token'
@@ -984,21 +926,17 @@ export interface FileRouteTypes {
     | '/_authenticated/employee-form'
     | '/_authenticated/employees'
     | '/_authenticated/error-log'
-    | '/_authenticated/executive-report'
     | '/_authenticated/goals'
     | '/_authenticated/invoice-form'
     | '/_authenticated/maintenance'
     | '/_authenticated/marketing'
     | '/_authenticated/notifications'
-    | '/_authenticated/opportunities'
     | '/_authenticated/owner-form'
     | '/_authenticated/partners'
-    | '/_authenticated/price-offers'
     | '/_authenticated/properties'
     | '/_authenticated/property-form'
     | '/_authenticated/reminders'
     | '/_authenticated/renewals'
-    | '/_authenticated/reports'
     | '/_authenticated/reservations'
     | '/_authenticated/reserve'
     | '/_authenticated/roles'
@@ -1007,7 +945,6 @@ export interface FileRouteTypes {
     | '/_authenticated/task-form'
     | '/_authenticated/tasks'
     | '/_authenticated/team-chat'
-    | '/_authenticated/valuation'
     | '/_authenticated/whatsapp-link'
     | '/buildings/$code'
     | '/owner-report/$token'
@@ -1271,13 +1208,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedErrorLogRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/executive-report': {
-      id: '/_authenticated/executive-report'
-      path: '/executive-report'
-      fullPath: '/executive-report'
-      preLoaderRoute: typeof AuthenticatedExecutiveReportRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/goals': {
       id: '/_authenticated/goals'
       path: '/goals'
@@ -1313,13 +1243,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/opportunities': {
-      id: '/_authenticated/opportunities'
-      path: '/opportunities'
-      fullPath: '/opportunities'
-      preLoaderRoute: typeof AuthenticatedOpportunitiesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/owner-form': {
       id: '/_authenticated/owner-form'
       path: '/owner-form'
@@ -1332,13 +1255,6 @@ declare module '@tanstack/react-router' {
       path: '/partners'
       fullPath: '/partners'
       preLoaderRoute: typeof AuthenticatedPartnersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/price-offers': {
-      id: '/_authenticated/price-offers'
-      path: '/price-offers'
-      fullPath: '/price-offers'
-      preLoaderRoute: typeof AuthenticatedPriceOffersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/properties': {
@@ -1367,13 +1283,6 @@ declare module '@tanstack/react-router' {
       path: '/renewals'
       fullPath: '/renewals'
       preLoaderRoute: typeof AuthenticatedRenewalsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/reports': {
-      id: '/_authenticated/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/reservations': {
@@ -1430,13 +1339,6 @@ declare module '@tanstack/react-router' {
       path: '/team-chat'
       fullPath: '/team-chat'
       preLoaderRoute: typeof AuthenticatedTeamChatRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/valuation': {
-      id: '/_authenticated/valuation'
-      path: '/valuation'
-      fullPath: '/valuation'
-      preLoaderRoute: typeof AuthenticatedValuationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/whatsapp-link': {
@@ -1679,21 +1581,17 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEmployeeFormRoute: typeof AuthenticatedEmployeeFormRoute
   AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRoute
   AuthenticatedErrorLogRoute: typeof AuthenticatedErrorLogRoute
-  AuthenticatedExecutiveReportRoute: typeof AuthenticatedExecutiveReportRoute
   AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
   AuthenticatedInvoiceFormRoute: typeof AuthenticatedInvoiceFormRoute
   AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedMarketingRoute: typeof AuthenticatedMarketingRouteWithChildren
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
-  AuthenticatedOpportunitiesRoute: typeof AuthenticatedOpportunitiesRoute
   AuthenticatedOwnerFormRoute: typeof AuthenticatedOwnerFormRoute
   AuthenticatedPartnersRoute: typeof AuthenticatedPartnersRoute
-  AuthenticatedPriceOffersRoute: typeof AuthenticatedPriceOffersRoute
   AuthenticatedPropertiesRoute: typeof AuthenticatedPropertiesRoute
   AuthenticatedPropertyFormRoute: typeof AuthenticatedPropertyFormRoute
   AuthenticatedRemindersRoute: typeof AuthenticatedRemindersRoute
   AuthenticatedRenewalsRoute: typeof AuthenticatedRenewalsRoute
-  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedReservationsRoute: typeof AuthenticatedReservationsRoute
   AuthenticatedReserveRoute: typeof AuthenticatedReserveRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
@@ -1702,7 +1600,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTaskFormRoute: typeof AuthenticatedTaskFormRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedTeamChatRoute: typeof AuthenticatedTeamChatRoute
-  AuthenticatedValuationRoute: typeof AuthenticatedValuationRoute
   AuthenticatedWhatsappLinkRoute: typeof AuthenticatedWhatsappLinkRoute
   AuthenticatedContractsContractIdRoute: typeof AuthenticatedContractsContractIdRoute
   AuthenticatedInvoicesInvoiceIdRoute: typeof AuthenticatedInvoicesInvoiceIdRoute
@@ -1729,21 +1626,17 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEmployeeFormRoute: AuthenticatedEmployeeFormRoute,
   AuthenticatedEmployeesRoute: AuthenticatedEmployeesRoute,
   AuthenticatedErrorLogRoute: AuthenticatedErrorLogRoute,
-  AuthenticatedExecutiveReportRoute: AuthenticatedExecutiveReportRoute,
   AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
   AuthenticatedInvoiceFormRoute: AuthenticatedInvoiceFormRoute,
   AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedMarketingRoute: AuthenticatedMarketingRouteWithChildren,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
-  AuthenticatedOpportunitiesRoute: AuthenticatedOpportunitiesRoute,
   AuthenticatedOwnerFormRoute: AuthenticatedOwnerFormRoute,
   AuthenticatedPartnersRoute: AuthenticatedPartnersRoute,
-  AuthenticatedPriceOffersRoute: AuthenticatedPriceOffersRoute,
   AuthenticatedPropertiesRoute: AuthenticatedPropertiesRoute,
   AuthenticatedPropertyFormRoute: AuthenticatedPropertyFormRoute,
   AuthenticatedRemindersRoute: AuthenticatedRemindersRoute,
   AuthenticatedRenewalsRoute: AuthenticatedRenewalsRoute,
-  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedReservationsRoute: AuthenticatedReservationsRoute,
   AuthenticatedReserveRoute: AuthenticatedReserveRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
@@ -1752,7 +1645,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTaskFormRoute: AuthenticatedTaskFormRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedTeamChatRoute: AuthenticatedTeamChatRoute,
-  AuthenticatedValuationRoute: AuthenticatedValuationRoute,
   AuthenticatedWhatsappLinkRoute: AuthenticatedWhatsappLinkRoute,
   AuthenticatedContractsContractIdRoute: AuthenticatedContractsContractIdRoute,
   AuthenticatedInvoicesInvoiceIdRoute: AuthenticatedInvoicesInvoiceIdRoute,

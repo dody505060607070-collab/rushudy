@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Contact, PhoneCall, Target, TrendingUp, Users } from "lucide-react";
+import { Contact, PhoneCall, Users } from "lucide-react";
 import { lazy, Suspense } from "react";
 
 import { Chip } from "@/components/kit/Chip";
@@ -115,7 +115,7 @@ function CrmPage() {
         <CrmIntelligence />
       </Suspense>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <CrmCard
           to="/clients"
           icon={Contact}
@@ -124,25 +124,11 @@ function CrmPage() {
           hint="ملاك، مستأجرون، مشترون ووسطاء"
         />
         <CrmCard
-          to="/opportunities"
-          icon={Target}
-          label="الفرص"
-          value={totals.data?.openDeals ?? 0}
-          hint="فرص مفتوحة قيد المتابعة"
-        />
-        <CrmCard
           to="/activities"
           icon={PhoneCall}
           label="المتابعات والأنشطة"
           value={totals.data?.activities ?? 0}
           hint="مكالمات، زيارات وملاحظات"
-        />
-        <CrmCard
-          to="/reports"
-          icon={TrendingUp}
-          label="العملاء المحتملون"
-          value={totals.data?.leads ?? 0}
-          hint="عملاء بحاجة إلى تأهيل"
         />
       </div>
 
