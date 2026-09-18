@@ -602,7 +602,85 @@ function OwnerDetailPage() {
           />
           <Kpi label="آخر سداد" value={data.lastPaidAt ? formatDate(data.lastPaidAt) : "—"} hint="آخر عملية سداد مسجلة" />
         </div>
+
+        <div className="border-t border-border p-4">
+          <h2 className="mb-3 text-[13px] font-bold text-foreground">البيانات الشخصية والهوية</h2>
+          <div className="grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2 lg:grid-cols-4">
+            <Info icon={KeyRound} label="رقم الهوية / السجل" value={data.owner.national_id} ltr />
+            <Info icon={Phone} label="الجوال" value={data.owner.phone} ltr />
+            <Info
+              icon={MessageCircle}
+              label="واتساب"
+              value={data.owner.whatsapp || data.owner.phone}
+              ltr
+            />
+            <Info icon={Mail} label="البريد الإلكتروني" value={data.owner.email} ltr />
+            <Info icon={MapPin} label="العنوان" value={data.owner.address} />
+            <Info icon={Building2} label="التصنيف" value="مالك" />
+            <Info
+              icon={CheckCircle2}
+              label="الحالة"
+              value={data.owner.is_active ? "نشط" : "موقوف"}
+            />
+            <Info icon={UserRound} label="أضيف في" value={formatDate(data.owner.created_at)} />
+          </div>
+          {data.owner.notes ? (
+            <p className="mt-3 rounded-lg bg-secondary/60 p-3 text-[13px]">{data.owner.notes}</p>
+          ) : null}
+        </div>
       </section>
+
+      <RecordSection
+        title="أقرب الدفعات"
+        subtitle="أولوية المتابعة والتحصيل حسب تاريخ الاستحقاق"
+        icon={CalendarClock}
+        count={stats.nearest.length}
+        tone="gold"
+      >
+        <div className="space-y-2">
+          {stats.nearest.map((p) => {
+            const contract = data.contracts.find((c) => c.id === p.contract_id);
+            const late = daysBetween(p.due_date) < 0;
+            return (
+              <div
+                key={p.id}
+                className={`flex flex-wrap items-center justify-between gap-3 rounded-md border px-3 py-2.5 ${late ? "border-destructive/40 bg-destructive/5" : "border-border"}`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="font-bold">{formatCurrency(remainingOf(p))}</span>
+                  <span className="text-[12.5px] text-muted-foreground">
+                    {contract?.unit?.unit_number
+                      ? `وحدة ${contract.unit.unit_number}`
+                      : (contract?.property?.name ?? "—")}
+                    {contract?.tenant?.full_name ? ` — ${contract.tenant.full_name}` : ""}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[12px] text-muted-foreground" dir="ltr">
+                    {formatDate(p.due_date)}
+                  </span>
+                  <Chip tone={paymentTone(p)}>
+                    {late
+                      ? `متأخرة منذ ${Math.abs(daysBetween(p.due_date))} يوم`
+                      : `خلال ${daysBetween(p.due_date)} يوم`}
+                  </Chip>
+                  <Link
+                    to="/payment-reminder/$paymentId"
+                    params={{ paymentId: p.id }}
+                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2.5 text-[12px] font-semibold text-muted-foreground hover:text-success"
+                    title="إرسال تذكير"
+                  >
+                    <MessageCircle className="size-3.5" />
+                    إرسال تذكير
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+          {!stats.nearest.length ? <Empty text="لا توجد دفعات مستحقة" /> : null}
+        </div>
+      </RecordSection>
+
 
       <section className="surface-card overflow-hidden">
         <div className="border-b border-border bg-primary px-5 py-5 text-primary-foreground">
@@ -680,62 +758,6 @@ function OwnerDetailPage() {
 
 
 
-      <RecordSection title="أقرب الدفعات" subtitle="أولوية المتابعة والتحصيل حسب تاريخ الاستحقاق" icon={CalendarClock} count={stats.nearest.length} tone="gold">
-        <div className="space-y-2">
-          {stats.nearest.map((p) => {
-            const contract = data.contracts.find((c) => c.id === p.contract_id);
-            const late = daysBetween(p.due_date) < 0;
-            return (
-              <div
-                key={p.id}
-                className={`flex flex-wrap items-center justify-between gap-3 rounded-md border px-3 py-2.5 ${late ? "border-destructive/40 bg-destructive/5" : "border-border"}`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-bold">{formatCurrency(remainingOf(p))}</span>
-                  <span className="text-[12.5px] text-muted-foreground">
-                    {contract?.unit?.unit_number ? `وحدة ${contract.unit.unit_number}` : contract?.property?.name ?? "—"}
-                    {contract?.tenant?.full_name ? ` — ${contract.tenant.full_name}` : ""}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] text-muted-foreground" dir="ltr">
-                    {formatDate(p.due_date)}
-                  </span>
-                  <Chip tone={paymentTone(p)}>
-                    {late ? `متأخرة منذ ${Math.abs(daysBetween(p.due_date))} يوم` : `خلال ${daysBetween(p.due_date)} يوم`}
-                  </Chip>
-                  <Link
-                    to="/payment-reminder/$paymentId"
-                    params={{ paymentId: p.id }}
-                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2.5 text-[12px] font-semibold text-muted-foreground hover:text-success"
-                    title="إرسال تذكير"
-                  >
-                    <MessageCircle className="size-3.5" />
-                    إرسال تذكير
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-          {!stats.nearest.length ? <Empty text="لا توجد دفعات مستحقة" /> : null}
-        </div>
-      </RecordSection>
-
-      <RecordSection title="البيانات الأساسية" subtitle="بيانات الاتصال والهوية والحالة" icon={UserRound} count={data.owner.is_active ? 1 : 0}>
-        <div className="grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2 lg:grid-cols-4">
-          <Info icon={UserRound} label="الاسم" value={data.owner.full_name} />
-          <Info icon={KeyRound} label="رقم الهوية / السجل" value={data.owner.national_id} ltr />
-          <Info icon={Phone} label="الجوال" value={data.owner.phone} ltr />
-          <Info icon={MessageCircle} label="واتساب" value={data.owner.whatsapp || data.owner.phone} ltr />
-          <Info icon={Mail} label="البريد الإلكتروني" value={data.owner.email} ltr />
-          <Info icon={MapPin} label="العنوان" value={data.owner.address} />
-          <Info icon={Building2} label="التصنيف" value="مالك" />
-          <Info icon={CheckCircle2} label="الحالة" value={data.owner.is_active ? "نشط" : "موقوف"} />
-        </div>
-        {data.owner.notes ? (
-          <p className="mt-3 rounded-lg bg-secondary/60 p-3 text-[13px]">{data.owner.notes}</p>
-        ) : null}
-      </RecordSection>
 
       <RecordSection title="العقارات والوحدات" subtitle="المباني والأصول والعقود المرتبطة بكل وحدة" icon={House} count={groups.reduce((s, g) => s + g.items.length, 0)}>
         <p className="mb-3 text-[12px] text-muted-foreground">اسحب الوحدة أو العقار بين المباني، أو اسحب عقدًا نشطًا من قسم العقود وأسقطه على وحدة شاغرة.</p>
