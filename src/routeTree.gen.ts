@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CompanyProfileRouteImport } from './routes/company-profile'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as ListPropertyRouteImport } from './routes/list-property'
@@ -91,6 +92,11 @@ const AboutRoute = AboutRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompanyProfileRoute = CompanyProfileRouteImport.update({
+  id: '/company-profile',
+  path: '/company-profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -418,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/company-profile': typeof CompanyProfileRoute
   '/contact': typeof ContactRoute
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
@@ -483,6 +490,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/company-profile': typeof CompanyProfileRoute
   '/contact': typeof ContactRoute
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
@@ -549,6 +557,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/company-profile': typeof CompanyProfileRoute
   '/contact': typeof ContactRoute
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
@@ -616,6 +625,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/company-profile'
     | '/contact'
     | '/favorites'
     | '/list-property'
@@ -681,6 +691,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/company-profile'
     | '/contact'
     | '/favorites'
     | '/list-property'
@@ -746,6 +757,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/about'
     | '/auth'
+    | '/company-profile'
     | '/contact'
     | '/favorites'
     | '/list-property'
@@ -813,6 +825,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
+  CompanyProfileRoute: typeof CompanyProfileRoute
   ContactRoute: typeof ContactRoute
   FavoritesRoute: typeof FavoritesRoute
   ListPropertyRoute: typeof ListPropertyRoute
@@ -858,6 +871,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/company-profile': {
+      id: '/company-profile'
+      path: '/company-profile'
+      fullPath: '/company-profile'
+      preLoaderRoute: typeof CompanyProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -1400,6 +1420,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
+  CompanyProfileRoute: CompanyProfileRoute,
   ContactRoute: ContactRoute,
   FavoritesRoute: FavoritesRoute,
   ListPropertyRoute: ListPropertyRoute,

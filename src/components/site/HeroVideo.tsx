@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MapPinned, Search } from "lucide-react";
+import { FileText, MapPinned, Search } from "lucide-react";
 
 import desktopHero from "@/assets/home-hero-desktop.jpg";
 import desktopHeroVideo from "@/assets/hero-desktop.mp4.asset.json";
@@ -88,7 +88,7 @@ export function HeroVideo({
             نسمع احتياجك، ونرشح لك الأنسب للبيع أو الإيجار، ونمشي معك حتى اكتمال الصفقة بخبرة تمتد لأكثر من 8 سنوات.
           </p>
 
-          <div className="animate-pop-in mt-7 grid w-full max-w-3xl grid-cols-3 gap-2.5 md:mt-9 md:gap-5">
+          <div className="animate-pop-in mt-7 grid w-full max-w-4xl grid-cols-2 gap-2.5 md:mt-9 md:grid-cols-4 md:gap-4">
             <Link
               to="/rent"
               className={cn(
@@ -117,6 +117,16 @@ export function HeroVideo({
               <MapPinned className="hidden size-5 sm:block" />
               الخريطة
             </a>
+            <Link
+              to="/company-profile"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-14 rounded-full border-primary-foreground/35 bg-card/10 px-2 text-[13px] font-bold text-primary-foreground shadow-none backdrop-blur-sm hover:bg-primary-foreground/10 hover:text-primary-foreground md:h-16 md:text-[17px]",
+              )}
+            >
+              <FileText className="hidden size-5 sm:block" />
+              ملف هوية الرشودي
+            </Link>
           </div>
         </div>
 
