@@ -289,6 +289,9 @@ export type Database = {
           floors_count: number | null
           id: string
           is_visible: boolean
+          latitude: number | null
+          longitude: number | null
+          map_url: string | null
           name: string
           notes: string | null
           owner_id: string | null
@@ -307,6 +310,9 @@ export type Database = {
           floors_count?: number | null
           id?: string
           is_visible?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          map_url?: string | null
           name: string
           notes?: string | null
           owner_id?: string | null
@@ -325,6 +331,9 @@ export type Database = {
           floors_count?: number | null
           id?: string
           is_visible?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          map_url?: string | null
           name?: string
           notes?: string | null
           owner_id?: string | null
