@@ -6,6 +6,7 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  Megaphone,
   type LucideIcon,
 } from "lucide-react";
 
@@ -70,6 +71,11 @@ export const navGroups: NavGroup[] = [
       { label: "التقارير", to: "/reports", module: "crm" },
     ],
   },
+  {
+    label: "التسويق العقاري",
+    icon: Megaphone,
+    items: [{ label: "المسوقون والإحالات", to: "/marketing", module: "marketing" }],
+  },
 
   {
     label: "إعدادات الموقع",
@@ -107,6 +113,7 @@ export const permissionModules: { key: string; label: string; actions: string[] 
   { key: "tasks", label: "المهام", actions: ["view", "add", "edit", "delete", "approve"] },
   { key: "contacts", label: "العملاء", actions: ["view", "add", "edit", "delete"] },
   { key: "crm", label: "CRM", actions: ["view", "edit"] },
+  { key: "marketing", label: "التسويق العقاري", actions: ["view", "add", "edit", "delete", "send", "approve"] },
   { key: "chat", label: "المحادثات الداخلية", actions: ["view"] },
   { key: "settings", label: "الإعدادات", actions: ["view", "edit"] },
   { key: "employees", label: "الموظفون", actions: ["view", "manage"] },
@@ -121,7 +128,7 @@ export const actionLabels: Record<string, string> = {
   approve: "اعتماد",
   export: "تصدير",
   collect: "تحصيل",
-  send: "إرسال تذكير",
+  send: "إرسال يدوي",
   book: "حجز وتمديد",
   manage: "إدارة موظفين",
 };

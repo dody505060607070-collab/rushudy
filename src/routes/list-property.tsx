@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { getStoredReferral } from "@/lib/marketing";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/list-property")({
@@ -57,6 +58,7 @@ function ListPropertyPage() {
     if (mode === "offer" && (!form.property_type || !form.description || !form.asking_price || !form.map_url)) { toast.error("أكمل بيانات العقار المطلوبة"); return; }
     setBusy(true);
     try {
+      const referral = getStoredReferral();
       if (mode === "offer") {
         const attachments: { path: string; name: string; size: number; type: string }[] = [];
         for (const file of images) {
@@ -67,10 +69,10 @@ function ListPropertyPage() {
           attachments.push({ path, name: file.name, size: file.size, type: file.type });
         }
         const notes = [form.description, additionalNotes, isBroker && form.broker_phone ? `جوال الوسيط: ${form.broker_phone}` : ""].filter(Boolean).join("\n\n");
-        const result = await supabase.from("listing_requests").insert({ full_name: form.full_name, phone: form.phone, purpose: form.purpose, property_type: form.property_type, city: form.city || null, district: form.district || null, asking_price: form.asking_price, description: notes, map_url: form.map_url, attachments });
+        const result = await supabase.from("listing_requests").insert({ full_name: form.full_name, phone: form.phone, purpose: form.purpose, property_type: form.property_type, city: form.city || null, district: form.district || null, asking_price: form.asking_price, description: notes, map_url: form.map_url, attachments, referral_code: referral?.code ?? null });
         if (result.error) throw result.error;
       } else {
-        const result = await supabase.from("supply_requests").insert({ full_name: form.full_name, phone: form.phone, request_type: form.purpose, city: form.city || null, districts: form.district || null, property_type: form.property_type || null, requester_type: isBroker ? "broker" : "client", broker_name: null, broker_phone: isBroker ? form.broker_phone || null : null, budget_min: form.budget_min ? Number(form.budget_min) : null, budget_max: form.budget_max ? Number(form.budget_max) : null, requester_notes: form.description || null });
+        const result = await supabase.from("supply_requests").insert({ full_name: form.full_name, phone: form.phone, request_type: form.purpose, city: form.city || null, districts: form.district || null, property_type: form.property_type || null, requester_type: isBroker ? "broker" : "client", broker_name: null, broker_phone: isBroker ? form.broker_phone || null : null, budget_min: form.budget_min ? Number(form.budget_min) : null, budget_max: form.budget_max ? Number(form.budget_max) : null, requester_notes: form.description || null, referral_code: referral?.code ?? null });
         if (result.error) throw result.error;
       }
       try { const { reportPublicRequest } = await import("@/lib/automation.functions"); await reportPublicRequest({ data: { full_name: form.full_name, phone: form.phone, purpose: form.purpose, city: form.city || undefined, property_type: form.property_type || undefined, request_kind: mode === "offer" ? "listing" : "supply" } }); } catch { /* الطلب محفوظ حتى عند تعذر رسالة التأكيد */ }

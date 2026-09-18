@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Building2, ChevronLeft, Loader2, Pencil, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Building2, ChevronLeft, Loader2, Megaphone, Pencil, Plus, Send, Trash2, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -19,6 +20,7 @@ import { PageHero } from "@/components/kit/PageHero";
 import { Pills } from "@/components/kit/Pills";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
+import { sendPropertyToMarketer } from "@/lib/marketing.functions";
 
 type PropertyRow = {
   id: string;
@@ -108,7 +110,18 @@ function PropertiesPage() {
   const [editing, setEditing] = useState<PropertyRow | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [shareProperty, setShareProperty] = useState<PropertyRow | null>(null);
+  const [selectedMarketer, setSelectedMarketer] = useState("");
   const queryClient = useQueryClient();
+  const sendToMarketer = useServerFn(sendPropertyToMarketer);
+  const marketers = useQuery({
+    queryKey: ["marketing-active-list"],
+    queryFn: async () => {
+      const { data: items, error: marketersError } = await supabase.from("marketers").select("id, full_name, phone").eq("status", "active").order("full_name");
+      if (marketersError) throw marketersError;
+      return items ?? [];
+    },
+  });
   const { data, isLoading, error } = useTableRows<PropertyRow>({
     table: "properties",
     select: SELECT,
@@ -217,6 +230,15 @@ function PropertiesPage() {
       toast.success("تم حذف العقار");
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحذف"),
+  });
+
+  const share = useMutation({
+    mutationFn: async () => {
+      if (!shareProperty || !selectedMarketer) throw new Error("اختر المسوق");
+      return sendToMarketer({ data: { marketerId: selectedMarketer, propertyId: shareProperty.id } });
+    },
+    onSuccess: () => { toast.success("تم إرسال العقار للمسوق برابطه الخاص"); setShareProperty(null); setSelectedMarketer(""); },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الإرسال"),
   });
 
   const counts = useMemo(
@@ -394,6 +416,14 @@ function PropertiesPage() {
                   </Link>
                   <button
                     type="button"
+                    onClick={(event) => { event.stopPropagation(); setShareProperty(r); setSelectedMarketer(""); }}
+                    className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary"
+                  >
+                    <Megaphone className="size-4" />
+                    إرسال لمسوق
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => openEdit(r)}
                     className="text-[12.5px] font-semibold text-muted-foreground"
                   >
@@ -563,6 +593,21 @@ function PropertiesPage() {
             </span>
           </div>
         </div>
+      </Modal>
+      <Modal
+        open={Boolean(shareProperty)}
+        onClose={() => setShareProperty(null)}
+        title="إرسال العقار لمسوق"
+        subtitle={`سيُرسل «${shareProperty?.name ?? "العقار"}» عبر واتساب برابط إحالة خاص. لن يحدث أي إرسال قبل تأكيدك.`}
+        footer={<><GhostButton onClick={() => setShareProperty(null)}>إلغاء</GhostButton><PrimaryButton onClick={() => share.mutate()} disabled={share.isPending || !selectedMarketer}>{share.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}إرسال الآن</PrimaryButton></>}
+      >
+        <Field label="المسوق المستلم" required>
+          <select className={inputClass} value={selectedMarketer} onChange={(event) => setSelectedMarketer(event.target.value)}>
+            <option value="">اختر مسوقًا واحدًا</option>
+            {(marketers.data ?? []).map((marketer) => <option key={marketer.id} value={marketer.id}>{marketer.full_name} — {marketer.phone}</option>)}
+          </select>
+        </Field>
+        {(marketers.data ?? []).length === 0 ? <p className="mt-3 text-xs text-muted-foreground">أضف مسوقًا نشطًا من قسم التسويق العقاري أولًا.</p> : null}
       </Modal>
     </>
   );
