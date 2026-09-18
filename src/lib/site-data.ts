@@ -27,7 +27,12 @@ export type PublicProperty = {
   link_facebook: string | null;
   link_tour: string | null;
   created_at: string;
+  floor?: string | null;
+  building_id?: string | null;
+  building_code?: string | null;
+  building_name?: string | null;
   property_images: { url: string; is_cover: boolean; sort_order: number; focal_x?: number; focal_y?: number }[];
+
 };
 
 const PROPERTY_FIELDS =
