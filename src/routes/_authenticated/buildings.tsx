@@ -247,7 +247,7 @@ function BuildingsPage() {
           ))}
         </div>
       ) : !rows.length ? (
-        <EmptyState title="لا توجد عمارات بعد" description="ابدأ بإضافة عمارة ثم وزّع شققها على الأدوار." />
+        <EmptyState icon={Building2} title="لا توجد عمارات بعد" description="ابدأ بإضافة عمارة ثم وزّع شققها على الأدوار." />
       ) : (
         <div className="grid w-full gap-4">
           {rows.map((b) => {
