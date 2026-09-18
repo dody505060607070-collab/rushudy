@@ -1,8 +1,23 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
-import { FileText, Home, LogOut, Receipt, User } from "lucide-react";
+import {
+  BarChart3,
+  FileSignature,
+  FileText,
+  Home,
+  LogOut,
+  MessageSquare,
+  Receipt,
+  Settings2,
+  User,
+  Wallet,
+  Wrench,
+} from "lucide-react";
+import { useEffect } from "react";
 
 import logoAsset from "@/assets/rashudi-logo.webp.asset.json";
 import { supabase } from "@/integrations/supabase/client";
+import { getOwnerWorkspace, recordOwnerLogin } from "@/lib/owner-portal.functions";
 
 
 export const Route = createFileRoute("/portal")({
@@ -30,7 +45,22 @@ function PortalLayout() {
   const navigate = useNavigate();
   const { user } = Route.useRouteContext();
   const name = (user.user_metadata?.["full_name"] as string | undefined) ?? "العميل";
-  const isOwner = user.user_metadata?.["portal_role"] === "owner";
+  const metaOwner = user.user_metadata?.["portal_role"] === "owner";
+
+  const workspace = useQuery({
+    queryKey: ["owner-workspace"],
+    queryFn: () => getOwnerWorkspace(),
+    retry: false,
+    staleTime: 60_000,
+  });
+  const isOwner = metaOwner || workspace.isSuccess;
+
+  useEffect(() => {
+    if (!isOwner) return;
+    void recordOwnerLogin({
+      data: { userAgent: navigator.userAgent, path: window.location.pathname },
+    }).catch(() => undefined);
+  }, [isOwner]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -55,7 +85,7 @@ function PortalLayout() {
           </div>
 
 
-          <nav className="flex flex-1 items-center justify-center gap-1">
+          <nav className="flex flex-1 flex-wrap items-center justify-center gap-1">
             <Link to="/portal" activeOptions={{ exact: true }} className={link} activeProps={{ className: `${link} ${active}` }}>
               <Home className="h-4 w-4" /> الرئيسية
             </Link>
@@ -65,6 +95,31 @@ function PortalLayout() {
             <Link to="/portal/invoices" className={link} activeProps={{ className: `${link} ${active}` }}>
               <Receipt className="h-4 w-4" /> الفواتير
             </Link>
+            {isOwner ? (
+              <>
+                <Link to="/portal/insights" className={link} activeProps={{ className: `${link} ${active}` }}>
+                  <BarChart3 className="h-4 w-4" /> التحليلات
+                </Link>
+                <Link to="/portal/finance" className={link} activeProps={{ className: `${link} ${active}` }}>
+                  <Wallet className="h-4 w-4" /> ماليتي
+                </Link>
+                <Link to="/portal/units" className={link} activeProps={{ className: `${link} ${active}` }}>
+                  <Home className="h-4 w-4" /> وحداتي
+                </Link>
+                <Link to="/portal/care" className={link} activeProps={{ className: `${link} ${active}` }}>
+                  <Wrench className="h-4 w-4" /> الصيانة والاعتمادات
+                </Link>
+                <Link to="/portal/documents" className={link} activeProps={{ className: `${link} ${active}` }}>
+                  <FileSignature className="h-4 w-4" /> المستندات
+                </Link>
+                <Link to="/portal/messages" className={link} activeProps={{ className: `${link} ${active}` }}>
+                  <MessageSquare className="h-4 w-4" /> الرسائل
+                </Link>
+                <Link to="/portal/settings" className={link} activeProps={{ className: `${link} ${active}` }}>
+                  <Settings2 className="h-4 w-4" /> الإعدادات
+                </Link>
+              </>
+            ) : null}
           </nav>
 
           <div className="flex items-center gap-2">

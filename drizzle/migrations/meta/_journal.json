@@ -197,6 +197,13 @@
       "when": 1789752826322,
       "tag": "0027_maintenance_requests_system",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1789753300345,
+      "tag": "0028_owner_portal_expansion",
+      "breakpoints": true
     }
   ]
 }
