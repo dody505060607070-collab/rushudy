@@ -1155,6 +1155,60 @@ export type Database = {
           },
         ]
       }
+      employee_goals: {
+        Row: {
+          achieved_value: number
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          goal_type: string
+          id: string
+          notes: string | null
+          period_month: string
+          target_value: number
+          updated_at: string
+        }
+        Insert: {
+          achieved_value?: number
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          goal_type: string
+          id?: string
+          notes?: string | null
+          period_month: string
+          target_value: number
+          updated_at?: string
+        }
+        Update: {
+          achieved_value?: number
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          goal_type?: string
+          id?: string
+          notes?: string | null
+          period_month?: string
+          target_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_goals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_goals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_sessions: {
         Row: {
           created_at: string
@@ -2400,6 +2454,66 @@ export type Database = {
             columns: ["reversed_of"]
             isOneToOne: false
             referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_offers: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          internal_notes: string | null
+          message: string | null
+          offer_amount: number
+          property_id: string
+          referral_code: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_phone: string
+          id?: string
+          internal_notes?: string | null
+          message?: string | null
+          offer_amount: number
+          property_id: string
+          referral_code?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          internal_notes?: string | null
+          message?: string | null
+          offer_amount?: number
+          property_id?: string
+          referral_code?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_offers_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_offers_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

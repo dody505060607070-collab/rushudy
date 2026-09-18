@@ -50,6 +50,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "الملاك", to: "/owners", countKey: "owners", module: "owners" },
       { label: "إدارة العقود", to: "/contracts", countKey: "contracts", module: "contracts" },
+      { label: "تنبيهات التجديد", to: "/renewals", module: "contracts" },
       { label: "الفواتير", to: "/invoices", countKey: "invoices", module: "invoices" },
       { label: "إدارة التذكيرات", to: "/reminders", countKey: "followups", module: "reminders" },
     ],
@@ -57,7 +58,10 @@ export const navGroups: NavGroup[] = [
   {
     label: "المهام",
     icon: CircleCheck,
-    items: [{ label: "كل المهام", to: "/tasks", countKey: "tasks", module: "tasks" }],
+    items: [
+      { label: "كل المهام", to: "/tasks", countKey: "tasks", module: "tasks" },
+      { label: "أهداف الموظفين", to: "/goals", module: "employees" },
+    ],
   },
   {
     label: "CRM",
@@ -66,9 +70,12 @@ export const navGroups: NavGroup[] = [
       { label: "نظام CRM", to: "/crm", module: "crm" },
       { label: "العملاء", to: "/clients", countKey: "contacts", module: "contacts" },
       { label: "الفرص", to: "/opportunities", countKey: "opportunities", module: "crm" },
+      { label: "عروض الأسعار", to: "/price-offers", module: "crm" },
       { label: "المتابعات والأنشطة", to: "/activities", module: "crm" },
       { label: "شات الموظفين", to: "/team-chat", module: "chat" },
       { label: "التقارير", to: "/reports", module: "crm" },
+      { label: "التقرير التنفيذي", to: "/executive-report", module: "crm" },
+      { label: "التقييم والعائد", to: "/valuation", module: "crm" },
     ],
   },
   {
