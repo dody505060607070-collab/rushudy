@@ -227,7 +227,12 @@ function ContractViewPage() {
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline"><Link to="/contracts"><Pencil />تعديل العقد</Link></Button>
+          <Button asChild variant="outline">
+            <Link to="/contracts" search={{ edit: contractId }}>
+              <Pencil />
+              تعديل بيانات العقد والأطراف
+            </Link>
+          </Button>
           <Button type="button" variant="outline" onClick={() => setSignatureOpen(true)}><PenLine />توقيع العقد</Button>
           <Button
             variant="destructive"
