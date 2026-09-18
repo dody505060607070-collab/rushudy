@@ -216,6 +216,28 @@ function OwnerDetailPage() {
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر تجهيز الحساب"),
   });
 
+  const moveItem = useMutation({
+    mutationFn: (payload: {
+      itemId: string;
+      itemType: "unit" | "property";
+      buildingId: string | null;
+    }) =>
+      moveOwnerAsset({
+        data: {
+          ownerId,
+          buildingId: payload.buildingId,
+          itemId: payload.itemId,
+          itemType: payload.itemType,
+        },
+      }),
+    onSuccess: () => {
+      setDragAsset(null);
+      queryClient.invalidateQueries({ queryKey: ["owner-dossier", ownerId] });
+      toast.success("تم تحديث مكان الوحدة");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر النقل"),
+  });
+
   const assignContract = useMutation({
     mutationFn: (unitId: string) => {
       if (!dragContractId) throw new Error("اختر العقد أولًا");
@@ -228,6 +250,7 @@ function OwnerDetailPage() {
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر نقل العقد"),
   });
+
 
   const exportOwner = async (aiSummary?: string) => {
     if (!data) return;
