@@ -1005,7 +1005,40 @@ function OwnerDetailPage() {
         icon={House}
         count={groups.reduce((s, g) => s + g.items.length, 0)}
       >
+        <div className="mb-4 rounded-md border border-border bg-card p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-[13.5px] font-bold">أقسامي (تقسيم بأسماء من عندك)</h3>
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                أنشئ قسمًا بالاسم اللي تحبه (مثال: عبد الرحمن، المحطات، العمائر)، ثم اسحب أي عمارة
+                أو عقار من الأسفل وأسقطه داخل القسم. العمارة تنتقل بكل شققها.
+              </p>
+            </div>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                createSection.mutate(newSectionName);
+              }}
+              className="flex items-center gap-2"
+            >
+              <input
+                value={newSectionName}
+                onChange={(event) => setNewSectionName(event.target.value)}
+                placeholder="اسم القسم الجديد"
+                className="h-9 w-56 rounded-md border border-border bg-background px-3 text-[12.5px]"
+              />
+              <button
+                type="submit"
+                className="h-9 rounded-md bg-primary px-4 text-[12.5px] font-semibold text-primary-foreground"
+              >
+                إضافة قسم
+              </button>
+            </form>
+          </div>
+        </div>
+
         <div className="mb-4 rounded-md border border-dashed border-primary/40 bg-secondary/20 p-3">
+
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-[13.5px] font-bold">لوحة الترتيب اليدوي</h3>
             <p className="text-[12px] text-muted-foreground">
