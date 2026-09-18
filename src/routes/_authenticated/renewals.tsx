@@ -8,7 +8,6 @@ import { EmptyState, formatCurrency, formatDate } from "@/components/kit/LiveTab
 import { PageHero } from "@/components/kit/PageHero";
 import { Pills } from "@/components/kit/Pills";
 import { supabase } from "@/integrations/supabase/client";
-import { whatsappLink } from "@/lib/site-data";
 
 const TITLE = "تنبيهات تجديد العقود | الرشودي للعقارات";
 const DESC = "متابعة العقود المنتهية خلال 90 و60 و30 يومًا مع خطة تفاوض وتجديد لكل عقد.";
@@ -80,6 +79,22 @@ function RenewalsPage() {
     },
   });
 
+  // أقرب دفعة غير مسددة لكل عقد، لفتح قالب التذكير الجاهز بدل واتساب المباشر.
+  const { data: nextPayments = new Map<string, string>() } = useQuery({
+    queryKey: ["contract-renewals", "next-payments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contract_payments")
+        .select("id, contract_id, due_date, status")
+        .not("status", "in", '("paid","cancelled")')
+        .order("due_date");
+      if (error) throw error;
+      const map = new Map<string, string>();
+      for (const row of data ?? []) if (!map.has(row.contract_id)) map.set(row.contract_id, row.id);
+      return map;
+    },
+  });
+
   const enriched = useMemo(
     () =>
       data
@@ -137,7 +152,7 @@ function RenewalsPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           {visible.map(({ row, days, bucket }) => {
             const info = buckets[bucket] ?? buckets["later"]!;
-            const phone = row.tenant?.phone;
+            const reminderId = nextPayments.get(row.id) ?? null;
             const message = [
               "السلام عليكم ورحمة الله 🌿",
               `بخصوص العقد رقم ${row.contract_number}`,
@@ -195,15 +210,14 @@ function RenewalsPage() {
                   >
                     فتح العقد
                   </Link>
-                  {phone ? (
-                    <a
-                      href={whatsappLink(phone, message)}
-                      target="_blank"
-                      rel="noreferrer"
+                  {reminderId ? (
+                    <Link
+                      to="/payment-reminder/$paymentId"
+                      params={{ paymentId: reminderId }}
                       className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-[12.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                     >
-                      <MessageCircle className="size-4" /> مراسلة المستأجر
-                    </a>
+                      <MessageCircle className="size-4" /> قالب مراسلة المستأجر
+                    </Link>
                   ) : null}
                 </div>
               </article>

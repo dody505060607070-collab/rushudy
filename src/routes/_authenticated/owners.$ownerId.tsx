@@ -857,7 +857,6 @@ function OwnerDetailPage() {
                                   </thead>
                                   <tbody>
                                     {list.map((p) => {
-                                      const payLink = reminderLink(contract, p);
                                       return (
                                         <tr key={p.id} className="border-t border-border">
                                           <td className="p-2 font-semibold">{p.payment_number}</td>
