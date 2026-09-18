@@ -21,12 +21,18 @@ import {
   Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { lazy, Suspense } from "react";
 
-import { DashboardInsights } from "@/components/dashboard/DashboardInsights";
 import { Chip } from "@/components/kit/Chip";
 import { formatCurrency, formatDate } from "@/components/kit/LiveTable";
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
+
+const DashboardInsights = lazy(() =>
+  import("@/components/dashboard/DashboardInsights").then((module) => ({
+    default: module.DashboardInsights,
+  })),
+);
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -618,7 +624,9 @@ function DashboardPage() {
 
 
 
-      <DashboardInsights />
+      <Suspense fallback={<div className="surface-card p-10 text-center text-sm text-muted-foreground">جاري إعداد التحليلات المتقدمة…</div>}>
+        <DashboardInsights />
+      </Suspense>
 
       <section className="surface-card overflow-hidden">
         <header className="flex items-center justify-between border-b border-border p-5"><div><p className="text-[11.5px] font-bold text-primary">مباشر</p><h2 className="mt-1 text-[15px] font-bold">آخر أنشطة النظام</h2></div><Link to="/activity-log" className="text-xs font-bold text-primary">متابعة الموظفين</Link></header>

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import "leaflet/dist/leaflet.css";
 
 import type { PublicProperty } from "@/lib/site-data";
 
@@ -53,7 +52,7 @@ export function PropertyMap({
 
   useEffect(() => {
     let cancelled = false;
-    void import("leaflet").then((mod) => {
+    void Promise.all([import("leaflet/dist/leaflet.css"), import("leaflet")]).then(([, mod]) => {
       if (!cancelled) setLeaflet(mod);
     });
     return () => {
