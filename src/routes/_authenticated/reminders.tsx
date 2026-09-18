@@ -123,8 +123,6 @@ function RemindersPage() {
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر التحديث"),
   });
 
-
-
   const sendNow = useMutation({
     mutationFn: async (row: FollowupRow) => {
       const result = await sendWhatsAppMessage({
@@ -191,7 +189,12 @@ function RemindersPage() {
             />
           }
           columns={[
-            { header: "المستلم", sortable: true, cell: (r) => r.recipient_name ?? "—", className: "font-semibold" },
+            {
+              header: "المستلم",
+              sortable: true,
+              cell: (r) => r.recipient_name ?? "—",
+              className: "font-semibold",
+            },
             { header: "الجوال", cell: (r) => <span dir="ltr">{r.recipient_phone}</span> },
             { header: "العقد", cell: (r) => r.contract?.contract_number ?? "—" },
             {
@@ -282,7 +285,11 @@ function RemindersPage() {
               header: "النتيجة",
               cell: (r) => (
                 <Chip tone={rowTone(r.result)}>
-                  {r.result === "sent" ? "تم الإرسال" : r.result === "failed" ? "تعذّر الإرسال" : "في الانتظار"}
+                  {r.result === "sent"
+                    ? "تم الإرسال"
+                    : r.result === "failed"
+                      ? "تعذّر الإرسال"
+                      : "في الانتظار"}
                 </Chip>
               ),
             },
