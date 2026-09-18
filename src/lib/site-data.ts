@@ -154,12 +154,11 @@ export type PublicBuilding = {
   units: PublicBuildingUnit[];
 };
 
-async function fetchBuildings(args: { code?: string; purpose?: "rent" | "sale"; limit?: number }) {
-  const { data, error } = await supabase.rpc("get_public_buildings", {
-    _code: args.code ?? undefined,
-    _purpose: args.purpose ?? undefined,
-    _limit: args.limit ?? 60,
-  });
+async function fetchBuildings(args: { code?: string | undefined; purpose?: "rent" | "sale" | undefined; limit?: number }) {
+  const params: { _code?: string; _purpose?: string; _limit?: number } = { _limit: args.limit ?? 60 };
+  if (args.code) params._code = args.code;
+  if (args.purpose) params._purpose = args.purpose;
+  const { data, error } = await supabase.rpc("get_public_buildings", params);
   if (error) throw error;
   return (Array.isArray(data) ? data : []) as unknown as PublicBuilding[];
 }

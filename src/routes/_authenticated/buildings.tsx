@@ -471,7 +471,7 @@ function GeneratorModal({
       const start = Number(startFloor) || 1;
       const priceValue = price ? Number(price) : null;
 
-      const unitsPayload: Record<string, unknown>[] = [];
+      const unitsPayload: { building_id: string; owner_id: string | null; unit_number: string; unit_type: string; floor: string; status: string; is_rentable: boolean }[] = [];
       const meta: { floorLabel: string; unitNumber: string }[] = [];
       for (let f = 0; f < floorsCount; f += 1) {
         const floorNo = start + f;
