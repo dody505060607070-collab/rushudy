@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Building2, DoorOpen, Eye, EyeOff, Layers, Loader2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Building2, DoorOpen, Eye, EyeOff, Layers, Loader2, MapPin, Pencil, Plus, Printer, Sparkles, Trash2, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -39,6 +39,8 @@ type BuildingRow = {
   is_visible: boolean;
   sort_order: number;
   owner_id: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 type UnitProperty = {
@@ -50,6 +52,8 @@ type UnitProperty = {
   is_visible: boolean;
   price_value: number | null;
   building_id: string | null;
+  purpose: string;
+  rent_period: string | null;
 };
 
 type FormState = {
@@ -65,6 +69,8 @@ type FormState = {
   sort_order: string;
   owner_id: string;
   is_visible: boolean;
+  latitude: string;
+  longitude: string;
 };
 
 const emptyForm: FormState = {
@@ -80,6 +86,8 @@ const emptyForm: FormState = {
   sort_order: "0",
   owner_id: "",
   is_visible: true,
+  latitude: "",
+  longitude: "",
 };
 
 function BuildingsPage() {
@@ -94,7 +102,7 @@ function BuildingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("buildings")
-        .select("id, code, name, city, district, address, description, purpose, floors_count, cover_url, is_visible, sort_order, owner_id")
+        .select("id, code, name, city, district, address, description, purpose, floors_count, cover_url, is_visible, sort_order, owner_id, latitude, longitude")
         .order("sort_order")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -107,7 +115,7 @@ function BuildingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("id, code, name, floor, status, is_visible, price_value, building_id")
+        .select("id, code, name, floor, status, is_visible, price_value, building_id, purpose, rent_period")
         .not("building_id", "is", null)
         .order("floor")
         .order("name");
@@ -161,6 +169,8 @@ function BuildingsPage() {
       sort_order: String(row.sort_order ?? 0),
       owner_id: row.owner_id ?? "",
       is_visible: row.is_visible,
+      latitude: row.latitude != null ? String(row.latitude) : "",
+      longitude: row.longitude != null ? String(row.longitude) : "",
     });
     setOpen(true);
   };
@@ -181,6 +191,8 @@ function BuildingsPage() {
         sort_order: Number(form.sort_order) || 0,
         owner_id: form.owner_id || null,
         is_visible: form.is_visible,
+        latitude: form.latitude ? Number(form.latitude) : null,
+        longitude: form.longitude ? Number(form.longitude) : null,
       };
       const res = editing
         ? await supabase.from("buildings").update(values).eq("id", editing.id)
@@ -415,6 +427,12 @@ function BuildingsPage() {
               value={form.sort_order}
               onChange={(e) => set({ sort_order: e.target.value })}
             />
+          </Field>
+          <Field label="خط العرض (Latitude)" hint="من رابط خرائط جوجل">
+            <input className={inputClass} dir="ltr" value={form.latitude} onChange={(e) => set({ latitude: e.target.value })} />
+          </Field>
+          <Field label="خط الطول (Longitude)">
+            <input className={inputClass} dir="ltr" value={form.longitude} onChange={(e) => set({ longitude: e.target.value })} />
           </Field>
           <Field label="رابط صورة الغلاف" className="sm:col-span-2" hint="اتركه فارغًا لاستخدام صورة أول شقة">
             <input className={inputClass} dir="ltr" value={form.cover_url} onChange={(e) => set({ cover_url: e.target.value })} />
