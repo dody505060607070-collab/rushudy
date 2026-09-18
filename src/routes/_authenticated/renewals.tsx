@@ -153,16 +153,6 @@ function RenewalsPage() {
           {visible.map(({ row, days, bucket }) => {
             const info = buckets[bucket] ?? buckets["later"]!;
             const reminderId = nextPayments.get(row.id) ?? null;
-            const message = [
-              "السلام عليكم ورحمة الله 🌿",
-              `بخصوص العقد رقم ${row.contract_number}`,
-              row.property?.name ? `العقار: ${row.property.name}` : null,
-              row.end_date ? `ينتهي بتاريخ ${formatDate(row.end_date)}` : null,
-              "",
-              "نرغب في الاتفاق على التجديد، فهل نحدد موعدًا للتفاوض؟",
-            ]
-              .filter(Boolean)
-              .join("\n");
 
             return (
               <article key={row.id} className="rounded-2xl border border-border bg-card p-5 shadow-card">
