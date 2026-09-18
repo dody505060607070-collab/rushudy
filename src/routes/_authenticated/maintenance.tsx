@@ -139,7 +139,7 @@ function MaintenancePage() {
       const insert = await supabase.from("maintenance_requests").insert({
         reporter_name: row.owner?.full_name ?? "المالك",
         reporter_phone: row.owner?.phone ?? null,
-        property_id: row.property_id,
+        ...(row.property_id ? { property_id: row.property_id } : {}),
         category: "owner",
         priority: "normal",
         description: [row.title, row.details].filter(Boolean).join(" — "),
