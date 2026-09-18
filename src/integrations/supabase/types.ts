@@ -1450,10 +1450,12 @@ export type Database = {
           full_name: string
           id: string
           map_url: string | null
+          marketer_id: string | null
           phone: string
           property_id: string | null
           property_type: string | null
           purpose: string
+          referral_code: string | null
           rent_period: string | null
           status: string
           updated_at: string
@@ -1472,10 +1474,12 @@ export type Database = {
           full_name: string
           id?: string
           map_url?: string | null
+          marketer_id?: string | null
           phone: string
           property_id?: string | null
           property_type?: string | null
           purpose?: string
+          referral_code?: string | null
           rent_period?: string | null
           status?: string
           updated_at?: string
@@ -1494,10 +1498,12 @@ export type Database = {
           full_name?: string
           id?: string
           map_url?: string | null
+          marketer_id?: string | null
           phone?: string
           property_id?: string | null
           property_type?: string | null
           purpose?: string
+          referral_code?: string | null
           rent_period?: string | null
           status?: string
           updated_at?: string
@@ -1518,10 +1524,340 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "listing_requests_marketer_id_fkey"
+            columns: ["marketer_id"]
+            isOneToOne: false
+            referencedRelation: "marketers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "listing_requests_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketer_commissions: {
+        Row: {
+          amount: number
+          basis_amount: number
+          contract_id: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          id: string
+          lead_id: string | null
+          marketer_id: string
+          notes: string | null
+          paid_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          basis_amount?: number
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          marketer_id: string
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          basis_amount?: number
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          marketer_id?: string
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketer_commissions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketer_commissions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketer_commissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "marketer_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketer_commissions_marketer_id_fkey"
+            columns: ["marketer_id"]
+            isOneToOne: false
+            referencedRelation: "marketers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketer_leads: {
+        Row: {
+          attributed_at: string
+          contact_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          estimated_value: number
+          id: string
+          listing_request_id: string | null
+          marketer_id: string
+          notes: string | null
+          property_id: string | null
+          source: string
+          status: string
+          supply_request_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attributed_at?: string
+          contact_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          estimated_value?: number
+          id?: string
+          listing_request_id?: string | null
+          marketer_id: string
+          notes?: string | null
+          property_id?: string | null
+          source?: string
+          status?: string
+          supply_request_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attributed_at?: string
+          contact_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          estimated_value?: number
+          id?: string
+          listing_request_id?: string | null
+          marketer_id?: string
+          notes?: string | null
+          property_id?: string | null
+          source?: string
+          status?: string
+          supply_request_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketer_leads_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketer_leads_listing_request_id_fkey"
+            columns: ["listing_request_id"]
+            isOneToOne: false
+            referencedRelation: "listing_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketer_leads_marketer_id_fkey"
+            columns: ["marketer_id"]
+            isOneToOne: false
+            referencedRelation: "marketers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketer_leads_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketer_leads_supply_request_id_fkey"
+            columns: ["supply_request_id"]
+            isOneToOne: false
+            referencedRelation: "supply_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketer_property_shares: {
+        Row: {
+          channel: string
+          id: string
+          marketer_id: string
+          property_id: string
+          sent_at: string
+          sent_by: string | null
+          sent_to: string | null
+        }
+        Insert: {
+          channel?: string
+          id?: string
+          marketer_id: string
+          property_id: string
+          sent_at?: string
+          sent_by?: string | null
+          sent_to?: string | null
+        }
+        Update: {
+          channel?: string
+          id?: string
+          marketer_id?: string
+          property_id?: string
+          sent_at?: string
+          sent_by?: string | null
+          sent_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketer_property_shares_marketer_id_fkey"
+            columns: ["marketer_id"]
+            isOneToOne: false
+            referencedRelation: "marketers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketer_property_shares_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketer_property_shares_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketer_referral_visits: {
+        Row: {
+          id: string
+          landing_path: string
+          marketer_id: string
+          property_id: string | null
+          referrer_host: string | null
+          visited_at: string
+          visitor_id: string
+        }
+        Insert: {
+          id?: string
+          landing_path: string
+          marketer_id: string
+          property_id?: string | null
+          referrer_host?: string | null
+          visited_at?: string
+          visitor_id: string
+        }
+        Update: {
+          id?: string
+          landing_path?: string
+          marketer_id?: string
+          property_id?: string | null
+          referrer_host?: string | null
+          visited_at?: string
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketer_referral_visits_marketer_id_fkey"
+            columns: ["marketer_id"]
+            isOneToOne: false
+            referencedRelation: "marketers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketer_referral_visits_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketers: {
+        Row: {
+          attribution_days: number
+          commission_type: string
+          commission_value: number
+          created_at: string
+          created_by: string | null
+          email: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string
+          referral_code: string
+          regions: string[]
+          specialty: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attribution_days?: number
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone: string
+          referral_code: string
+          regions?: string[]
+          specialty?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attribution_days?: number
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          referral_code?: string
+          regions?: string[]
+          specialty?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2806,8 +3142,10 @@ export type Database = {
           districts: string | null
           full_name: string
           id: string
+          marketer_id: string | null
           phone: string
           property_type: string | null
+          referral_code: string | null
           request_type: string
           requester_notes: string | null
           requester_type: string
@@ -2827,8 +3165,10 @@ export type Database = {
           districts?: string | null
           full_name: string
           id?: string
+          marketer_id?: string | null
           phone: string
           property_type?: string | null
+          referral_code?: string | null
           request_type?: string
           requester_notes?: string | null
           requester_type?: string
@@ -2848,8 +3188,10 @@ export type Database = {
           districts?: string | null
           full_name?: string
           id?: string
+          marketer_id?: string | null
           phone?: string
           property_type?: string | null
+          referral_code?: string | null
           request_type?: string
           requester_notes?: string | null
           requester_type?: string
@@ -2869,6 +3211,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supply_requests_marketer_id_fkey"
+            columns: ["marketer_id"]
+            isOneToOne: false
+            referencedRelation: "marketers"
             referencedColumns: ["id"]
           },
         ]
@@ -3518,6 +3867,16 @@ export type Database = {
       is_task_member: {
         Args: { _task_id: string; _user_id: string }
         Returns: boolean
+      }
+      record_marketer_referral: {
+        Args: {
+          _landing_path: string
+          _property_code?: string
+          _referral_code: string
+          _referrer_host?: string
+          _visitor_id: string
+        }
+        Returns: Json
       }
       touch_employee_session: {
         Args: { _device?: string; _path: string; _session_id: string }

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 
 import { supabase } from "@/integrations/supabase/client";
+import { MARKETING_REFERRAL_KEY, type StoredReferral } from "@/lib/marketing";
 
 const VISITOR_KEY = "rashoudi_analytics_visitor";
 
@@ -37,6 +38,29 @@ export function useSiteAnalytics() {
         referrer_host: referrerHost,
         user_id: data.session?.user.id ?? null,
       });
+
+      const referralCode = new URLSearchParams(window.location.search).get("ref")?.trim().toLowerCase();
+      if (referralCode) {
+        const propertyCode = pathname.startsWith("/properties/")
+          ? decodeURIComponent(pathname.slice("/properties/".length))
+          : null;
+        const { data: referral } = await supabase.rpc("record_marketer_referral", {
+          _referral_code: referralCode,
+          _visitor_id: getVisitorId(),
+          _landing_path: `${pathname}${window.location.search}`,
+          ...(propertyCode ? { _property_code: propertyCode } : {}),
+          ...(referrerHost ? { _referrer_host: referrerHost } : {}),
+        });
+        const result = referral as { ok?: boolean; marketer_id?: string; code?: string; days?: number } | null;
+        if (result?.ok && result.marketer_id && result.code) {
+          const stored: StoredReferral = {
+            code: result.code,
+            marketerId: result.marketer_id,
+            expiresAt: Date.now() + (result.days ?? 30) * 86_400_000,
+          };
+          window.localStorage.setItem(MARKETING_REFERRAL_KEY, JSON.stringify(stored));
+        }
+      }
     }, 1_500);
     return () => window.clearTimeout(timer);
   }, [pathname]);
