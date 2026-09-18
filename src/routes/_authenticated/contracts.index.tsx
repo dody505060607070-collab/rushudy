@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Eye, FileText, FileUp, Loader2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/kit/Chip";
@@ -76,6 +76,8 @@ export const Route = createFileRoute("/_authenticated/contracts/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { edit?: string } =>
+    typeof search["edit"] === "string" ? { edit: search["edit"] } : {},
   component: ContractsPage,
 });
 
@@ -209,6 +211,18 @@ function ContractsPage() {
     });
     setFormOpen(true);
   };
+
+  const { edit: editId } = Route.useSearch();
+  const handledEditId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!editId || handledEditId.current === editId) return;
+    const row = rows.find((r) => r.id === editId);
+    if (!row) return;
+    handledEditId.current = editId;
+    openEdit(row);
+    void navigate({ to: "/contracts", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, rows]);
 
   const save = useMutation({
     mutationFn: async (source: "manual" | "pdf_import" = "manual") => {

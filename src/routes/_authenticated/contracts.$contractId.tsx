@@ -1,6 +1,22 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Banknote, Building2, CalendarDays, CheckCircle2, CircleDollarSign, FileText, Loader2, Pencil, PenLine, ReceiptText, ShieldCheck, Trash2, UserRound, WalletCards } from "lucide-react";
+import {
+  ArrowRight,
+  Banknote,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  CircleDollarSign,
+  FileText,
+  Loader2,
+  Pencil,
+  PenLine,
+  ReceiptText,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+  WalletCards,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -18,7 +34,10 @@ export const Route = createFileRoute("/_authenticated/contracts/$contractId")({
   head: () => ({
     meta: [
       { title: "تفاصيل العقد | الرشودي للعقارات" },
-      { name: "description", content: "تفاصيل العقد وأطرافه والعقار والدفعات والفواتير والتوقيعات." },
+      {
+        name: "description",
+        content: "تفاصيل العقد وأطرافه والعقار والدفعات والفواتير والتوقيعات.",
+      },
       { property: "og:title", content: "تفاصيل العقد | الرشودي للعقارات" },
       { property: "og:description", content: "عرض إداري شامل للعقد وحالته المالية والتنفيذية." },
       { property: "og:type", content: "website" },
@@ -44,30 +63,88 @@ const statusLabels: Record<string, string> = {
   cancelled: "ملغي",
 };
 
-function Row({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon?: typeof FileText }) {
+function Row({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: React.ReactNode;
+  icon?: typeof FileText;
+}) {
   return (
     <div className="rounded-lg border border-border bg-muted/20 p-3.5">
-      <p className="flex items-center gap-2 text-[11.5px] text-muted-foreground">{Icon ? <Icon className="size-3.5 text-primary" /> : null}{label}</p>
+      <p className="flex items-center gap-2 text-[11.5px] text-muted-foreground">
+        {Icon ? <Icon className="size-3.5 text-primary" /> : null}
+        {label}
+      </p>
       <p className="mt-1 text-[13.5px] font-semibold text-foreground">{value ?? "—"}</p>
     </div>
   );
 }
 
-function Section({ title, subtitle, icon: Icon, children }: { title: string; subtitle?: string; icon?: typeof FileText; children: React.ReactNode }) {
+function Section({
+  title,
+  subtitle,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: typeof FileText;
+  children: React.ReactNode;
+}) {
   return (
     <section className="surface-card overflow-hidden">
       <header className="flex items-center gap-3 border-b border-border bg-muted/30 px-5 py-4">
-        {Icon ? <span className="grid size-9 place-items-center rounded-lg bg-accent text-primary"><Icon className="size-4" /></span> : null}
-        <div><h2 className="text-[14px] font-black text-foreground">{title}</h2>{subtitle ? <p className="mt-0.5 text-[11.5px] text-muted-foreground">{subtitle}</p> : null}</div>
+        {Icon ? (
+          <span className="grid size-9 place-items-center rounded-lg bg-accent text-primary">
+            <Icon className="size-4" />
+          </span>
+        ) : null}
+        <div>
+          <h2 className="text-[14px] font-black text-foreground">{title}</h2>
+          {subtitle ? (
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">{subtitle}</p>
+          ) : null}
+        </div>
       </header>
       <div className="p-5">{children}</div>
     </section>
   );
 }
 
-function ContractMetric({ icon: Icon, label, value, hint, tone = "primary" }: { icon: typeof FileText; label: string; value: string; hint: string; tone?: "primary" | "success" | "danger" | "gold" }) {
-  const toneClass = tone === "success" ? "bg-success/15 text-success" : tone === "danger" ? "bg-destructive/15 text-destructive" : tone === "gold" ? "bg-gold/15 text-gold" : "bg-accent text-primary";
-  return <article className="surface-card p-4"><span className={`grid size-9 place-items-center rounded-lg ${toneClass}`}><Icon className="size-4" /></span><p className="mt-3 text-[11.5px] text-muted-foreground">{label}</p><b className="mt-1 block text-lg text-foreground">{value}</b><p className="mt-1 text-[11px] text-muted-foreground">{hint}</p></article>;
+function ContractMetric({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  tone = "primary",
+}: {
+  icon: typeof FileText;
+  label: string;
+  value: string;
+  hint: string;
+  tone?: "primary" | "success" | "danger" | "gold";
+}) {
+  const toneClass =
+    tone === "success"
+      ? "bg-success/15 text-success"
+      : tone === "danger"
+        ? "bg-destructive/15 text-destructive"
+        : tone === "gold"
+          ? "bg-gold/15 text-gold"
+          : "bg-accent text-primary";
+  return (
+    <article className="surface-card p-4">
+      <span className={`grid size-9 place-items-center rounded-lg ${toneClass}`}>
+        <Icon className="size-4" />
+      </span>
+      <p className="mt-3 text-[11.5px] text-muted-foreground">{label}</p>
+      <b className="mt-1 block text-lg text-foreground">{value}</b>
+      <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>
+    </article>
+  );
 }
 
 function ContractViewPage() {
@@ -79,8 +156,6 @@ function ContractViewPage() {
   const [signature, setSignature] = useState("");
   const [signerName, setSignerName] = useState("");
   const [payingPayment, setPayingPayment] = useState<RecorderPayment | null>(null);
-
-
 
   const contract = useQuery({
     queryKey: ["contract-view", contractId],
@@ -123,15 +198,42 @@ function ContractViewPage() {
     },
   });
 
-  const signatures = useQuery({ queryKey: ["contract-signatures", contractId], queryFn: async () => {
-    const { data, error } = await supabase.from("contract_signatures").select("id,signer_name,signer_role,image_data,signed_at").eq("contract_id", contractId).order("signed_at", { ascending: false });
-    if (error) throw error; return data ?? [];
-  }});
+  const signatures = useQuery({
+    queryKey: ["contract-signatures", contractId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contract_signatures")
+        .select("id,signer_name,signer_role,image_data,signed_at")
+        .eq("contract_id", contractId)
+        .order("signed_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
-  const saveSignature = useMutation({ mutationFn: async () => {
-    if (!signerName.trim()) throw new Error("اكتب اسم الموقّع"); if (!signature) throw new Error("أضف التوقيع");
-    const { data: auth } = await supabase.auth.getUser(); const { error } = await supabase.from("contract_signatures").insert({ contract_id: contractId, signer_name: signerName.trim(), signer_role: "staff", image_data: signature, created_by: auth.user?.id ?? null }); if (error) throw error;
-  }, onSuccess: () => { void signatures.refetch(); setSignatureOpen(false); setSignature(""); setSignerName(""); toast.success("تم حفظ التوقيع الإلكتروني"); }, onError: (e) => toast.error(e instanceof Error ? e.message : "تعذّر حفظ التوقيع") });
+  const saveSignature = useMutation({
+    mutationFn: async () => {
+      if (!signerName.trim()) throw new Error("اكتب اسم الموقّع");
+      if (!signature) throw new Error("أضف التوقيع");
+      const { data: auth } = await supabase.auth.getUser();
+      const { error } = await supabase.from("contract_signatures").insert({
+        contract_id: contractId,
+        signer_name: signerName.trim(),
+        signer_role: "staff",
+        image_data: signature,
+        created_by: auth.user?.id ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void signatures.refetch();
+      setSignatureOpen(false);
+      setSignature("");
+      setSignerName("");
+      toast.success("تم حفظ التوقيع الإلكتروني");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "تعذّر حفظ التوقيع"),
+  });
 
   const extraction = useQuery({
     queryKey: ["contract-view-extraction", contractId],
@@ -145,7 +247,6 @@ function ContractViewPage() {
       return (data?.[0] ?? null) as Record<string, any> | null;
     },
   });
-
 
   const c: any = contract.data;
   const ex: Record<string, any> = (extraction.data?.["extraction"] as Record<string, any>) ?? {};
@@ -192,7 +293,6 @@ function ContractViewPage() {
   const collectionRate = totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0;
   const overdueCount = paymentRows.filter((payment) => payment.status === "overdue").length;
 
-
   const remove = useMutation({
     mutationFn: async (alsoOwner: boolean) =>
       deleteContractWithOwner(contractId, (c?.owner_id as string | null) ?? null, alsoOwner),
@@ -209,12 +309,16 @@ function ContractViewPage() {
         title={c?.contract_number ? `العقد ${c.contract_number}` : "تفاصيل العقد"}
         subtitle="مركز متابعة العقد وأطرافه والعقار والتحصيل والفواتير والتوقيعات"
         icon={FileText}
-        stats={c ? [
-          { value: statusLabels[c.status] ?? c.status, label: "حالة العقد" },
-          { value: money(c.total_value), label: "قيمة العقد" },
-          { value: `${collectionRate}%`, label: "نسبة التحصيل" },
-          { value: String(paymentRows.length), label: "عدد الدفعات" },
-        ] : []}
+        stats={
+          c
+            ? [
+                { value: statusLabels[c.status] ?? c.status, label: "حالة العقد" },
+                { value: money(c.total_value), label: "قيمة العقد" },
+                { value: `${collectionRate}%`, label: "نسبة التحصيل" },
+                { value: String(paymentRows.length), label: "عدد الدفعات" },
+              ]
+            : []
+        }
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -227,14 +331,26 @@ function ContractViewPage() {
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline"><Link to="/contracts"><Pencil />تعديل العقد</Link></Button>
-          <Button type="button" variant="outline" onClick={() => setSignatureOpen(true)}><PenLine />توقيع العقد</Button>
+          <Button asChild variant="outline">
+            <Link to="/contracts" search={{ edit: contractId }}>
+              <Pencil />
+              تعديل بيانات العقد والأطراف
+            </Link>
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setSignatureOpen(true)}>
+            <PenLine />
+            توقيع العقد
+          </Button>
           <Button
             variant="destructive"
             disabled={remove.isPending}
             onClick={() => setConfirmOpen(true)}
           >
-            {remove.isPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+            {remove.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Trash2 className="size-4" />
+            )}
             حذف العقد
           </Button>
 
@@ -246,7 +362,11 @@ function ContractViewPage() {
             footer={
               <>
                 <PrimaryButton onClick={() => remove.mutate(alsoOwner)} disabled={remove.isPending}>
-                  {remove.isPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                  {remove.isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="size-4" />
+                  )}
                   تأكيد الحذف
                 </PrimaryButton>
                 <GhostButton onClick={() => setConfirmOpen(false)}>إلغاء</GhostButton>
@@ -260,14 +380,43 @@ function ContractViewPage() {
                   checked={alsoOwner}
                   onChange={(v) => setAlsoOwner(v)}
                 />
-                حذف المالك المرتبط بالعقد أيضًا {c?.owner?.full_name ? `(${c.owner.full_name})` : ""}
+                حذف المالك المرتبط بالعقد أيضًا{" "}
+                {c?.owner?.full_name ? `(${c.owner.full_name})` : ""}
               </label>
               <p className="text-[12px] text-muted-foreground">
                 عند التفعيل سيتم حذف المالك وكل عقوده الأخرى، مع فصل عقاراته ووحداته.
               </p>
             </div>
           </Modal>
-          <Modal open={signatureOpen} onClose={() => setSignatureOpen(false)} title="التوقيع الإلكتروني" subtitle="يُحفظ اسم الموقّع والتاريخ مع العقد." footer={<><PrimaryButton onClick={() => saveSignature.mutate()} disabled={saveSignature.isPending}>حفظ التوقيع</PrimaryButton><GhostButton onClick={() => setSignatureOpen(false)}>إلغاء</GhostButton></>}><div className="space-y-4"><label className="grid gap-1 text-[12.5px] font-semibold">اسم الموقّع<input className="h-10 rounded-lg border border-input bg-background px-3" value={signerName} onChange={(e) => setSignerName(e.target.value)} /></label><SignaturePad onChange={setSignature} /></div></Modal>
+          <Modal
+            open={signatureOpen}
+            onClose={() => setSignatureOpen(false)}
+            title="التوقيع الإلكتروني"
+            subtitle="يُحفظ اسم الموقّع والتاريخ مع العقد."
+            footer={
+              <>
+                <PrimaryButton
+                  onClick={() => saveSignature.mutate()}
+                  disabled={saveSignature.isPending}
+                >
+                  حفظ التوقيع
+                </PrimaryButton>
+                <GhostButton onClick={() => setSignatureOpen(false)}>إلغاء</GhostButton>
+              </>
+            }
+          >
+            <div className="space-y-4">
+              <label className="grid gap-1 text-[12.5px] font-semibold">
+                اسم الموقّع
+                <input
+                  className="h-10 rounded-lg border border-input bg-background px-3"
+                  value={signerName}
+                  onChange={(e) => setSignerName(e.target.value)}
+                />
+              </label>
+              <SignaturePad onChange={setSignature} />
+            </div>
+          </Modal>
         </div>
       </div>
 
@@ -280,19 +429,55 @@ function ContractViewPage() {
       ) : (
         <div className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <ContractMetric icon={CircleDollarSign} label="إجمالي المستحق" value={money(totalDue)} hint={`${paymentRows.length} دفعة مسجلة`} tone="gold" />
-            <ContractMetric icon={CheckCircle2} label="إجمالي المحصل" value={money(totalPaid)} hint={`${collectionRate}% من قيمة الدفعات`} tone="success" />
-            <ContractMetric icon={Banknote} label="الرصيد المتبقي" value={money(totalRemaining)} hint={totalRemaining ? "يحتاج متابعة التحصيل" : "تم تحصيل جميع الدفعات"} tone={totalRemaining ? "danger" : "success"} />
-            <ContractMetric icon={CalendarDays} label="الدفعات المتأخرة" value={String(overdueCount)} hint={overdueCount ? "دفعات تحتاج إجراء" : "لا توجد دفعات متأخرة"} tone={overdueCount ? "danger" : "primary"} />
+            <ContractMetric
+              icon={CircleDollarSign}
+              label="إجمالي المستحق"
+              value={money(totalDue)}
+              hint={`${paymentRows.length} دفعة مسجلة`}
+              tone="gold"
+            />
+            <ContractMetric
+              icon={CheckCircle2}
+              label="إجمالي المحصل"
+              value={money(totalPaid)}
+              hint={`${collectionRate}% من قيمة الدفعات`}
+              tone="success"
+            />
+            <ContractMetric
+              icon={Banknote}
+              label="الرصيد المتبقي"
+              value={money(totalRemaining)}
+              hint={totalRemaining ? "يحتاج متابعة التحصيل" : "تم تحصيل جميع الدفعات"}
+              tone={totalRemaining ? "danger" : "success"}
+            />
+            <ContractMetric
+              icon={CalendarDays}
+              label="الدفعات المتأخرة"
+              value={String(overdueCount)}
+              hint={overdueCount ? "دفعات تحتاج إجراء" : "لا توجد دفعات متأخرة"}
+              tone={overdueCount ? "danger" : "primary"}
+            />
           </div>
 
-          <Section title="بيانات العقد" subtitle="الهوية القانونية والمدة والقيمة المالية" icon={FileText}>
+          <Section
+            title="بيانات العقد"
+            subtitle="الهوية القانونية والمدة والقيمة المالية"
+            icon={FileText}
+          >
             <div className="grid gap-3 sm:grid-cols-3">
               <Row icon={FileText} label="رقم العقد" value={c.contract_number} />
               <Row
                 label="الحالة"
                 value={
-                  <Chip tone={c.status === "active" ? "success" : c.status === "draft" ? "warning" : "danger"}>
+                  <Chip
+                    tone={
+                      c.status === "active"
+                        ? "success"
+                        : c.status === "draft"
+                          ? "warning"
+                          : "danger"
+                    }
+                  >
                     {statusLabels[c.status] ?? c.status}
                   </Chip>
                 }
@@ -309,7 +494,9 @@ function ContractViewPage() {
               <Row label="تاريخ الإنشاء" value={c.created_at?.slice(0, 10)} />
             </div>
             {c.notes ? (
-              <p className="mt-3 rounded-xl bg-secondary/60 p-3 text-[13px] text-foreground">{c.notes}</p>
+              <p className="mt-3 rounded-xl bg-secondary/60 p-3 text-[13px] text-foreground">
+                {c.notes}
+              </p>
             ) : null}
           </Section>
 
@@ -332,7 +519,11 @@ function ContractViewPage() {
             </Section>
           </div>
 
-          <Section title="العقارات والوحدات" subtitle="الأصل العقاري المرتبط بهذا العقد" icon={Building2}>
+          <Section
+            title="العقارات والوحدات"
+            subtitle="الأصل العقاري المرتبط بهذا العقد"
+            icon={Building2}
+          >
             {c.property ? (
               <Link
                 to="/properties"
@@ -351,23 +542,27 @@ function ContractViewPage() {
               </p>
             )}
             <div className="grid gap-3 sm:grid-cols-2">
-              {(extractedUnits.length
-                ? extractedUnits
-                : c.unit
-                  ? [c.unit]
-                  : []
-              ).map((u: any, i: number) => (
-                <div key={u.id ?? `${u.unit_number}-${i}`} className="rounded-xl border border-border p-3">
-                  <p className="text-[13px] font-bold text-foreground">
-                    وحدة رقم {u.unit_number || "—"}
-                  </p>
-                  <p className="text-[12px] text-muted-foreground">
-                    {[u.unit_type, u.floor ? `الدور ${u.floor}` : null, u.area ? `${u.area} م²` : null]
-                      .filter(Boolean)
-                      .join(" · ") || "—"}
-                  </p>
-                </div>
-              ))}
+              {(extractedUnits.length ? extractedUnits : c.unit ? [c.unit] : []).map(
+                (u: any, i: number) => (
+                  <div
+                    key={u.id ?? `${u.unit_number}-${i}`}
+                    className="rounded-xl border border-border p-3"
+                  >
+                    <p className="text-[13px] font-bold text-foreground">
+                      وحدة رقم {u.unit_number || "—"}
+                    </p>
+                    <p className="text-[12px] text-muted-foreground">
+                      {[
+                        u.unit_type,
+                        u.floor ? `الدور ${u.floor}` : null,
+                        u.area ? `${u.area} م²` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "—"}
+                    </p>
+                  </div>
+                ),
+              )}
               {!extractedUnits.length && !c.unit ? (
                 <p className="p-2 text-[12.5px] text-muted-foreground">
                   لم تُذكر وحدات مستقلة في هذا العقد.
@@ -376,9 +571,19 @@ function ContractViewPage() {
             </div>
           </Section>
 
-
-          <Section title={`جدول الأقساط (${payments.data?.length ?? 0})`} subtitle={`محصل ${money(totalPaid)} من ${money(totalDue)} — المتبقي ${money(totalRemaining)}`} icon={WalletCards}>
-            <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center"><progress value={collectionRate} max={100} className="h-2.5 w-full overflow-hidden rounded-full accent-success" /><strong className="text-sm text-success">{collectionRate}% محصل</strong></div>
+          <Section
+            title={`جدول الأقساط (${payments.data?.length ?? 0})`}
+            subtitle={`محصل ${money(totalPaid)} من ${money(totalDue)} — المتبقي ${money(totalRemaining)}`}
+            icon={WalletCards}
+          >
+            <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+              <progress
+                value={collectionRate}
+                max={100}
+                className="h-2.5 w-full overflow-hidden rounded-full accent-success"
+              />
+              <strong className="text-sm text-success">{collectionRate}% محصل</strong>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-[13px]">
                 <thead className="bg-secondary/60 text-[12px] text-muted-foreground">
@@ -439,7 +644,11 @@ function ContractViewPage() {
             </div>
           </Section>
 
-          <Section title={`الفواتير (${invoices.data?.length ?? 0})`} subtitle="كل المستندات المالية الصادرة على العقد" icon={ReceiptText}>
+          <Section
+            title={`الفواتير (${invoices.data?.length ?? 0})`}
+            subtitle="كل المستندات المالية الصادرة على العقد"
+            icon={ReceiptText}
+          >
             <div className="space-y-2">
               {(invoices.data ?? []).map((inv) => (
                 <Link
@@ -464,8 +673,29 @@ function ContractViewPage() {
             </div>
           </Section>
 
-          <Section title={`التوقيعات الإلكترونية (${signatures.data?.length ?? 0})`} subtitle="التوقيعات المثبتة وتاريخ كل توقيع" icon={ShieldCheck}>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{(signatures.data ?? []).map((row) => <article key={row.id} className="rounded-xl border border-border p-3"><img src={row.image_data} alt={`توقيع ${row.signer_name}`} className="h-24 w-full rounded-lg bg-card object-contain" /><p className="mt-2 text-[13px] font-bold">{row.signer_name}</p><p className="text-[11.5px] text-muted-foreground">{new Date(row.signed_at).toLocaleString("ar-SA")}</p></article>)}{!signatures.data?.length ? <p className="text-[12.5px] text-muted-foreground">لم يُضف أي توقيع بعد.</p> : null}</div>
+          <Section
+            title={`التوقيعات الإلكترونية (${signatures.data?.length ?? 0})`}
+            subtitle="التوقيعات المثبتة وتاريخ كل توقيع"
+            icon={ShieldCheck}
+          >
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {(signatures.data ?? []).map((row) => (
+                <article key={row.id} className="rounded-xl border border-border p-3">
+                  <img
+                    src={row.image_data}
+                    alt={`توقيع ${row.signer_name}`}
+                    className="h-24 w-full rounded-lg bg-card object-contain"
+                  />
+                  <p className="mt-2 text-[13px] font-bold">{row.signer_name}</p>
+                  <p className="text-[11.5px] text-muted-foreground">
+                    {new Date(row.signed_at).toLocaleString("ar-SA")}
+                  </p>
+                </article>
+              ))}
+              {!signatures.data?.length ? (
+                <p className="text-[12.5px] text-muted-foreground">لم يُضف أي توقيع بعد.</p>
+              ) : null}
+            </div>
           </Section>
 
           {extraFields.length || importWarnings.length ? (
@@ -489,7 +719,6 @@ function ContractViewPage() {
               ) : null}
             </Section>
           ) : null}
-
         </div>
       )}
 

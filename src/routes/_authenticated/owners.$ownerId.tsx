@@ -72,9 +72,13 @@ function OwnerDetailPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [openUnits, setOpenUnits] = useState<Record<string, boolean>>({});
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-  const [dragAsset, setDragAsset] = useState<{ id: string; type: "unit" | "property" } | null>(null);
+  const [dragAsset, setDragAsset] = useState<{ id: string; type: "unit" | "property" } | null>(
+    null,
+  );
   const [dragContractId, setDragContractId] = useState<string | null>(null);
-  const [ownerAccess, setOwnerAccess] = useState<{ username: string; password: string } | null>(null);
+  const [ownerAccess, setOwnerAccess] = useState<{ username: string; password: string } | null>(
+    null,
+  );
   const [payingPayment, setPayingPayment] = useState<PaymentRow | null>(null);
 
   const dossier = useQuery({
@@ -84,15 +88,22 @@ function OwnerDetailPage() {
         supabase.from("contacts").select("*").eq("id", ownerId).single(),
         supabase
           .from("properties")
-          .select("id, code, name, purpose, property_type, city, district, price_value, status, is_visible, building_id")
+          .select(
+            "id, code, name, purpose, property_type, city, district, price_value, status, is_visible, building_id",
+          )
           .eq("owner_id", ownerId)
           .order("created_at", { ascending: false }),
         supabase
           .from("units")
-          .select("id, unit_number, unit_type, floor, area, rooms, status, is_rentable, building_id")
+          .select(
+            "id, unit_number, unit_type, floor, area, rooms, status, is_rentable, building_id",
+          )
           .eq("owner_id", ownerId)
           .order("unit_number"),
-        supabase.from("buildings").select("id, name, city, district, address").eq("owner_id", ownerId),
+        supabase
+          .from("buildings")
+          .select("id, name, city, district, address")
+          .eq("owner_id", ownerId),
         supabase
           .from("contracts")
           .select(
@@ -125,7 +136,10 @@ function OwnerDetailPage() {
           const tx = await supabase
             .from("payment_transactions")
             .select("paid_at")
-            .in("payment_id", payments.map((p) => p.id))
+            .in(
+              "payment_id",
+              payments.map((p) => p.id),
+            )
             .order("paid_at", { ascending: false })
             .limit(1);
           lastPaidAt = tx.data?.[0]?.paid_at ?? null;
@@ -149,9 +163,13 @@ function OwnerDetailPage() {
   const stats = useMemo(() => {
     const payments = data?.payments ?? [];
     const remaining = (p: PaymentRow) => Math.max(Number(p.amount_due) - Number(p.amount_paid), 0);
-    const overdue = payments.filter((p) => p.status !== "paid" && p.status !== "cancelled" && daysBetween(p.due_date) < 0);
+    const overdue = payments.filter(
+      (p) => p.status !== "paid" && p.status !== "cancelled" && daysBetween(p.due_date) < 0,
+    );
     const upcoming = payments
-      .filter((p) => p.status !== "paid" && p.status !== "cancelled" && daysBetween(p.due_date) >= 0)
+      .filter(
+        (p) => p.status !== "paid" && p.status !== "cancelled" && daysBetween(p.due_date) >= 0,
+      )
       .sort((a, b) => a.due_date.localeCompare(b.due_date));
     const next30 = upcoming.filter((p) => daysBetween(p.due_date) <= 30);
     const totalDue = payments.reduce((s, p) => s + Number(p.amount_due), 0);
@@ -165,17 +183,21 @@ function OwnerDetailPage() {
       totalPaid,
       rate: totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0,
       nextPayment: upcoming[0] ?? null,
-      nearest: [...overdue.sort((a, b) => a.due_date.localeCompare(b.due_date)), ...upcoming].slice(0, 6),
+      nearest: [...overdue.sort((a, b) => a.due_date.localeCompare(b.due_date)), ...upcoming].slice(
+        0,
+        6,
+      ),
     };
   }, [data]);
 
   const activeContracts = data?.contracts.filter((c) => c.status === "active") ?? [];
 
-
   const moveAsset = useMutation({
     mutationFn: (buildingId: string | null) => {
       if (!dragAsset) throw new Error("اختر الوحدة أو العقار أولًا");
-      return moveOwnerAsset({ data: { ownerId, buildingId, itemId: dragAsset.id, itemType: dragAsset.type } });
+      return moveOwnerAsset({
+        data: { ownerId, buildingId, itemId: dragAsset.id, itemType: dragAsset.type },
+      });
     },
     onSuccess: () => {
       setDragAsset(null);
@@ -212,14 +234,14 @@ function OwnerDetailPage() {
     const ownerRows: ExportRow[] = [
       {
         "الاسم الكامل": data.owner.full_name,
-        "الصفة": "مالك",
+        الصفة: "مالك",
         "رقم الهوية / السجل": data.owner.national_id,
-        "الجوال": data.owner.phone,
-        "واتساب": data.owner.whatsapp,
-        "البريد": data.owner.email,
-        "العنوان": data.owner.address,
-        "الحالة": data.owner.is_active ? "نشط" : "موقوف",
-        "الملاحظات": data.owner.notes,
+        الجوال: data.owner.phone,
+        واتساب: data.owner.whatsapp,
+        البريد: data.owner.email,
+        العنوان: data.owner.address,
+        الحالة: data.owner.is_active ? "نشط" : "موقوف",
+        الملاحظات: data.owner.notes,
       },
     ];
     const sheets = [
@@ -322,7 +344,10 @@ function OwnerDetailPage() {
         <Loader2 className="size-7 animate-spin text-primary" />
       </div>
     );
-  if (!data) return <div className="surface-card p-10 text-center text-destructive">تعذّر تحميل ملف المالك</div>;
+  if (!data)
+    return (
+      <div className="surface-card p-10 text-center text-destructive">تعذّر تحميل ملف المالك</div>
+    );
 
   const phone = data.owner.phone?.replace(/\D/g, "") ?? "";
   const whatsapp = (data.owner.whatsapp || data.owner.phone)?.replace(/\D/g, "") ?? "";
@@ -332,7 +357,8 @@ function OwnerDetailPage() {
   for (const c of data.contracts) {
     if (c.status !== "active") continue;
     if (c.unit_id && !contractByUnit.has(c.unit_id)) contractByUnit.set(c.unit_id, c);
-    if (c.property_id && !contractByProperty.has(c.property_id)) contractByProperty.set(c.property_id, c);
+    if (c.property_id && !contractByProperty.has(c.property_id))
+      contractByProperty.set(c.property_id, c);
   }
   const paymentsByContract = new Map<string, PaymentRow[]>();
   for (const p of data.payments) {
@@ -350,28 +376,75 @@ function OwnerDetailPage() {
     );
     return { unit: u, contract, remaining };
   });
+  // الأصول = الوحدات داخل العمارات + العقارات المستقلة، والإشغال يُقرأ من العقد النشط أولًا ثم الحالة المخزنة
+  const assetRows: { status: string | null; hasContract: boolean }[] = [
+    ...data.units.map((u) => ({
+      status: u.status ?? null,
+      hasContract: Boolean(contractByUnit.get(u.id)),
+    })),
+    ...data.properties.map((p) => ({
+      status: p.status ?? null,
+      hasContract: Boolean(contractByProperty.get(p.id)),
+    })),
+  ];
+  const norm = (s: string | null) => (s ?? "").trim().toLowerCase();
+  const occupiedStatuses = [
+    "occupied",
+    "rented",
+    "leased",
+    "sold",
+    "busy",
+    "مؤجرة",
+    "مؤجر",
+    "مشغولة",
+  ];
+  const outStatuses = [
+    "maintenance",
+    "out_of_service",
+    "inactive",
+    "disabled",
+    "صيانة",
+    "خارج الخدمة",
+  ];
   const unitCounts = {
-    total: data.units.length,
-    occupied: data.units.filter((u) => u.status === "occupied").length,
-    vacant: data.units.filter((u) => u.status === "available" || u.status === "vacant").length,
-    outOfService: data.units.filter(
-      (u) => u.status === "maintenance" || u.status === "out_of_service",
+    total: assetRows.length,
+    occupied: assetRows.filter((a) => a.hasContract || occupiedStatuses.includes(norm(a.status)))
+      .length,
+    outOfService: assetRows.filter((a) => !a.hasContract && outStatuses.includes(norm(a.status)))
+      .length,
+    vacant: assetRows.filter(
+      (a) =>
+        !a.hasContract &&
+        !occupiedStatuses.includes(norm(a.status)) &&
+        !outStatuses.includes(norm(a.status)),
     ).length,
   };
 
-  type GroupItem = { key: string; title: string; subtitle: string; contract: any | null; badge?: string; assetType: "unit" | "property" };
+  type GroupItem = {
+    key: string;
+    title: string;
+    subtitle: string;
+    contract: any | null;
+    badge?: string;
+    assetType: "unit" | "property";
+  };
   const groups: { key: string; title: string; subtitle: string; items: GroupItem[] }[] = [];
   for (const building of data.buildings) {
     groups.push({
       key: building.id,
       title: building.name,
-      subtitle: [building.district, building.city, building.address].filter(Boolean).join(" ، ") || "—",
+      subtitle:
+        [building.district, building.city, building.address].filter(Boolean).join(" ، ") || "—",
       items: data.units
         .filter((u) => u.building_id === building.id)
         .map((u) => ({
           key: u.id,
           title: `وحدة رقم ${u.unit_number}`,
-          subtitle: [u.unit_type, u.floor ? `الدور ${u.floor}` : null, u.area ? `${u.area} م²` : null]
+          subtitle: [
+            u.unit_type,
+            u.floor ? `الدور ${u.floor}` : null,
+            u.area ? `${u.area} م²` : null,
+          ]
             .filter(Boolean)
             .join(" · "),
           contract: contractByUnit.get(u.id) ?? null,
@@ -485,7 +558,11 @@ function OwnerDetailPage() {
             onClick={() => aiExport.mutate()}
             className="inline-flex h-9 items-center gap-2 rounded-md border border-primary/30 bg-accent px-3 font-semibold text-primary disabled:opacity-50"
           >
-            {aiExport.isPending ? <Loader2 className="size-4 animate-spin" /> : <Bot className="size-4" />}
+            {aiExport.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Bot className="size-4" />
+            )}
             ملف ذكي
           </button>
         </div>
@@ -494,10 +571,34 @@ function OwnerDetailPage() {
       {ownerAccess ? (
         <section className="surface-card border-e-4 border-e-success p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div><h2 className="text-sm font-bold">بيانات دخول بوابة المالك</h2><p className="mt-1 text-xs text-muted-foreground">انسخها وأرسلها للمالك بصورة آمنة. كلمة المرور لا تُعرض مرة أخرى.</p></div>
-            <button type="button" onClick={() => setOwnerAccess(null)} className="text-xs font-semibold text-muted-foreground">إخفاء</button>
+            <div>
+              <h2 className="text-sm font-bold">بيانات دخول بوابة المالك</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                انسخها وأرسلها للمالك بصورة آمنة. كلمة المرور لا تُعرض مرة أخرى.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOwnerAccess(null)}
+              className="text-xs font-semibold text-muted-foreground"
+            >
+              إخفاء
+            </button>
           </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2"><div className="rounded-lg bg-muted p-3"><span className="block text-xs text-muted-foreground">اسم المستخدم</span><b dir="ltr" className="mt-1 block">{ownerAccess.username}</b></div><div className="rounded-lg bg-muted p-3"><span className="block text-xs text-muted-foreground">كلمة المرور المؤقتة</span><b dir="ltr" className="mt-1 block">{ownerAccess.password}</b></div></div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="rounded-lg bg-muted p-3">
+              <span className="block text-xs text-muted-foreground">اسم المستخدم</span>
+              <b dir="ltr" className="mt-1 block">
+                {ownerAccess.username}
+              </b>
+            </div>
+            <div className="rounded-lg bg-muted p-3">
+              <span className="block text-xs text-muted-foreground">كلمة المرور المؤقتة</span>
+              <b dir="ltr" className="mt-1 block">
+                {ownerAccess.password}
+              </b>
+            </div>
+          </div>
         </section>
       ) : null}
 
@@ -516,7 +617,8 @@ function OwnerDetailPage() {
                 </Chip>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                رقم المالك: <span dir="ltr">{data.owner.id.slice(0, 8)}</span> · أضيف في {formatDate(data.owner.created_at)}
+                رقم المالك: <span dir="ltr">{data.owner.id.slice(0, 8)}</span> · أضيف في{" "}
+                {formatDate(data.owner.created_at)}
               </p>
             </div>
           </div>
@@ -562,8 +664,17 @@ function OwnerDetailPage() {
         </div>
 
         <div className="grid gap-px border-t border-border bg-border sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <Kpi label="المتأخرات" value={formatCurrency(stats.overdueAmount)} hint={`${stats.overdueCount} دفعة متأخرة`} tone="danger" />
-          <Kpi label="المستحق خلال 30 يوم" value={formatCurrency(stats.next30Amount)} hint={`${stats.next30Count} دفعة قادمة`} />
+          <Kpi
+            label="المتأخرات"
+            value={formatCurrency(stats.overdueAmount)}
+            hint={`${stats.overdueCount} دفعة متأخرة`}
+            tone="danger"
+          />
+          <Kpi
+            label="المستحق خلال 30 يوم"
+            value={formatCurrency(stats.next30Amount)}
+            hint={`${stats.next30Count} دفعة قادمة`}
+          />
           <Kpi
             label="نسبة التحصيل"
             value={`${stats.rate}%`}
@@ -578,89 +689,53 @@ function OwnerDetailPage() {
           <Kpi
             label="أقرب دفعة"
             value={stats.nextPayment ? formatDate(stats.nextPayment.due_date) : "—"}
-            hint={stats.nextPayment ? `${formatCurrency(remainingOf(stats.nextPayment))} ريال` : "لا توجد دفعات قادمة"}
+            hint={
+              stats.nextPayment
+                ? `${formatCurrency(remainingOf(stats.nextPayment))} ريال`
+                : "لا توجد دفعات قادمة"
+            }
           />
-          <Kpi label="آخر سداد" value={data.lastPaidAt ? formatDate(data.lastPaidAt) : "—"} hint="آخر عملية سداد مسجلة" />
+          <Kpi
+            label="آخر سداد"
+            value={data.lastPaidAt ? formatDate(data.lastPaidAt) : "—"}
+            hint="آخر عملية سداد مسجلة"
+          />
+        </div>
+
+        <div className="border-t border-border p-4">
+          <h2 className="mb-3 text-[13px] font-bold text-foreground">البيانات الشخصية والهوية</h2>
+          <div className="grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2 lg:grid-cols-4">
+            <Info icon={KeyRound} label="رقم الهوية / السجل" value={data.owner.national_id} ltr />
+            <Info icon={Phone} label="الجوال" value={data.owner.phone} ltr />
+            <Info
+              icon={MessageCircle}
+              label="واتساب"
+              value={data.owner.whatsapp || data.owner.phone}
+              ltr
+            />
+            <Info icon={Mail} label="البريد الإلكتروني" value={data.owner.email} ltr />
+            <Info icon={MapPin} label="العنوان" value={data.owner.address} />
+            <Info icon={Building2} label="التصنيف" value="مالك" />
+            <Info
+              icon={CheckCircle2}
+              label="الحالة"
+              value={data.owner.is_active ? "نشط" : "موقوف"}
+            />
+            <Info icon={UserRound} label="أضيف في" value={formatDate(data.owner.created_at)} />
+          </div>
+          {data.owner.notes ? (
+            <p className="mt-3 rounded-lg bg-secondary/60 p-3 text-[13px]">{data.owner.notes}</p>
+          ) : null}
         </div>
       </section>
 
-      <section className="surface-card overflow-hidden">
-        <div className="border-b border-border bg-primary px-5 py-5 text-primary-foreground">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-bold opacity-75">لوحة المحفظة العقارية</p>
-            <h2 className="mt-1 text-xl font-black">الوحدات وحالتها التشغيلية</h2>
-            <p className="mt-1 text-[12.5px] opacity-75">
-              حالة وحدات المالك ومستأجريها والمبالغ المتبقية
-            </p>
-          </div>
-          <span className="rounded-md border border-primary-foreground/20 bg-primary-foreground/10 px-3 py-1 text-xs font-bold">{unitCounts.total} وحدة</span>
-        </div>
-        </div>
-
-        <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
-          <UnitStat label="شاغرة" value={unitCounts.vacant} tone="success" />
-          <UnitStat label="مشغولة" value={unitCounts.occupied} tone="danger" />
-          <UnitStat label="خارج الخدمة" value={unitCounts.outOfService} tone="warning" />
-          <UnitStat label="إجمالي الوحدات" value={unitCounts.total} tone="neutral" />
-        </div>
-
-        <div className="p-5">{unitBoard.length === 0 ? (
-          <p className="py-10 text-center text-[13px] text-muted-foreground">
-            لا توجد وحدات مسجلة لهذا المالك.
-          </p>
-        ) : (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {unitBoard.map(({ unit, contract, remaining }) => {
-              const occupied = unit.status === "occupied" || Boolean(contract);
-              const accent = occupied ? "border-destructive/50" : "border-success/50";
-              return (
-                <article key={unit.id} className={`rounded-xl border-2 ${accent} bg-card p-3`}>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-[11.5px] text-muted-foreground">{unit.unit_type ?? "وحدة"}</p>
-                      <p className="text-base font-bold">{unit.unit_number}</p>
-                    </div>
-                    <Chip tone={occupied ? "danger" : "success"}>{occupied ? "مشغولة" : "شاغرة"}</Chip>
-                  </div>
-
-                  <div className="mt-3 border-t border-border pt-3 text-[12.5px]">
-                    <p className="flex items-center gap-2 font-semibold">
-                      <UserRound className="size-3.5 text-muted-foreground" />
-                      {contract?.tenant?.full_name ?? "لا يوجد مستأجر"}
-                    </p>
-                    <p className="mt-1 text-[11.5px] text-muted-foreground">
-                      تسجيل الدخول: {contract?.start_date ? formatDate(contract.start_date) : "—"}
-                    </p>
-                    <p className="text-[11.5px] text-muted-foreground">
-                      تسجيل الخروج: {contract?.end_date ? formatDate(contract.end_date) : "—"}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between border-t border-border pt-2 text-[12px]">
-                    <span className={remaining > 0 ? "font-semibold text-destructive" : "text-muted-foreground"}>
-                      المتبقي: {formatCurrency(remaining)}
-                    </span>
-                    {contract ? (
-                      <Link
-                        to="/contracts/$contractId"
-                        params={{ contractId: contract.id }}
-                        className="font-semibold text-primary"
-                      >
-                        العقد
-                      </Link>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}</div>
-      </section>
-
-
-
-      <RecordSection title="أقرب الدفعات" subtitle="أولوية المتابعة والتحصيل حسب تاريخ الاستحقاق" icon={CalendarClock} count={stats.nearest.length} tone="gold">
+      <RecordSection
+        title="أقرب الدفعات"
+        subtitle="أولوية المتابعة والتحصيل حسب تاريخ الاستحقاق"
+        icon={CalendarClock}
+        count={stats.nearest.length}
+        tone="gold"
+      >
         <div className="space-y-2">
           {stats.nearest.map((p) => {
             const contract = data.contracts.find((c) => c.id === p.contract_id);
@@ -673,7 +748,9 @@ function OwnerDetailPage() {
                 <div className="flex items-center gap-3">
                   <span className="font-bold">{formatCurrency(remainingOf(p))}</span>
                   <span className="text-[12.5px] text-muted-foreground">
-                    {contract?.unit?.unit_number ? `وحدة ${contract.unit.unit_number}` : contract?.property?.name ?? "—"}
+                    {contract?.unit?.unit_number
+                      ? `وحدة ${contract.unit.unit_number}`
+                      : (contract?.property?.name ?? "—")}
                     {contract?.tenant?.full_name ? ` — ${contract.tenant.full_name}` : ""}
                   </span>
                 </div>
@@ -682,7 +759,9 @@ function OwnerDetailPage() {
                     {formatDate(p.due_date)}
                   </span>
                   <Chip tone={paymentTone(p)}>
-                    {late ? `متأخرة منذ ${Math.abs(daysBetween(p.due_date))} يوم` : `خلال ${daysBetween(p.due_date)} يوم`}
+                    {late
+                      ? `متأخرة منذ ${Math.abs(daysBetween(p.due_date))} يوم`
+                      : `خلال ${daysBetween(p.due_date)} يوم`}
                   </Chip>
                   <Link
                     to="/payment-reminder/$paymentId"
@@ -701,24 +780,102 @@ function OwnerDetailPage() {
         </div>
       </RecordSection>
 
-      <RecordSection title="البيانات الأساسية" subtitle="بيانات الاتصال والهوية والحالة" icon={UserRound} count={data.owner.is_active ? 1 : 0}>
-        <div className="grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2 lg:grid-cols-4">
-          <Info icon={UserRound} label="الاسم" value={data.owner.full_name} />
-          <Info icon={KeyRound} label="رقم الهوية / السجل" value={data.owner.national_id} ltr />
-          <Info icon={Phone} label="الجوال" value={data.owner.phone} ltr />
-          <Info icon={MessageCircle} label="واتساب" value={data.owner.whatsapp || data.owner.phone} ltr />
-          <Info icon={Mail} label="البريد الإلكتروني" value={data.owner.email} ltr />
-          <Info icon={MapPin} label="العنوان" value={data.owner.address} />
-          <Info icon={Building2} label="التصنيف" value="مالك" />
-          <Info icon={CheckCircle2} label="الحالة" value={data.owner.is_active ? "نشط" : "موقوف"} />
+      <section className="surface-card overflow-hidden">
+        <div className="border-b border-border bg-primary px-5 py-5 text-primary-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold opacity-75">لوحة المحفظة العقارية</p>
+              <h2 className="mt-1 text-xl font-black">الوحدات وحالتها التشغيلية</h2>
+              <p className="mt-1 text-[12.5px] opacity-75">
+                حالة وحدات المالك ومستأجريها والمبالغ المتبقية
+              </p>
+            </div>
+            <span className="rounded-md border border-primary-foreground/20 bg-primary-foreground/10 px-3 py-1 text-xs font-bold">
+              {unitCounts.total} وحدة
+            </span>
+          </div>
         </div>
-        {data.owner.notes ? (
-          <p className="mt-3 rounded-lg bg-secondary/60 p-3 text-[13px]">{data.owner.notes}</p>
-        ) : null}
-      </RecordSection>
 
-      <RecordSection title="العقارات والوحدات" subtitle="المباني والأصول والعقود المرتبطة بكل وحدة" icon={House} count={groups.reduce((s, g) => s + g.items.length, 0)}>
-        <p className="mb-3 text-[12px] text-muted-foreground">اسحب الوحدة أو العقار بين المباني، أو اسحب عقدًا نشطًا من قسم العقود وأسقطه على وحدة شاغرة.</p>
+        <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
+          <UnitStat label="شاغرة" value={unitCounts.vacant} tone="success" />
+          <UnitStat label="مشغولة" value={unitCounts.occupied} tone="danger" />
+          <UnitStat label="خارج الخدمة" value={unitCounts.outOfService} tone="warning" />
+          <UnitStat label="إجمالي الوحدات" value={unitCounts.total} tone="neutral" />
+        </div>
+
+        <div className="p-5">
+          {unitBoard.length === 0 ? (
+            <p className="py-10 text-center text-[13px] text-muted-foreground">
+              لا توجد وحدات مسجلة لهذا المالك.
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {unitBoard.map(({ unit, contract, remaining }) => {
+                const occupied = unit.status === "occupied" || Boolean(contract);
+                const accent = occupied ? "border-destructive/50" : "border-success/50";
+                return (
+                  <article key={unit.id} className={`rounded-xl border-2 ${accent} bg-card p-3`}>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-[11.5px] text-muted-foreground">
+                          {unit.unit_type ?? "وحدة"}
+                        </p>
+                        <p className="text-base font-bold">{unit.unit_number}</p>
+                      </div>
+                      <Chip tone={occupied ? "danger" : "success"}>
+                        {occupied ? "مشغولة" : "شاغرة"}
+                      </Chip>
+                    </div>
+
+                    <div className="mt-3 border-t border-border pt-3 text-[12.5px]">
+                      <p className="flex items-center gap-2 font-semibold">
+                        <UserRound className="size-3.5 text-muted-foreground" />
+                        {contract?.tenant?.full_name ?? "لا يوجد مستأجر"}
+                      </p>
+                      <p className="mt-1 text-[11.5px] text-muted-foreground">
+                        تسجيل الدخول: {contract?.start_date ? formatDate(contract.start_date) : "—"}
+                      </p>
+                      <p className="text-[11.5px] text-muted-foreground">
+                        تسجيل الخروج: {contract?.end_date ? formatDate(contract.end_date) : "—"}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between border-t border-border pt-2 text-[12px]">
+                      <span
+                        className={
+                          remaining > 0 ? "font-semibold text-destructive" : "text-muted-foreground"
+                        }
+                      >
+                        المتبقي: {formatCurrency(remaining)}
+                      </span>
+                      {contract ? (
+                        <Link
+                          to="/contracts/$contractId"
+                          params={{ contractId: contract.id }}
+                          className="font-semibold text-primary"
+                        >
+                          العقد
+                        </Link>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <RecordSection
+        title="العقارات والوحدات"
+        subtitle="المباني والأصول والعقود المرتبطة بكل وحدة"
+        icon={House}
+        count={groups.reduce((s, g) => s + g.items.length, 0)}
+      >
+        <p className="mb-3 text-[12px] text-muted-foreground">
+          اسحب الوحدة أو العقار بين المباني، أو اسحب عقدًا نشطًا من قسم العقود وأسقطه على وحدة
+          شاغرة.
+        </p>
         <div className="grid w-full grid-cols-1 gap-4">
           {groups.map((group) => {
             const collapsed = collapsedGroups[group.key];
@@ -742,7 +899,9 @@ function OwnerDetailPage() {
                       className="grid size-8 place-items-center rounded-md border border-border bg-card hover:bg-muted"
                       aria-label="طي / فتح"
                     >
-                      <ChevronDown className={`size-4 transition-transform ${collapsed ? "-rotate-90" : ""}`} />
+                      <ChevronDown
+                        className={`size-4 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+                      />
                     </button>
                   </div>
                 </header>
@@ -807,7 +966,9 @@ function OwnerDetailPage() {
                                 <>
                                   <button
                                     type="button"
-                                    onClick={() => setOpenUnits((s) => ({ ...s, [item.key]: !shown }))}
+                                    onClick={() =>
+                                      setOpenUnits((s) => ({ ...s, [item.key]: !shown }))
+                                    }
                                     className="inline-flex h-8 items-center gap-2 rounded-md border border-border px-3 text-[12px] font-semibold hover:bg-muted"
                                   >
                                     <ReceiptText className="size-3.5" />
@@ -832,10 +993,16 @@ function OwnerDetailPage() {
                                 <MiniStat label="الدفعات" value={`${paid}/${list.length}`} />
                                 <MiniStat
                                   label="مدفوع"
-                                  value={formatCurrency(list.reduce((s, p) => s + Number(p.amount_paid), 0))}
+                                  value={formatCurrency(
+                                    list.reduce((s, p) => s + Number(p.amount_paid), 0),
+                                  )}
                                   tone="success"
                                 />
-                                <MiniStat label="متبقي" value={formatCurrency(totalRemaining)} tone="danger" />
+                                <MiniStat
+                                  label="متبقي"
+                                  value={formatCurrency(totalRemaining)}
+                                  tone="danger"
+                                />
                                 <MiniStat
                                   label="نسبة التحصيل"
                                   value={`${list.length ? Math.round((paid / list.length) * 100) : 0}%`}
@@ -864,25 +1031,27 @@ function OwnerDetailPage() {
                                             {formatDate(p.due_date)}
                                           </td>
                                           <td className="p-2">{formatCurrency(p.amount_due)}</td>
-                                          <td className="p-2 text-success">{formatCurrency(p.amount_paid)}</td>
+                                          <td className="p-2 text-success">
+                                            {formatCurrency(p.amount_paid)}
+                                          </td>
                                           <td className="p-2">{formatCurrency(remainingOf(p))}</td>
                                           <td className="p-2">
                                             <Chip tone={paymentTone(p)}>{paymentLabel(p)}</Chip>
                                           </td>
-                                           <td className="p-2">
-                                             <button
-                                               type="button"
-                                               onClick={() => setPayingPayment(p)}
-                                               className={
-                                                 p.status === "paid"
-                                                   ? "inline-flex h-8 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-semibold text-success"
-                                                   : "inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground"
-                                               }
-                                             >
-                                               <CheckCircle2 className="size-3.5" />
-                                               {p.status === "paid" ? "مسددة — تعديل" : "تسجيل سداد"}
-                                             </button>
-                                           </td>
+                                          <td className="p-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => setPayingPayment(p)}
+                                              className={
+                                                p.status === "paid"
+                                                  ? "inline-flex h-8 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-semibold text-success"
+                                                  : "inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground"
+                                              }
+                                            >
+                                              <CheckCircle2 className="size-3.5" />
+                                              {p.status === "paid" ? "مسددة — تعديل" : "تسجيل سداد"}
+                                            </button>
+                                          </td>
                                           <td className="p-2">
                                             <Link
                                               to="/payment-reminder/$paymentId"
@@ -899,7 +1068,10 @@ function OwnerDetailPage() {
                                     })}
                                     {!list.length ? (
                                       <tr>
-                                        <td colSpan={8} className="p-4 text-center text-muted-foreground">
+                                        <td
+                                          colSpan={8}
+                                          className="p-4 text-center text-muted-foreground"
+                                        >
                                           لا توجد دفعات مسجلة على هذا العقد.
                                         </td>
                                       </tr>
@@ -922,7 +1094,13 @@ function OwnerDetailPage() {
         </div>
       </RecordSection>
 
-      <RecordSection title="العقود" subtitle="القيمة والمدة والتحصيل والمتأخرات لكل عقد" icon={FileText} count={data.contracts.length} tone="primary">
+      <RecordSection
+        title="العقود"
+        subtitle="القيمة والمدة والتحصيل والمتأخرات لكل عقد"
+        icon={FileText}
+        count={data.contracts.length}
+        tone="primary"
+      >
         <div className="grid w-full gap-4">
           {data.contracts.map((contract) => {
             const rows = data.payments.filter((p) => p.contract_id === contract.id);
@@ -934,7 +1112,10 @@ function OwnerDetailPage() {
               (p) => p.status !== "paid" && p.status !== "cancelled" && daysBetween(p.due_date) < 0,
             );
             const next = rows
-              .filter((p) => p.status !== "paid" && p.status !== "cancelled" && daysBetween(p.due_date) >= 0)
+              .filter(
+                (p) =>
+                  p.status !== "paid" && p.status !== "cancelled" && daysBetween(p.due_date) >= 0,
+              )
               .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
             const left = daysBetween(contract.end_date);
             return (
@@ -956,11 +1137,15 @@ function OwnerDetailPage() {
                     <p className="mt-1 text-[12.5px] text-muted-foreground">
                       {contract.property?.name ??
                         (contract.unit?.unit_number ? `وحدة ${contract.unit.unit_number}` : "—")}
-                      {contract.tenant?.full_name ? ` • المستأجر: ${contract.tenant.full_name}` : ""}
+                      {contract.tenant?.full_name
+                        ? ` • المستأجر: ${contract.tenant.full_name}`
+                        : ""}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    {overdue.length ? <Chip tone="danger">{overdue.length} دفعة متأخرة</Chip> : null}
+                    {overdue.length ? (
+                      <Chip tone="danger">{overdue.length} دفعة متأخرة</Chip>
+                    ) : null}
                     <Chip tone={contract.status === "active" ? "success" : "neutral"}>
                       {contractStatusLabels[contract.status] ?? contract.status}
                     </Chip>
@@ -975,12 +1160,38 @@ function OwnerDetailPage() {
                 </header>
 
                 <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
-                  <Detail label="مدة العقد" value={`${formatDate(contract.start_date)} — ${formatDate(contract.end_date)}`} hint={contract.status === "active" ? (left >= 0 ? `متبقٍ ${left} يوم` : `منتهٍ منذ ${Math.abs(left)} يوم`) : undefined} />
-                  <Detail label="قيمة الإيجار السنوي" value={formatCurrency(contract.annual_rent ?? contract.total_value)} hint={contract.payment_cycle ? `دورة السداد: ${contract.payment_cycle}` : undefined} />
-                  <Detail label="إجمالي العقد" value={formatCurrency(contract.total_value)} hint={contract.deposit ? `التأمين: ${formatCurrency(contract.deposit)}` : undefined} />
+                  <Detail
+                    label="مدة العقد"
+                    value={`${formatDate(contract.start_date)} — ${formatDate(contract.end_date)}`}
+                    hint={
+                      contract.status === "active"
+                        ? left >= 0
+                          ? `متبقٍ ${left} يوم`
+                          : `منتهٍ منذ ${Math.abs(left)} يوم`
+                        : undefined
+                    }
+                  />
+                  <Detail
+                    label="قيمة الإيجار السنوي"
+                    value={formatCurrency(contract.annual_rent ?? contract.total_value)}
+                    hint={
+                      contract.payment_cycle ? `دورة السداد: ${contract.payment_cycle}` : undefined
+                    }
+                  />
+                  <Detail
+                    label="إجمالي العقد"
+                    value={formatCurrency(contract.total_value)}
+                    hint={
+                      contract.deposit ? `التأمين: ${formatCurrency(contract.deposit)}` : undefined
+                    }
+                  />
                   <Detail
                     label="الدفعة القادمة"
-                    value={next ? formatCurrency(Number(next.amount_due) - Number(next.amount_paid)) : "لا توجد"}
+                    value={
+                      next
+                        ? formatCurrency(Number(next.amount_due) - Number(next.amount_paid))
+                        : "لا توجد"
+                    }
                     hint={next ? `تستحق ${formatDate(next.due_date)}` : undefined}
                   />
                 </div>
@@ -991,9 +1202,15 @@ function OwnerDetailPage() {
                       المسدد {formatCurrency(paid)} من {formatCurrency(due)} • المتبقي{" "}
                       <strong className="text-foreground">{formatCurrency(remaining)}</strong>
                     </span>
-                    <span>{rows.length.toLocaleString("ar-SA")} دفعة • نسبة التحصيل {rate}%</span>
+                    <span>
+                      {rows.length.toLocaleString("ar-SA")} دفعة • نسبة التحصيل {rate}%
+                    </span>
                   </div>
-                   <progress value={Math.min(rate, 100)} max={100} className="h-2.5 w-full overflow-hidden rounded-full accent-primary" />
+                  <progress
+                    value={Math.min(rate, 100)}
+                    max={100}
+                    className="h-2.5 w-full overflow-hidden rounded-full accent-primary"
+                  />
                   {contract.tenant?.phone || contract.tenant?.whatsapp ? (
                     <p className="text-[12px] text-muted-foreground" dir="ltr">
                       {contract.tenant?.whatsapp ?? contract.tenant?.phone}
@@ -1007,8 +1224,13 @@ function OwnerDetailPage() {
         </div>
       </RecordSection>
 
-
-      <RecordSection title="الفواتير" subtitle="تواريخ الإصدار والاستحقاق وحالة السداد" icon={ReceiptText} count={data.invoices.length} tone="gold">
+      <RecordSection
+        title="الفواتير"
+        subtitle="تواريخ الإصدار والاستحقاق وحالة السداد"
+        icon={ReceiptText}
+        count={data.invoices.length}
+        tone="gold"
+      >
         <div className="grid gap-3 lg:grid-cols-2">
           {data.invoices.map((invoice) => (
             <Link
@@ -1017,14 +1239,35 @@ function OwnerDetailPage() {
               params={{ invoiceId: invoice.id }}
               className="grid items-center gap-3 rounded-lg border border-border bg-muted/20 p-4 transition-colors hover:bg-muted sm:grid-cols-2"
             >
-              <div><span className="text-[11px] text-muted-foreground">رقم الفاتورة</span><strong className="mt-1 block" dir="ltr">{invoice.invoice_number}</strong></div>
-              <div className="justify-self-start sm:justify-self-end"><Chip
-                tone={invoice.status === "paid" ? "success" : invoice.status === "overdue" ? "danger" : "warning"}
-              >
-                {invoiceStatusLabels[invoice.status] ?? invoice.status}
-              </Chip></div>
-              <div><span className="text-[11px] text-muted-foreground">الإصدار / الاستحقاق</span><p className="mt-1 text-[12.5px]">{formatDate(invoice.issue_date)} — {formatDate(invoice.due_date)}</p></div>
-              <div className="sm:text-end"><span className="text-[11px] text-muted-foreground">الإجمالي</span><strong className="mt-1 block text-base">{formatCurrency(invoice.total)}</strong></div>
+              <div>
+                <span className="text-[11px] text-muted-foreground">رقم الفاتورة</span>
+                <strong className="mt-1 block" dir="ltr">
+                  {invoice.invoice_number}
+                </strong>
+              </div>
+              <div className="justify-self-start sm:justify-self-end">
+                <Chip
+                  tone={
+                    invoice.status === "paid"
+                      ? "success"
+                      : invoice.status === "overdue"
+                        ? "danger"
+                        : "warning"
+                  }
+                >
+                  {invoiceStatusLabels[invoice.status] ?? invoice.status}
+                </Chip>
+              </div>
+              <div>
+                <span className="text-[11px] text-muted-foreground">الإصدار / الاستحقاق</span>
+                <p className="mt-1 text-[12.5px]">
+                  {formatDate(invoice.issue_date)} — {formatDate(invoice.due_date)}
+                </p>
+              </div>
+              <div className="sm:text-end">
+                <span className="text-[11px] text-muted-foreground">الإجمالي</span>
+                <strong className="mt-1 block text-base">{formatCurrency(invoice.total)}</strong>
+              </div>
             </Link>
           ))}
           {!data.invoices.length ? <Empty text="لا توجد فواتير مرتبطة" /> : null}
@@ -1069,10 +1312,15 @@ function Kpi({
   return (
     <div className="min-h-24 bg-card p-4">
       <p className="text-[11.5px] text-muted-foreground">{label}</p>
-      <p className={`mt-2 text-[17px] font-bold ${tone === "danger" ? "text-destructive" : ""}`}>{value}</p>
+      <p className={`mt-2 text-[17px] font-bold ${tone === "danger" ? "text-destructive" : ""}`}>
+        {value}
+      </p>
       {progress != null ? (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(progress, 100)}%` }} />
+          <div
+            className="h-full rounded-full bg-success"
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          />
         </div>
       ) : null}
       {hint ? <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p> : null}
@@ -1080,7 +1328,15 @@ function Kpi({
   );
 }
 
-function MiniStat({ label, value, tone }: { label: string; value: string; tone?: "success" | "danger" }) {
+function MiniStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "success" | "danger";
+}) {
   return (
     <div className="rounded-md bg-secondary/60 p-2 text-center">
       <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -1133,9 +1389,23 @@ function RecordSection({
   children: ReactNode;
 }) {
   return (
-    <section className={`surface-card overflow-hidden border-e-2 ${tone === "gold" ? "border-e-gold" : "border-e-primary"}`}>
+    <section
+      className={`surface-card overflow-hidden border-e-2 ${tone === "gold" ? "border-e-gold" : "border-e-primary"}`}
+    >
       <header className="flex items-center justify-between border-b border-border bg-muted/25 px-5 py-4">
-        <div className="flex items-center gap-3"><span className={`grid size-9 place-items-center rounded-lg ${tone === "gold" ? "bg-gold/15 text-gold" : "bg-accent text-primary"}`}><Icon className="size-4" /></span><div><h2 className="text-[14px] font-black">{title}</h2>{subtitle ? <p className="mt-0.5 text-[11.5px] text-muted-foreground">{subtitle}</p> : null}</div></div>
+        <div className="flex items-center gap-3">
+          <span
+            className={`grid size-9 place-items-center rounded-lg ${tone === "gold" ? "bg-gold/15 text-gold" : "bg-accent text-primary"}`}
+          >
+            <Icon className="size-4" />
+          </span>
+          <div>
+            <h2 className="text-[14px] font-black">{title}</h2>
+            {subtitle ? (
+              <p className="mt-0.5 text-[11.5px] text-muted-foreground">{subtitle}</p>
+            ) : null}
+          </div>
+        </div>
         <Chip tone="primary">{count}</Chip>
       </header>
       <div className="p-4">{children}</div>
@@ -1144,7 +1414,9 @@ function RecordSection({
 }
 
 function Empty({ text }: { text: string }) {
-  return <p className="col-span-full py-7 text-center text-[12.5px] text-muted-foreground">{text}</p>;
+  return (
+    <p className="col-span-full py-7 text-center text-[12.5px] text-muted-foreground">{text}</p>
+  );
 }
 
 function UnitStat({
@@ -1173,7 +1445,15 @@ function UnitStat({
 }
 
 /** خلية تفصيل داخل بطاقة العقد. */
-function Detail({ label, value, hint }: { label: string; value: string; hint?: string | undefined }) {
+function Detail({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string | undefined;
+}) {
   return (
     <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
       <p className="text-[11.5px] text-muted-foreground">{label}</p>
