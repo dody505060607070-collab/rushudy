@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Contact, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/kit/Chip";
@@ -45,10 +45,15 @@ type Row = {
 };
 
 export const Route = createFileRoute("/_authenticated/clients")({
+  validateSearch: (search: Record<string, unknown>): { edit?: string } =>
+    typeof search["edit"] === "string" ? { edit: search["edit"] } : {},
   head: () => ({
     meta: [
       { title: "العملاء | الرشودي للعقارات" },
-      { name: "description", content: "قاعدة العملاء والوسطاء وبيانات التواصل والميزانيات والمتابعة." },
+      {
+        name: "description",
+        content: "قاعدة العملاء والوسطاء وبيانات التواصل والميزانيات والمتابعة.",
+      },
       { property: "og:title", content: "العملاء | الرشودي للعقارات" },
       { property: "og:description", content: "إدارة كاملة لبيانات العملاء وأدوارهم وتفضيلاتهم." },
       { property: "og:type", content: "website" },
@@ -102,6 +107,7 @@ const emptyForm: FormState = {
 };
 
 function ClientsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState("all");
   const [open, setOpen] = useState(false);
@@ -147,6 +153,18 @@ function ClientsPage() {
     });
     setOpen(true);
   };
+
+  const { edit: editId } = Route.useSearch();
+  const handledEditId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!editId || handledEditId.current === editId) return;
+    const row = rows.find((item) => item.id === editId);
+    if (!row) return;
+    handledEditId.current = editId;
+    openEdit(row);
+    void navigate({ to: "/clients", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, rows]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -580,7 +598,9 @@ function ClientsPage() {
             ))}
           </dl>
         ) : null}
-        {detail ? <ClientAccessPanel contactId={detail.id} phone={detail.whatsapp ?? detail.phone} /> : null}
+        {detail ? (
+          <ClientAccessPanel contactId={detail.id} phone={detail.whatsapp ?? detail.phone} />
+        ) : null}
       </Modal>
     </>
   );
@@ -625,8 +645,8 @@ function ClientAccessPanel({ contactId, phone }: { contactId: string; phone: str
     <div className="mt-4 rounded-xl border border-border p-4">
       <h3 className="text-[13px] font-bold text-foreground">بيانات دخول بوابة العميل</h3>
       <p className="mt-1 text-[12px] leading-6 text-muted-foreground">
-        تُنشأ تلقائيًا من العقد (اسم المستخدم = رقم الهوية، كلمة المرور = الجوال 05…). ولو العقد بدون
-        هوية أو جوال يولّد النظام بيانات دخول تلقائية يمكنك تسليمها للعميل.
+        تُنشأ تلقائيًا من العقد (اسم المستخدم = رقم الهوية، كلمة المرور = الجوال 05…). ولو العقد
+        بدون هوية أو جوال يولّد النظام بيانات دخول تلقائية يمكنك تسليمها للعميل.
       </p>
 
       <div className="mt-3 text-[12.5px]">
