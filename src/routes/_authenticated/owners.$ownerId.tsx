@@ -1134,16 +1134,20 @@ function OwnerDetailPage() {
           </div>
         </div>
 
-        <div className="grid w-full grid-cols-1 gap-4">
-          {groups.map((group) => {
+        {(() => {
+          const renderGroup = (group: (typeof groups)[number]) => {
             const collapsed = collapsedGroups[group.key];
             return (
               <article
                 key={group.key}
+                draggable={group.key !== "__standalone"}
+                onDragStart={() => setDragGroup({ id: group.key, type: "building" })}
+                onDragEnd={() => setDragGroup(null)}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => moveAsset.mutate(group.key === "__standalone" ? null : group.key)}
                 className="overflow-hidden rounded-md border border-border border-e-primary transition-colors hover:border-primary/50"
               >
+
                 <header className="flex flex-wrap items-center justify-between gap-3 bg-secondary/40 px-4 py-3">
                   <div>
                     <h3 className="text-[14px] font-bold">{group.title}</h3>
