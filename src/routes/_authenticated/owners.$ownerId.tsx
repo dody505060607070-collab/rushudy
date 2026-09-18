@@ -76,6 +76,12 @@ function OwnerDetailPage() {
     null,
   );
   const [dragContractId, setDragContractId] = useState<string | null>(null);
+  const [newSectionName, setNewSectionName] = useState("");
+  const [dragGroup, setDragGroup] = useState<{
+    id: string;
+    type: "building" | "property" | "unit";
+  } | null>(null);
+
   const [ownerAccess, setOwnerAccess] = useState<{ username: string; password: string } | null>(
     null,
   );
