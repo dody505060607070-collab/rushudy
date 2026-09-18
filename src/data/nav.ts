@@ -50,6 +50,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "الملاك", to: "/owners", countKey: "owners", module: "owners" },
       { label: "إدارة العقود", to: "/contracts", countKey: "contracts", module: "contracts" },
+      { label: "تنبيهات التجديد", to: "/renewals", module: "contracts" },
       { label: "الفواتير", to: "/invoices", countKey: "invoices", module: "invoices" },
       { label: "إدارة التذكيرات", to: "/reminders", countKey: "followups", module: "reminders" },
     ],
