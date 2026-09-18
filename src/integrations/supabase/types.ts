@@ -1596,6 +1596,107 @@ export type Database = {
           },
         ]
       }
+      maintenance_requests: {
+        Row: {
+          after_images: string[]
+          before_images: string[]
+          category: string
+          contract_id: string | null
+          cost: number
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          internal_notes: string | null
+          priority: string
+          property_id: string | null
+          rating: number | null
+          reporter_name: string
+          reporter_phone: string
+          scheduled_at: string | null
+          status: string
+          technician_name: string | null
+          technician_phone: string | null
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          after_images?: string[]
+          before_images?: string[]
+          category?: string
+          contract_id?: string | null
+          cost?: number
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          internal_notes?: string | null
+          priority?: string
+          property_id?: string | null
+          rating?: number | null
+          reporter_name: string
+          reporter_phone: string
+          scheduled_at?: string | null
+          status?: string
+          technician_name?: string | null
+          technician_phone?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          after_images?: string[]
+          before_images?: string[]
+          category?: string
+          contract_id?: string | null
+          cost?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          internal_notes?: string | null
+          priority?: string
+          property_id?: string | null
+          rating?: number | null
+          reporter_name?: string
+          reporter_phone?: string
+          scheduled_at?: string | null
+          status?: string
+          technician_name?: string | null
+          technician_phone?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_requests_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketer_commissions: {
         Row: {
           amount: number
