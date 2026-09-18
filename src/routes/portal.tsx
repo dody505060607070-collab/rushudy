@@ -45,7 +45,22 @@ function PortalLayout() {
   const navigate = useNavigate();
   const { user } = Route.useRouteContext();
   const name = (user.user_metadata?.["full_name"] as string | undefined) ?? "العميل";
-  const isOwner = user.user_metadata?.["portal_role"] === "owner";
+  const metaOwner = user.user_metadata?.["portal_role"] === "owner";
+
+  const workspace = useQuery({
+    queryKey: ["owner-workspace"],
+    queryFn: () => getOwnerWorkspace(),
+    retry: false,
+    staleTime: 60_000,
+  });
+  const isOwner = metaOwner || workspace.isSuccess;
+
+  useEffect(() => {
+    if (!isOwner) return;
+    void recordOwnerLogin({
+      data: { userAgent: navigator.userAgent, path: window.location.pathname },
+    }).catch(() => undefined);
+  }, [isOwner]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
