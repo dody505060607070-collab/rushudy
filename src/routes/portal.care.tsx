@@ -115,7 +115,7 @@ function OwnerCarePage() {
                     type="button"
                     className={btnPrimary}
                     disabled={decide.isPending}
-                    onClick={() => decide.mutate({ id: a.id, decision: "approved", note: note[a.id] })}
+                    onClick={() => decide.mutate({ id: a.id, decision: "approved", note: note[a.id] ?? "" })}
                   >
                     <CheckCircle2 className="h-4 w-4" /> موافقة
                   </button>
@@ -123,7 +123,7 @@ function OwnerCarePage() {
                     type="button"
                     className={btnGhost}
                     disabled={decide.isPending}
-                    onClick={() => decide.mutate({ id: a.id, decision: "rejected", note: note[a.id] })}
+                    onClick={() => decide.mutate({ id: a.id, decision: "rejected", note: note[a.id] ?? "" })}
                   >
                     <XCircle className="h-4 w-4" /> رفض
                   </button>

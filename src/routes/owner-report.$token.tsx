@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Bars, PortalCard, Stat, money, pct } from "@/components/portal/ui";
+import { BarChart3, Coins, Receipt } from "lucide-react";
 import { getSharedOwnerReport } from "@/lib/owner-portal.functions";
 
 export const Route = createFileRoute("/owner-report/$token")({
@@ -55,11 +56,11 @@ function SharedOwnerReportPage() {
             <Stat label="نسبة الإشغال" value={pct(data.summary.occupancyRate)} />
           </div>
 
-          <PortalCard title="الدخل خلال الأشهر الماضية" subtitle="المحصّل شهريًا">
+          <PortalCard icon={BarChart3} title="الدخل خلال الأشهر الماضية" subtitle="المحصّل شهريًا">
             <Bars items={data.months.slice(-12).map((m) => ({ label: m.label, value: m.collected }))} />
           </PortalCard>
 
-          <PortalCard title="العائد لكل عقار" subtitle="الإيجار السنوي والمصروفات ومعدل العائد">
+          <PortalCard icon={Coins} title="العائد لكل عقار" subtitle="الإيجار السنوي والمصروفات ومعدل العائد">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] text-right text-[12.5px]">
                 <thead className="text-muted-foreground">
@@ -84,7 +85,7 @@ function SharedOwnerReportPage() {
             </div>
           </PortalCard>
 
-          <PortalCard title={`ملخص ${data.taxReport.year}`} subtitle="أرقام استرشادية للمحاسب">
+          <PortalCard icon={Receipt} title={`ملخص ${data.taxReport.year}`} subtitle="أرقام استرشادية للمحاسب">
             <div className="grid gap-3 sm:grid-cols-4">
               <Stat label="المحصّل" value={money(data.taxReport.collected)} />
               <Stat label="المصروفات" value={money(data.taxReport.expenses)} />
