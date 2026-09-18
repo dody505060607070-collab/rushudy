@@ -213,6 +213,18 @@ function ContractsPage() {
     setFormOpen(true);
   };
 
+  const { edit: editId } = Route.useSearch();
+  const handledEditId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!editId || handledEditId.current === editId) return;
+    const row = rows.find((r) => r.id === editId);
+    if (!row) return;
+    handledEditId.current = editId;
+    openEdit(row);
+    void navigate({ to: "/contracts", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, rows]);
+
   const save = useMutation({
     mutationFn: async (source: "manual" | "pdf_import" = "manual") => {
       const payload = {
