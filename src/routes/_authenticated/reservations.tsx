@@ -122,6 +122,29 @@ function ReservationsPage() {
     },
   });
 
+  const [picker, setPicker] = useState(false);
+
+  // معرض الإعلانات: نفس شكل الموقع العام لاختيار العقار المراد حجزه.
+  const gallery = useQuery({
+    queryKey: ["reservation-gallery"],
+    enabled: canBook && picker,
+    queryFn: async () => {
+      const [properties, activeReservations] = await Promise.all([
+        supabase
+          .from("properties")
+          .select("id,name,code,city,district,purpose,price_text,price_value,property_images(url,is_cover,sort_order)")
+          .eq("status", "available")
+          .order("name")
+          .limit(200),
+        supabase.from("reservations").select("property_id").in("status", ["hold", "active"]).gt("ends_at", new Date().toISOString()),
+      ]);
+      if (properties.error) throw properties.error;
+      if (activeReservations.error) throw activeReservations.error;
+      const reserved = new Set((activeReservations.data ?? []).map((row) => row.property_id));
+      return (properties.data ?? []).filter((row) => !reserved.has(row.id));
+    },
+  });
+
   const options = useQuery({
     queryKey: ["reservation-options"],
     enabled: canBook,
@@ -224,7 +247,7 @@ function ReservationsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ReservationStatusLegend />
         {canBook ? (
-          <Button onClick={() => setOpen(true)}>
+          <Button onClick={() => setPicker(true)}>
             <Plus />
             حجز جديد
           </Button>
