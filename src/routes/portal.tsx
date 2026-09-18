@@ -1,8 +1,23 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
-import { FileText, Home, LogOut, Receipt, User } from "lucide-react";
+import {
+  BarChart3,
+  FileSignature,
+  FileText,
+  Home,
+  LogOut,
+  MessageSquare,
+  Receipt,
+  Settings2,
+  User,
+  Wallet,
+  Wrench,
+} from "lucide-react";
+import { useEffect } from "react";
 
 import logoAsset from "@/assets/rashudi-logo.webp.asset.json";
 import { supabase } from "@/integrations/supabase/client";
+import { getOwnerWorkspace, recordOwnerLogin } from "@/lib/owner-portal.functions";
 
 
 export const Route = createFileRoute("/portal")({
