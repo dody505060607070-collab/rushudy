@@ -348,6 +348,58 @@ function ReservationsPage() {
           </Field>
         </div>
       </Modal>
+
+      <Modal
+        open={picker}
+        onClose={() => setPicker(false)}
+        title="اختر العقار من الإعلانات"
+        subtitle="تصفح الإعلانات كما يراها العميل، ثم اختر العقار لإتمام الحجز."
+        footer={<GhostButton onClick={() => setPicker(false)}>إغلاق</GhostButton>}
+      >
+        {gallery.isLoading ? (
+          <div className="grid place-items-center py-10">
+            <Loader2 className="size-6 animate-spin text-primary" />
+          </div>
+        ) : !gallery.data?.length ? (
+          <EmptyState text="لا توجد عقارات متاحة للحجز" hint="كل العقارات محجوزة أو غير متاحة حاليًا." />
+        ) : (
+          <div className="grid max-h-[65vh] gap-4 overflow-y-auto p-1 sm:grid-cols-2 lg:grid-cols-3">
+            {gallery.data.map((property) => {
+              const image = [...(property.property_images ?? [])].sort(
+                (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order,
+              )[0]?.url;
+              const price =
+                property.price_text ??
+                (property.price_value ? `${Number(property.price_value).toLocaleString("ar-SA")} ريال` : "السعر عند الطلب");
+              return (
+                <button
+                  key={property.id}
+                  type="button"
+                  onClick={() => {
+                    setForm((current) => ({ ...current, property_id: property.id }));
+                    setPicker(false);
+                    setOpen(true);
+                  }}
+                  className="overflow-hidden rounded-xl border border-border bg-card text-start transition-shadow hover:shadow-card"
+                >
+                  <div className="h-36 bg-muted">
+                    {image ? (
+                      <img src={image} alt={property.name} loading="lazy" className="size-full object-cover" />
+                    ) : null}
+                  </div>
+                  <div className="space-y-1 p-3">
+                    <p className="line-clamp-1 text-[13.5px] font-bold text-foreground">{property.name}</p>
+                    <p className="text-[12px] text-muted-foreground">
+                      {[property.district, property.city].filter(Boolean).join(" — ") || property.code}
+                    </p>
+                    <p className="text-[13px] font-bold text-primary">{price}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </Modal>
     </>
   );
 }
