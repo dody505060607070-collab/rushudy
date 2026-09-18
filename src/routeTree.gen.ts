@@ -52,6 +52,7 @@ import { Route as AuthenticatedTaskFormRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedTeamChatRouteImport } from './routes/_authenticated/team-chat'
 import { Route as AuthenticatedWhatsappLinkRouteImport } from './routes/_authenticated/whatsapp-link'
+import { Route as BuildingsCodeRouteImport } from './routes/buildings.$code'
 import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PropertiesCodeRouteImport } from './routes/properties.$code'
 import { Route as AuthenticatedContractsIndexRouteImport } from './routes/_authenticated/contracts.index'
@@ -294,6 +295,11 @@ const AuthenticatedWhatsappLinkRoute =
     path: '/whatsapp-link',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const BuildingsCodeRoute = BuildingsCodeRouteImport.update({
+  id: '/buildings/$code',
+  path: '/buildings/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortalIndexRoute = PortalIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -445,6 +451,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AuthenticatedTasksRoute
   '/team-chat': typeof AuthenticatedTeamChatRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
+  '/buildings/$code': typeof BuildingsCodeRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal/': typeof PortalIndexRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
@@ -507,6 +514,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksRoute
   '/team-chat': typeof AuthenticatedTeamChatRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
+  '/buildings/$code': typeof BuildingsCodeRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal': typeof PortalIndexRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
@@ -572,6 +580,7 @@ export interface FileRoutesById {
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/team-chat': typeof AuthenticatedTeamChatRoute
   '/_authenticated/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
+  '/buildings/$code': typeof BuildingsCodeRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal/': typeof PortalIndexRoute
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
@@ -637,6 +646,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/team-chat'
     | '/whatsapp-link'
+    | '/buildings/$code'
     | '/properties/$code'
     | '/portal/'
     | '/contracts/$contractId'
@@ -699,6 +709,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/team-chat'
     | '/whatsapp-link'
+    | '/buildings/$code'
     | '/properties/$code'
     | '/portal'
     | '/contracts/$contractId'
@@ -763,6 +774,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks'
     | '/_authenticated/team-chat'
     | '/_authenticated/whatsapp-link'
+    | '/buildings/$code'
     | '/properties/$code'
     | '/portal/'
     | '/_authenticated/contracts/$contractId'
@@ -800,6 +812,7 @@ export interface RootRouteChildren {
   SysX9k2ControlRoute: typeof SysX9k2ControlRoute
   TermsRoute: typeof TermsRoute
   ThankYouRoute: typeof ThankYouRoute
+  BuildingsCodeRoute: typeof BuildingsCodeRoute
   PropertiesCodeRoute: typeof PropertiesCodeRoute
   ApiPublicN8nRoute: typeof ApiPublicN8nRoute
   ApiPublicFilesSplatRoute: typeof ApiPublicFilesSplatRoute
@@ -1108,6 +1121,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWhatsappLinkRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/buildings/$code': {
+      id: '/buildings/$code'
+      path: '/buildings/$code'
+      fullPath: '/buildings/$code'
+      preLoaderRoute: typeof BuildingsCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portal/': {
       id: '/portal/'
       path: '/'
@@ -1370,6 +1390,7 @@ const rootRouteChildren: RootRouteChildren = {
   SysX9k2ControlRoute: SysX9k2ControlRoute,
   TermsRoute: TermsRoute,
   ThankYouRoute: ThankYouRoute,
+  BuildingsCodeRoute: BuildingsCodeRoute,
   PropertiesCodeRoute: PropertiesCodeRoute,
   ApiPublicN8nRoute: ApiPublicN8nRoute,
   ApiPublicFilesSplatRoute: ApiPublicFilesSplatRoute,
