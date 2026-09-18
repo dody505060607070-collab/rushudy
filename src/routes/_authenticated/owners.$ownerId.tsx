@@ -348,7 +348,6 @@ function OwnerDetailPage() {
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الترتيب"),
   });
 
-
   const assignContract = useMutation({
     mutationFn: (unitId: string) => {
       if (!dragContractId) throw new Error("اختر العقد أولًا");
@@ -1038,7 +1037,6 @@ function OwnerDetailPage() {
         </div>
 
         <div className="mb-4 rounded-md border border-dashed border-primary/40 bg-secondary/20 p-3">
-
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-[13.5px] font-bold">لوحة الترتيب اليدوي</h3>
             <p className="text-[12px] text-muted-foreground">
@@ -1147,7 +1145,6 @@ function OwnerDetailPage() {
                 onDrop={() => moveAsset.mutate(group.key === "__standalone" ? null : group.key)}
                 className="overflow-hidden rounded-md border border-border border-e-primary transition-colors hover:border-primary/50"
               >
-
                 <header className="flex flex-wrap items-center justify-between gap-3 bg-secondary/40 px-4 py-3">
                   <div>
                     <h3 className="text-[14px] font-bold">{group.title}</h3>
@@ -1385,9 +1382,7 @@ function OwnerDetailPage() {
           return (
             <div className="grid w-full grid-cols-1 gap-5">
               {sections.map((section) => {
-                const inSection = groups.filter(
-                  (g) => sectionOfBuilding.get(g.key) === section.id,
-                );
+                const inSection = groups.filter((g) => sectionOfBuilding.get(g.key) === section.id);
                 return (
                   <section
                     key={section.id}
@@ -1454,7 +1449,6 @@ function OwnerDetailPage() {
             </div>
           );
         })()}
-
       </RecordSection>
 
       <RecordSection
