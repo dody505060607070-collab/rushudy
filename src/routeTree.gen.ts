@@ -64,12 +64,14 @@ import { Route as AuthenticatedTeamChatRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedValuationRouteImport } from './routes/_authenticated/valuation'
 import { Route as AuthenticatedWhatsappLinkRouteImport } from './routes/_authenticated/whatsapp-link'
 import { Route as BuildingsCodeRouteImport } from './routes/buildings.$code'
+import { Route as OwnerReportTokenRouteImport } from './routes/owner-report.$token'
 import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PortalCareRouteImport } from './routes/portal.care'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
 import { Route as PortalFinanceRouteImport } from './routes/portal.finance'
 import { Route as PortalInsightsRouteImport } from './routes/portal.insights'
 import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
+import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as PortalUnitsRouteImport } from './routes/portal.units'
 import { Route as PropertiesCodeRouteImport } from './routes/properties.$code'
 import { Route as AuthenticatedContractsIndexRouteImport } from './routes/_authenticated/contracts.index'
@@ -376,6 +378,11 @@ const BuildingsCodeRoute = BuildingsCodeRouteImport.update({
   path: '/buildings/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OwnerReportTokenRoute = OwnerReportTokenRouteImport.update({
+  id: '/owner-report/$token',
+  path: '/owner-report/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortalIndexRoute = PortalIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -404,6 +411,11 @@ const PortalInsightsRoute = PortalInsightsRouteImport.update({
 const PortalMessagesRoute = PortalMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalSettingsRoute = PortalSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalUnitsRoute = PortalUnitsRouteImport.update({
@@ -575,11 +587,13 @@ export interface FileRoutesByFullPath {
   '/valuation': typeof AuthenticatedValuationRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
+  '/owner-report/$token': typeof OwnerReportTokenRoute
   '/portal/care': typeof PortalCareRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
   '/portal/messages': typeof PortalMessagesRoute
+  '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal/': typeof PortalIndexRoute
@@ -656,11 +670,13 @@ export interface FileRoutesByTo {
   '/valuation': typeof AuthenticatedValuationRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
+  '/owner-report/$token': typeof OwnerReportTokenRoute
   '/portal/care': typeof PortalCareRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
   '/portal/messages': typeof PortalMessagesRoute
+  '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal': typeof PortalIndexRoute
@@ -740,11 +756,13 @@ export interface FileRoutesById {
   '/_authenticated/valuation': typeof AuthenticatedValuationRoute
   '/_authenticated/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
+  '/owner-report/$token': typeof OwnerReportTokenRoute
   '/portal/care': typeof PortalCareRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
   '/portal/messages': typeof PortalMessagesRoute
+  '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal/': typeof PortalIndexRoute
@@ -824,11 +842,13 @@ export interface FileRouteTypes {
     | '/valuation'
     | '/whatsapp-link'
     | '/buildings/$code'
+    | '/owner-report/$token'
     | '/portal/care'
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
     | '/portal/messages'
+    | '/portal/settings'
     | '/portal/units'
     | '/properties/$code'
     | '/portal/'
@@ -905,11 +925,13 @@ export interface FileRouteTypes {
     | '/valuation'
     | '/whatsapp-link'
     | '/buildings/$code'
+    | '/owner-report/$token'
     | '/portal/care'
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
     | '/portal/messages'
+    | '/portal/settings'
     | '/portal/units'
     | '/properties/$code'
     | '/portal'
@@ -988,11 +1010,13 @@ export interface FileRouteTypes {
     | '/_authenticated/valuation'
     | '/_authenticated/whatsapp-link'
     | '/buildings/$code'
+    | '/owner-report/$token'
     | '/portal/care'
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
     | '/portal/messages'
+    | '/portal/settings'
     | '/portal/units'
     | '/properties/$code'
     | '/portal/'
@@ -1036,6 +1060,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ThankYouRoute: typeof ThankYouRoute
   BuildingsCodeRoute: typeof BuildingsCodeRoute
+  OwnerReportTokenRoute: typeof OwnerReportTokenRoute
   PropertiesCodeRoute: typeof PropertiesCodeRoute
   ApiPublicN8nRoute: typeof ApiPublicN8nRoute
   ApiPublicFilesSplatRoute: typeof ApiPublicFilesSplatRoute
@@ -1428,6 +1453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BuildingsCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/owner-report/$token': {
+      id: '/owner-report/$token'
+      path: '/owner-report/$token'
+      fullPath: '/owner-report/$token'
+      preLoaderRoute: typeof OwnerReportTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portal/': {
       id: '/portal/'
       path: '/'
@@ -1468,6 +1500,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/portal/messages'
       preLoaderRoute: typeof PortalMessagesRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/settings': {
+      id: '/portal/settings'
+      path: '/settings'
+      fullPath: '/portal/settings'
+      preLoaderRoute: typeof PortalSettingsRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/units': {
@@ -1741,6 +1780,7 @@ interface PortalRouteChildren {
   PortalFinanceRoute: typeof PortalFinanceRoute
   PortalInsightsRoute: typeof PortalInsightsRoute
   PortalMessagesRoute: typeof PortalMessagesRoute
+  PortalSettingsRoute: typeof PortalSettingsRoute
   PortalUnitsRoute: typeof PortalUnitsRoute
   PortalIndexRoute: typeof PortalIndexRoute
   PortalContractsContractIdRoute: typeof PortalContractsContractIdRoute
@@ -1755,6 +1795,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalFinanceRoute: PortalFinanceRoute,
   PortalInsightsRoute: PortalInsightsRoute,
   PortalMessagesRoute: PortalMessagesRoute,
+  PortalSettingsRoute: PortalSettingsRoute,
   PortalUnitsRoute: PortalUnitsRoute,
   PortalIndexRoute: PortalIndexRoute,
   PortalContractsContractIdRoute: PortalContractsContractIdRoute,
@@ -1786,6 +1827,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ThankYouRoute: ThankYouRoute,
   BuildingsCodeRoute: BuildingsCodeRoute,
+  OwnerReportTokenRoute: OwnerReportTokenRoute,
   PropertiesCodeRoute: PropertiesCodeRoute,
   ApiPublicN8nRoute: ApiPublicN8nRoute,
   ApiPublicFilesSplatRoute: ApiPublicFilesSplatRoute,
