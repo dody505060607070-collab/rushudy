@@ -41,6 +41,7 @@ type PropertyRow = {
   needs_review: boolean;
   sort_order: number | null;
   created_at: string;
+  building_id: string | null;
 };
 
 export const Route = createFileRoute("/_authenticated/properties")({
@@ -66,7 +67,7 @@ const statusLabels: Record<string, string> = {
 };
 
 const SELECT =
-  "id, code, name, purpose, property_type, status, price_value, price_text, city, district, description, map_url, whatsapp_number, is_visible, is_featured, needs_review, sort_order, created_at";
+  "id, code, name, purpose, property_type, status, price_value, price_text, city, district, description, map_url, whatsapp_number, is_visible, is_featured, needs_review, sort_order, created_at, building_id";
 
 type FormState = {
   name: string;
@@ -128,7 +129,8 @@ function PropertiesPage() {
     orderBy: { column: "created_at" },
   });
 
-  const rows = data ?? [];
+  // وحدات العمارات تُدار من صفحة العمارات فقط حتى لا تختلط بقائمة العقارات المستقلة.
+  const rows = (data ?? []).filter((row) => !row.building_id);
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
   const openCreate = () => {

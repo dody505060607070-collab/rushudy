@@ -38,6 +38,7 @@ import { approveListingRequest } from "@/lib/requests.functions";
 export const Route = createFileRoute("/_authenticated/property-form")({
   validateSearch: (search: Record<string, unknown>) => ({
     id: typeof search["id"] === "string" ? (search["id"] as string) : "",
+    buildingId: typeof search["buildingId"] === "string" ? (search["buildingId"] as string) : "",
     ...(typeof search["requestId"] === "string" ? { requestId: search["requestId"] as string } : {}),
   }),
   head: () => ({
@@ -136,7 +137,7 @@ function SectionCard({
 }
 
 function PropertyFormPage() {
-  const { id, requestId = "" } = Route.useSearch();
+  const { id, buildingId, requestId = "" } = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -152,6 +153,10 @@ function PropertyFormPage() {
   const [dragImageId, setDragImageId] = useState<string | null>(null);
   const [quickType, setQuickType] = useState("");
   const [quickDistrict, setQuickDistrict] = useState("");
+
+  useEffect(() => {
+    if (!id && buildingId) setForm((current) => ({ ...current, building_id: buildingId }));
+  }, [buildingId, id]);
 
 
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
@@ -488,9 +493,33 @@ function PropertyFormPage() {
         if (error) throw error;
         return id;
       }
+      let unitId: string | null = null;
+      if (payload.building_id) {
+        const selectedBuilding = buildingsList.data?.find((building) => building.id === payload.building_id);
+        const unitNumber = payload.code || `${Date.now().toString(36).toUpperCase()}`;
+        const unitResult = await supabase
+          .from("units")
+          .insert({
+            building_id: payload.building_id,
+            owner_id: payload.owner_id,
+            unit_number: unitNumber,
+            unit_type: payload.property_type ?? "شقة",
+            floor: payload.floor,
+            status: payload.status,
+            is_rentable: payload.purpose === "rent",
+            notes: payload.internal_notes,
+          })
+          .select("id")
+          .single();
+        if (unitResult.error) throw unitResult.error;
+        unitId = unitResult.data.id;
+        if (selectedBuilding) {
+          payload.city ||= null;
+        }
+      }
       const { data, error } = await supabase
         .from("properties")
-        .insert(payload)
+        .insert({ ...payload, unit_id: unitId })
         .select("id")
         .single();
       if (error) throw error;
@@ -712,11 +741,11 @@ function PropertyFormPage() {
 
       <div className="flex items-center justify-between gap-3">
         <Link
-          to="/properties"
+          to={form.building_id ? "/buildings" : "/properties"}
           className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"
         >
           <ArrowRight className="size-4" />
-          رجوع لقائمة العقارات
+           {form.building_id ? "رجوع للعمارات" : "رجوع لقائمة العقارات"}
         </Link>
       </div>
 
@@ -1400,11 +1429,11 @@ function PropertyFormPage() {
           </button>
         ) : null}
         <Link
-          to="/properties"
+          to={form.building_id ? "/buildings" : "/properties"}
           className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-3 text-[13.5px] font-semibold"
         >
           <ArrowRight className="size-4" />
-          رجوع
+          {form.building_id ? "رجوع للعمارات" : "رجوع"}
         </Link>
       </div>
     </>

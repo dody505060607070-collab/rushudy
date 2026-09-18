@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Building2, DoorOpen, Eye, EyeOff, Layers, Loader2, MapPin, Pencil, Plus, Printer, Sparkles, Trash2, Wallet } from "lucide-react";
+import { Building2, DoorOpen, Eye, EyeOff, FileText, Layers, Loader2, MapPin, Pencil, Plus, Printer, Sparkles, Trash2, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -54,6 +54,15 @@ type UnitProperty = {
   building_id: string | null;
   purpose: string;
   rent_period: string | null;
+  unit_id: string | null;
+};
+
+type UnitContract = {
+  id: string;
+  contract_number: string;
+  property_id: string | null;
+  status: string;
+  tenant: { full_name: string; phone: string | null } | null;
 };
 
 type FormState = {
@@ -115,7 +124,7 @@ function BuildingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("id, code, name, floor, status, is_visible, price_value, building_id, purpose, rent_period")
+        .select("id, code, name, floor, status, is_visible, price_value, building_id, purpose, rent_period, unit_id")
         .not("building_id", "is", null)
         .order("floor")
         .order("name");
@@ -123,6 +132,28 @@ function BuildingsPage() {
       return (data ?? []) as UnitProperty[];
     },
   });
+
+  const contracts = useQuery({
+    queryKey: ["building-unit-contracts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contracts")
+        .select("id, contract_number, property_id, status, tenant:tenant_id(full_name, phone)")
+        .not("property_id", "is", null)
+        .in("status", ["active", "draft"])
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as UnitContract[];
+    },
+  });
+
+  const contractByProperty = useMemo(() => {
+    const map = new Map<string, UnitContract>();
+    for (const contract of contracts.data ?? []) {
+      if (contract.property_id && !map.has(contract.property_id)) map.set(contract.property_id, contract);
+    }
+    return map;
+  }, [contracts.data]);
 
   const owners = useQuery({
     queryKey: ["contacts", "owners", "buildings"],
@@ -263,6 +294,25 @@ function BuildingsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const cycleUnitStatus = useMutation({
+    mutationFn: async (unit: UnitProperty) => {
+      const next = unit.status === "available" ? (unit.purpose === "sale" ? "sold" : "rented") : "available";
+      const propertyUpdate = await supabase.from("properties").update({ status: next }).eq("id", unit.id);
+      if (propertyUpdate.error) throw propertyUpdate.error;
+      if (unit.unit_id) {
+        const unitUpdate = await supabase.from("units").update({ status: next }).eq("id", unit.unit_id);
+        if (unitUpdate.error) throw unitUpdate.error;
+      }
+      return next;
+    },
+    onSuccess: (next) => {
+      toast.success(next === "available" ? "تمت إعادة الوحدة إلى متاحة" : "تم تعليم الوحدة بالأحمر كمؤجرة أو مبيعة");
+      void qc.invalidateQueries({ queryKey: ["building-units"] });
+      void qc.invalidateQueries({ queryKey: ["public-buildings"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const remove = useMutation({
     mutationFn: async (row: BuildingRow) => {
       const { error } = await supabase.from("buildings").delete().eq("id", row.id);
@@ -346,6 +396,13 @@ function BuildingsPage() {
                     >
                       {b.is_visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
+                    <Link
+                      to="/property-form"
+                      search={{ id: "", buildingId: b.id }}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-[12.5px] font-semibold text-primary-foreground"
+                    >
+                      <Plus className="size-4" /> إضافة شقة
+                    </Link>
                     {b.latitude != null && b.longitude != null ? (
                       <a
                         href={`https://www.google.com/maps?q=${b.latitude},${b.longitude}`}
@@ -411,15 +468,15 @@ function BuildingsPage() {
                         <div key={floor} className="flex flex-wrap items-center gap-2">
                           <span className="w-24 shrink-0 text-[12px] text-muted-foreground">{floor}</span>
                           {items.map((u) => (
-                            <Link
+                            <button
                               key={u.id}
-                              to="/property-form"
-                              search={{ id: u.id }}
+                              type="button"
+                              onClick={() => cycleUnitStatus.mutate(u)}
                               title={`${u.name} — ${unitStatusLabels[u.status] ?? u.status}`}
                               className={`grid h-9 min-w-14 place-items-center rounded-lg border px-2 text-[11.5px] font-bold ${statusClass(u.status)}`}
                             >
                               {u.name.replace(/[^\d]/g, "") || u.code || "—"}
-                            </Link>
+                            </button>
                           ))}
                         </div>
                       ))}
@@ -446,22 +503,34 @@ function BuildingsPage() {
                             </span>
                           </p>
                           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                            {items.map((u) => (
-                              <Link
-                                key={u.id}
-                                to="/property-form"
-                                search={{ id: u.id }}
-                                className="flex items-center justify-between gap-2 rounded-lg border border-border p-3 text-[12.5px] transition-colors hover:bg-muted"
-                              >
-                                <span className="flex min-w-0 items-center gap-2">
-                                  <DoorOpen className="size-4 shrink-0 text-primary/70" />
-                                  <span className="truncate font-semibold text-foreground">{u.name}</span>
-                                </span>
-                                <Chip tone={u.is_visible ? "success" : "neutral"}>
-                                  {u.is_visible ? "معروضة" : "مخفية"}
-                                </Chip>
-                              </Link>
-                            ))}
+                            {items.map((u) => {
+                              const contract = contractByProperty.get(u.id);
+                              return (
+                                <div key={u.id} className="rounded-lg border border-border p-3">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <Link to="/property-form" search={{ id: u.id }} className="flex min-w-0 items-center gap-2">
+                                      <DoorOpen className="size-4 shrink-0 text-primary/70" />
+                                      <span className="truncate text-[12.5px] font-semibold text-foreground">{u.name}</span>
+                                    </Link>
+                                    <Chip tone={u.status === "available" ? "success" : u.status === "reserved" ? "warning" : "danger"}>
+                                      {unitStatusLabels[u.status] ?? u.status}
+                                    </Chip>
+                                  </div>
+                                  {contract ? (
+                                    <div className="mt-2 space-y-1 border-t border-border pt-2 text-[11.5px] text-muted-foreground">
+                                      <p className="flex items-center gap-1.5"><UserRound className="size-3.5 text-primary" />{contract.tenant?.full_name ?? "بدون مستأجر محدد"}</p>
+                                      <Link to="/contracts/$contractId" params={{ contractId: contract.id }} className="flex items-center gap-1.5 font-semibold text-primary hover:underline">
+                                        <FileText className="size-3.5" /> العقد {contract.contract_number}
+                                      </Link>
+                                    </div>
+                                  ) : (
+                                    <Link to="/contracts" className="mt-2 block border-t border-border pt-2 text-[11.5px] font-semibold text-primary hover:underline">
+                                      إضافة عقد ومستأجر لهذه الوحدة
+                                    </Link>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       ))

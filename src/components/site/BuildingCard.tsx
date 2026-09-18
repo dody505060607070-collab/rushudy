@@ -2,9 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { Building2, Layers, MapPin } from "lucide-react";
 
 import { buildingCover, purposeLabels, type PublicBuilding } from "@/lib/site-data";
+import fixedBuildingCover from "@/assets/hero-rent.jpg";
 
 export function BuildingCard({ building }: { building: PublicBuilding }) {
-  const cover = buildingCover(building);
+  const cover = buildingCover(building) ?? fixedBuildingCover;
   const floors = new Set((building.units ?? []).map((u) => (u.floor ?? "").trim() || "—")).size;
 
   return (

@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Building2, DoorOpen, Layers, MapPin, Printer, Video } from "lucide-react";
 
 import { SiteLayout } from "@/components/site/SiteLayout";
+import fixedBuildingCover from "@/assets/hero-rent.jpg";
 import {
   buildingCover,
   buildingOccupancy,
@@ -75,7 +76,7 @@ function BuildingPage() {
     );
   }
 
-  const cover = buildingCover(building);
+  const cover = buildingCover(building) ?? fixedBuildingCover;
   const floors = groupUnitsByFloor(building.units ?? []);
   const occ = buildingOccupancy(building.units ?? []);
   const hasGeo = typeof building.latitude === "number" && typeof building.longitude === "number";

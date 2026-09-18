@@ -6,8 +6,8 @@ import { useMemo, useState } from "react";
 import ctaImage from "@/assets/cta-deal.jpg";
 import socialCard from "@/assets/rushdy-social-card.jpg.asset.json";
 import { HeroVideo } from "@/components/site/HeroVideo";
-import { BuildingGrid } from "@/components/site/BuildingCard";
-import { PropertyGrid } from "@/components/site/PropertyCard";
+import { BuildingCard } from "@/components/site/BuildingCard";
+import { PropertyCard, PropertyGrid } from "@/components/site/PropertyCard";
 import { PropertyCompare } from "@/components/site/PropertyCompare";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { PropertyMapSection } from "@/components/site/PropertyMapSection";
@@ -169,25 +169,13 @@ function HomePage() {
             عرض الكل
           </Link>
         </div>
-        <PropertyGrid
-          properties={rent.data}
-          loading={rent.isLoading}
-          error={rent.error}
-          emptyText="لا توجد عقارات إيجار معروضة حالياً."
-          compareIds={compareIds}
-          onCompare={toggleCompare}
-        />
-      </Reveal>
-
-      {(buildings.data ?? []).length ? (
-        <Reveal as="section" className="mx-auto max-w-6xl px-4 py-10">
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-            <h2 className="text-[22px] font-bold text-foreground sm:text-[26px]">عماراتنا</h2>
-            <span className="text-[13px] text-muted-foreground">اضغط على العمارة لعرض شققها حسب الدور</span>
+        {rent.isLoading || buildings.isLoading ? <PropertyGrid properties={undefined} loading /> : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {(buildings.data ?? []).filter((building) => building.purpose === "rent").slice(0, 3).map((building) => <BuildingCard key={`rent-building-${building.id}`} building={building} />)}
+            {(rent.data ?? []).map((property) => <PropertyCard key={property.id} property={property} comparing={compareIds.includes(property.id)} onCompare={toggleCompare} />)}
           </div>
-          <BuildingGrid buildings={buildings.data ?? []} />
-        </Reveal>
-      ) : null}
+        )}
+      </Reveal>
 
       <Reveal as="section" className="mesh-bg py-16">
         <div className="mx-auto max-w-6xl px-4">
@@ -197,14 +185,12 @@ function HomePage() {
               عرض الكل
             </Link>
           </div>
-          <PropertyGrid
-            properties={sale.data}
-            loading={sale.isLoading}
-            error={sale.error}
-            emptyText="لا توجد عقارات بيع معروضة حالياً."
-            compareIds={compareIds}
-            onCompare={toggleCompare}
-          />
+          {sale.isLoading || buildings.isLoading ? <PropertyGrid properties={undefined} loading /> : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {(buildings.data ?? []).filter((building) => building.purpose === "sale").slice(0, 3).map((building) => <BuildingCard key={`sale-building-${building.id}`} building={building} />)}
+              {(sale.data ?? []).map((property) => <PropertyCard key={property.id} property={property} comparing={compareIds.includes(property.id)} onCompare={toggleCompare} />)}
+            </div>
+          )}
         </div>
       </Reveal>
 
