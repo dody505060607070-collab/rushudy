@@ -110,6 +110,7 @@ export type Database = {
           timezone: string
           updated_at: string
           vat_rate: number
+          whatsapp_auto_send_enabled: boolean
           whatsapp_number: string | null
         }
         Insert: {
@@ -130,6 +131,7 @@ export type Database = {
           timezone?: string
           updated_at?: string
           vat_rate?: number
+          whatsapp_auto_send_enabled?: boolean
           whatsapp_number?: string | null
         }
         Update: {
@@ -150,6 +152,7 @@ export type Database = {
           timezone?: string
           updated_at?: string
           vat_rate?: number
+          whatsapp_auto_send_enabled?: boolean
           whatsapp_number?: string | null
         }
         Relationships: []
