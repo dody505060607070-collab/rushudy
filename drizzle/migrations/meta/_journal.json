@@ -204,6 +204,13 @@
       "when": 1789753300345,
       "tag": "0028_owner_portal_expansion",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1789764669458,
+      "tag": "0029_create_owner_asset_sections",
+      "breakpoints": true
     }
   ]
 }

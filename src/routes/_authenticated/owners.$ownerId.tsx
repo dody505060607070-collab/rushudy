@@ -76,6 +76,12 @@ function OwnerDetailPage() {
     null,
   );
   const [dragContractId, setDragContractId] = useState<string | null>(null);
+  const [newSectionName, setNewSectionName] = useState("");
+  const [dragGroup, setDragGroup] = useState<{
+    id: string;
+    type: "building" | "property" | "unit";
+  } | null>(null);
+
   const [ownerAccess, setOwnerAccess] = useState<{ username: string; password: string } | null>(
     null,
   );
@@ -236,6 +242,110 @@ function OwnerDetailPage() {
       toast.success("تم تحديث مكان الوحدة");
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر النقل"),
+  });
+
+  const sectionsQuery = useQuery({
+    queryKey: ["owner-sections", ownerId],
+    queryFn: async () => {
+      const [sections, items] = await Promise.all([
+        supabase
+          .from("owner_asset_sections")
+          .select("id, name, sort_order")
+          .eq("owner_id", ownerId)
+          .order("sort_order")
+          .order("created_at"),
+        supabase
+          .from("owner_asset_section_items")
+          .select("id, section_id, item_type, item_id")
+          .eq("owner_id", ownerId),
+      ]);
+      if (sections.error) throw sections.error;
+      if (items.error) throw items.error;
+      return { sections: sections.data ?? [], items: items.data ?? [] };
+    },
+  });
+  const refreshSections = () =>
+    queryClient.invalidateQueries({ queryKey: ["owner-sections", ownerId] });
+
+  const createSection = useMutation({
+    mutationFn: async (name: string) => {
+      const clean = name.trim();
+      if (!clean) throw new Error("اكتب اسم القسم أولًا");
+      const { error } = await supabase
+        .from("owner_asset_sections")
+        .insert({ owner_id: ownerId, name: clean });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setNewSectionName("");
+      refreshSections();
+      toast.success("تمت إضافة القسم");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّرت الإضافة"),
+  });
+
+  const renameSection = useMutation({
+    mutationFn: async (payload: { id: string; name: string }) => {
+      const clean = payload.name.trim();
+      if (!clean) throw new Error("اسم القسم مطلوب");
+      const { error } = await supabase
+        .from("owner_asset_sections")
+        .update({ name: clean })
+        .eq("id", payload.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refreshSections();
+      toast.success("تم تعديل اسم القسم");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر التعديل"),
+  });
+
+  const deleteSection = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("owner_asset_sections").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refreshSections();
+      toast.success("تم حذف القسم");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الحذف"),
+  });
+
+  const assignToSection = useMutation({
+    mutationFn: async (payload: {
+      sectionId: string | null;
+      itemType: "building" | "property" | "unit";
+      itemId: string;
+    }) => {
+      if (!payload.sectionId) {
+        const { error } = await supabase
+          .from("owner_asset_section_items")
+          .delete()
+          .eq("owner_id", ownerId)
+          .eq("item_type", payload.itemType)
+          .eq("item_id", payload.itemId);
+        if (error) throw error;
+        return;
+      }
+      const { error } = await supabase.from("owner_asset_section_items").upsert(
+        {
+          owner_id: ownerId,
+          section_id: payload.sectionId,
+          item_type: payload.itemType,
+          item_id: payload.itemId,
+        },
+        { onConflict: "owner_id,item_type,item_id" },
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setDragGroup(null);
+      refreshSections();
+      toast.success("تم ترتيب العنصر داخل القسم");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الترتيب"),
   });
 
   const assignContract = useMutation({
@@ -894,6 +1004,38 @@ function OwnerDetailPage() {
         icon={House}
         count={groups.reduce((s, g) => s + g.items.length, 0)}
       >
+        <div className="mb-4 rounded-md border border-border bg-card p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-[13.5px] font-bold">أقسامي (تقسيم بأسماء من عندك)</h3>
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                أنشئ قسمًا بالاسم اللي تحبه (مثال: عبد الرحمن، المحطات، العمائر)، ثم اسحب أي عمارة
+                أو عقار من الأسفل وأسقطه داخل القسم. العمارة تنتقل بكل شققها.
+              </p>
+            </div>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                createSection.mutate(newSectionName);
+              }}
+              className="flex items-center gap-2"
+            >
+              <input
+                value={newSectionName}
+                onChange={(event) => setNewSectionName(event.target.value)}
+                placeholder="اسم القسم الجديد"
+                className="h-9 w-56 rounded-md border border-border bg-background px-3 text-[12.5px]"
+              />
+              <button
+                type="submit"
+                className="h-9 rounded-md bg-primary px-4 text-[12.5px] font-semibold text-primary-foreground"
+              >
+                إضافة قسم
+              </button>
+            </form>
+          </div>
+        </div>
+
         <div className="mb-4 rounded-md border border-dashed border-primary/40 bg-secondary/20 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-[13.5px] font-bold">لوحة الترتيب اليدوي</h3>
@@ -990,12 +1132,15 @@ function OwnerDetailPage() {
           </div>
         </div>
 
-        <div className="grid w-full grid-cols-1 gap-4">
-          {groups.map((group) => {
+        {(() => {
+          const renderGroup = (group: (typeof groups)[number]) => {
             const collapsed = collapsedGroups[group.key];
             return (
               <article
                 key={group.key}
+                draggable={group.key !== "__standalone"}
+                onDragStart={() => setDragGroup({ id: group.key, type: "building" })}
+                onDragEnd={() => setDragGroup(null)}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => moveAsset.mutate(group.key === "__standalone" ? null : group.key)}
                 className="overflow-hidden rounded-md border border-border border-e-primary transition-colors hover:border-primary/50"
@@ -1223,9 +1368,87 @@ function OwnerDetailPage() {
                 )}
               </article>
             );
-          })}
-          {!groups.length ? <Empty text="لا توجد عقارات أو وحدات مرتبطة" /> : null}
-        </div>
+          };
+          const sections = sectionsQuery.data?.sections ?? [];
+          const sectionItems = sectionsQuery.data?.items ?? [];
+          const sectionOfBuilding = new Map(
+            sectionItems
+              .filter((i) => i.item_type === "building")
+              .map((i) => [i.item_id, i.section_id] as const),
+          );
+          const unassigned = groups.filter(
+            (g) => g.key === "__standalone" || !sectionOfBuilding.has(g.key),
+          );
+          return (
+            <div className="grid w-full grid-cols-1 gap-5">
+              {sections.map((section) => {
+                const inSection = groups.filter((g) => sectionOfBuilding.get(g.key) === section.id);
+                return (
+                  <section
+                    key={section.id}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => {
+                      if (!dragGroup) return;
+                      assignToSection.mutate({
+                        sectionId: section.id,
+                        itemType: dragGroup.type,
+                        itemId: dragGroup.id,
+                      });
+                    }}
+                    className="rounded-md border-2 border-dashed border-primary/40 bg-secondary/10 p-3"
+                  >
+                    <header className="flex flex-wrap items-center justify-between gap-2">
+                      <input
+                        defaultValue={section.name}
+                        onBlur={(event) => {
+                          if (event.target.value.trim() === section.name) return;
+                          renameSection.mutate({ id: section.id, name: event.target.value });
+                        }}
+                        className="h-9 rounded-md border border-transparent bg-transparent px-2 text-[14px] font-bold hover:border-border focus:border-border"
+                        aria-label="اسم القسم"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Chip tone="primary">{inSection.length} عنصر</Chip>
+                        <button
+                          type="button"
+                          onClick={() => deleteSection.mutate(section.id)}
+                          className="h-8 rounded-md border border-border px-3 text-[12px] font-semibold text-muted-foreground hover:text-destructive"
+                        >
+                          حذف القسم
+                        </button>
+                      </div>
+                    </header>
+                    <div className="mt-3 grid gap-4">
+                      {inSection.map(renderGroup)}
+                      {!inSection.length ? (
+                        <Empty text="اسحب عمارة أو عقارًا وأسقطه داخل هذا القسم" />
+                      ) : null}
+                    </div>
+                  </section>
+                );
+              })}
+
+              <section
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => {
+                  if (!dragGroup) return;
+                  assignToSection.mutate({
+                    sectionId: null,
+                    itemType: dragGroup.type,
+                    itemId: dragGroup.id,
+                  });
+                }}
+                className="rounded-md border border-border p-3"
+              >
+                <h3 className="text-[14px] font-bold">غير مصنّف</h3>
+                <div className="mt-3 grid gap-4">
+                  {unassigned.map(renderGroup)}
+                  {!groups.length ? <Empty text="لا توجد عقارات أو وحدات مرتبطة" /> : null}
+                </div>
+              </section>
+            </div>
+          );
+        })()}
       </RecordSection>
 
       <RecordSection
