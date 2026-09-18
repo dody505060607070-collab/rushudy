@@ -920,31 +920,92 @@ function OwnerDetailPage() {
       </RecordSection>
 
       <RecordSection title="العقود" icon={FileText} count={data.contracts.length}>
-        <div className="space-y-2">
-          {data.contracts.map((contract) => (
-            <Link
-              key={contract.id}
-              draggable={contract.status === "active"}
-              onDragStart={() => setDragContractId(contract.id)}
-              onDragEnd={() => setDragContractId(null)}
-              to="/contracts/$contractId"
-              params={{ contractId: contract.id }}
-              className="grid items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted sm:grid-cols-5"
-            >
-              <strong>{contract.contract_number}</strong>
-              <span>{contract.property?.name ?? (contract.unit?.unit_number ? `وحدة ${contract.unit.unit_number}` : "—")}</span>
-              <span>
-                {formatDate(contract.start_date)} — {formatDate(contract.end_date)}
-              </span>
-              <span className="font-semibold">{formatCurrency(contract.annual_rent ?? contract.total_value)}</span>
-              <Chip tone={contract.status === "active" ? "success" : "neutral"}>
-                {contractStatusLabels[contract.status] ?? contract.status}
-              </Chip>
-            </Link>
-          ))}
+        <div className="grid w-full gap-4">
+          {data.contracts.map((contract) => {
+            const rows = data.payments.filter((p) => p.contract_id === contract.id);
+            const due = rows.reduce((s, p) => s + Number(p.amount_due), 0);
+            const paid = rows.reduce((s, p) => s + Number(p.amount_paid), 0);
+            const remaining = Math.max(due - paid, 0);
+            const rate = due > 0 ? Math.round((paid / due) * 100) : 0;
+            const overdue = rows.filter(
+              (p) => p.status !== "paid" && p.status !== "cancelled" && daysBetween(p.due_date) < 0,
+            );
+            const next = rows
+              .filter((p) => p.status !== "paid" && p.status !== "cancelled" && daysBetween(p.due_date) >= 0)
+              .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+            const left = daysBetween(contract.end_date);
+            return (
+              <article
+                key={contract.id}
+                draggable={contract.status === "active"}
+                onDragStart={() => setDragContractId(contract.id)}
+                onDragEnd={() => setDragContractId(null)}
+                className="w-full overflow-hidden rounded-xl border border-border bg-card"
+              >
+                <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/30 px-4 py-3">
+                  <div className="min-w-0">
+                    <h3 className="text-[15px] font-bold text-foreground">
+                      عقد {contract.contract_number}
+                      <span className="ms-2 text-[12.5px] font-normal text-muted-foreground">
+                        {contract.contract_type === "sale" ? "بيع" : "إيجار"}
+                      </span>
+                    </h3>
+                    <p className="mt-1 text-[12.5px] text-muted-foreground">
+                      {contract.property?.name ??
+                        (contract.unit?.unit_number ? `وحدة ${contract.unit.unit_number}` : "—")}
+                      {contract.tenant?.full_name ? ` • المستأجر: ${contract.tenant.full_name}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {overdue.length ? <Chip tone="danger">{overdue.length} دفعة متأخرة</Chip> : null}
+                    <Chip tone={contract.status === "active" ? "success" : "neutral"}>
+                      {contractStatusLabels[contract.status] ?? contract.status}
+                    </Chip>
+                    <Link
+                      to="/contracts/$contractId"
+                      params={{ contractId: contract.id }}
+                      className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-[12.5px] font-semibold text-foreground hover:bg-muted"
+                    >
+                      فتح العقد
+                    </Link>
+                  </div>
+                </header>
+
+                <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <Detail label="مدة العقد" value={`${formatDate(contract.start_date)} — ${formatDate(contract.end_date)}`} hint={contract.status === "active" ? (left >= 0 ? `متبقٍ ${left} يوم` : `منتهٍ منذ ${Math.abs(left)} يوم`) : undefined} />
+                  <Detail label="قيمة الإيجار السنوي" value={formatCurrency(contract.annual_rent ?? contract.total_value)} hint={contract.payment_cycle ? `دورة السداد: ${contract.payment_cycle}` : undefined} />
+                  <Detail label="إجمالي العقد" value={formatCurrency(contract.total_value)} hint={contract.deposit ? `التأمين: ${formatCurrency(contract.deposit)}` : undefined} />
+                  <Detail
+                    label="الدفعة القادمة"
+                    value={next ? formatCurrency(Number(next.amount_due) - Number(next.amount_paid)) : "لا توجد"}
+                    hint={next ? `تستحق ${formatDate(next.due_date)}` : undefined}
+                  />
+                </div>
+
+                <div className="space-y-2 border-t border-border px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-muted-foreground">
+                    <span>
+                      المسدد {formatCurrency(paid)} من {formatCurrency(due)} • المتبقي{" "}
+                      <strong className="text-foreground">{formatCurrency(remaining)}</strong>
+                    </span>
+                    <span>{rows.length.toLocaleString("ar-SA")} دفعة • نسبة التحصيل {rate}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(rate, 100)}%` }} />
+                  </div>
+                  {contract.tenant?.phone || contract.tenant?.whatsapp ? (
+                    <p className="text-[12px] text-muted-foreground" dir="ltr">
+                      {contract.tenant?.whatsapp ?? contract.tenant?.phone}
+                    </p>
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
           {!data.contracts.length ? <Empty text="لا توجد عقود مرتبطة" /> : null}
         </div>
       </RecordSection>
+
 
       <RecordSection title="الفواتير" icon={ReceiptText} count={data.invoices.length}>
         <div className="space-y-2">
@@ -1106,6 +1167,17 @@ function UnitStat({
     <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
       <span className="text-[12.5px] text-muted-foreground">{label}</span>
       <b className={`text-2xl ${toneClass}`}>{value}</b>
+    </div>
+  );
+}
+
+/** خلية تفصيل داخل بطاقة العقد. */
+function Detail({ label, value, hint }: { label: string; value: string; hint?: string | undefined }) {
+  return (
+    <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+      <p className="text-[11.5px] text-muted-foreground">{label}</p>
+      <p className="mt-1 text-[13.5px] font-bold text-foreground">{value}</p>
+      {hint ? <p className="mt-0.5 text-[11.5px] text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }

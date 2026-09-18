@@ -5,11 +5,12 @@ import { useMemo, useState } from "react";
 import heroImage from "@/assets/hero-rent.jpg";
 import heroVideo from "@/assets/video-rent.mp4.asset.json";
 import { PageHero } from "@/components/site/PageHero";
+import { BuildingGrid } from "@/components/site/BuildingCard";
 import { PropertyGrid } from "@/components/site/PropertyCard";
 import { PropertyMapSection } from "@/components/site/PropertyMapSection";
 import { Reveal } from "@/components/site/Reveal";
 import { SiteLayout } from "@/components/site/SiteLayout";
-import { publicPropertiesQuery } from "@/lib/site-data";
+import { publicBuildingsQuery, publicPropertiesQuery } from "@/lib/site-data";
 
 export const Route = createFileRoute("/rent")({
   head: () => ({
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/rent")({
 
 function RentPage() {
   const { data, isLoading, error } = useQuery(publicPropertiesQuery("rent", 200));
+  const buildings = useQuery(publicBuildingsQuery("rent", 60));
   const [district, setDistrict] = useState("");
   const [type, setType] = useState("");
   const [term, setTerm] = useState("");
@@ -58,6 +60,7 @@ function RentPage() {
         (!district || p.district === district) &&
         (!type || p.property_type === type) &&
         (!q || `${p.name} ${p.code} ${p.district ?? ""}`.includes(q)) &&
+        !p.building_code &&
         (!cap || (p.price_value ?? 0) <= cap),
     );
     const sorted = [...list];
@@ -117,6 +120,13 @@ function RentPage() {
             <option value="price-desc">الأعلى سعراً</option>
           </select>
         </Reveal>
+
+        {(buildings.data ?? []).length ? (
+          <div className="mb-10 space-y-4">
+            <h2 className="text-[20px] font-bold text-foreground">العمارات</h2>
+            <BuildingGrid buildings={buildings.data ?? []} />
+          </div>
+        ) : null}
 
         <p className="mb-4 text-[13px] text-muted-foreground">
           النتائج: {filtered.length.toLocaleString("ar-SA")} عقار

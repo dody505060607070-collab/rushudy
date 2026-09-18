@@ -27,7 +27,12 @@ export type PublicProperty = {
   link_facebook: string | null;
   link_tour: string | null;
   created_at: string;
+  floor?: string | null;
+  building_id?: string | null;
+  building_code?: string | null;
+  building_name?: string | null;
   property_images: { url: string; is_cover: boolean; sort_order: number; focal_x?: number; focal_y?: number }[];
+
 };
 
 const PROPERTY_FIELDS =
@@ -114,6 +119,85 @@ export const publicPropertyQuery = (code: string) =>
       return (Array.isArray(data) ? data[0] : null) as unknown as PublicProperty | null;
     },
   });
+
+export type PublicBuildingUnit = {
+  id: string;
+  code: string;
+  name: string;
+  floor: string | null;
+  purpose: string;
+  rent_period: string | null;
+  property_type: string | null;
+  status: string;
+  price_text: string | null;
+  price_value: number | null;
+  description: string | null;
+  whatsapp_number: string | null;
+  city: string | null;
+  district: string | null;
+  images: { url: string; is_cover: boolean; sort_order: number }[];
+};
+
+export type PublicBuilding = {
+  id: string;
+  code: string;
+  name: string;
+  city: string | null;
+  district: string | null;
+  address: string | null;
+  description: string | null;
+  purpose: string;
+  floors_count: number | null;
+  cover_url: string | null;
+  sort_order: number;
+  created_at: string;
+  units: PublicBuildingUnit[];
+};
+
+async function fetchBuildings(args: { code?: string | undefined; purpose?: "rent" | "sale" | undefined; limit?: number }) {
+  const params: { _code?: string; _purpose?: string; _limit?: number } = { _limit: args.limit ?? 60 };
+  if (args.code) params._code = args.code;
+  if (args.purpose) params._purpose = args.purpose;
+  const { data, error } = await supabase.rpc("get_public_buildings", params);
+  if (error) throw error;
+  return (Array.isArray(data) ? data : []) as unknown as PublicBuilding[];
+}
+
+export const publicBuildingsQuery = (purpose?: "rent" | "sale", limit?: number) =>
+  queryOptions({
+    queryKey: ["public-buildings", purpose ?? "all", limit ?? 60],
+    queryFn: () => fetchBuildings({ purpose: purpose ?? undefined, limit: limit ?? 60 }),
+    staleTime: 60_000,
+  });
+
+export const publicBuildingQuery = (code: string) =>
+  queryOptions({
+    queryKey: ["public-building", code],
+    queryFn: async () => (await fetchBuildings({ code, limit: 1 }))[0] ?? null,
+  });
+
+/** غلاف العمارة: الصورة المرفوعة أو أول صورة من شققها. */
+export function buildingCover(building: PublicBuilding) {
+  if (building.cover_url) return building.cover_url;
+  for (const unit of building.units ?? []) {
+    const cover = [...(unit.images ?? [])].sort(
+      (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order,
+    )[0];
+    if (cover) return cover.url;
+  }
+  return null;
+}
+
+/** ترتيب شقق العمارة حسب الأدوار. */
+export function groupUnitsByFloor(units: PublicBuildingUnit[]) {
+  const map = new Map<string, PublicBuildingUnit[]>();
+  for (const unit of units ?? []) {
+    const key = (unit.floor ?? "").trim() || "بدون دور";
+    map.set(key, [...(map.get(key) ?? []), unit]);
+  }
+  return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0], "ar", { numeric: true }));
+}
+
 
 export const publicServicesQuery = queryOptions({
   queryKey: ["public-services"],

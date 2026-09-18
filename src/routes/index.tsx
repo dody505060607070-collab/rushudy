@@ -6,13 +6,14 @@ import { useMemo, useState } from "react";
 import ctaImage from "@/assets/cta-deal.jpg";
 import socialCard from "@/assets/rushdy-social-card.jpg.asset.json";
 import { HeroVideo } from "@/components/site/HeroVideo";
+import { BuildingGrid } from "@/components/site/BuildingCard";
 import { PropertyGrid } from "@/components/site/PropertyCard";
 import { PropertyCompare } from "@/components/site/PropertyCompare";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { PropertyMapSection } from "@/components/site/PropertyMapSection";
 import { Reveal } from "@/components/site/Reveal";
 import { useRecentlyViewed } from "@/lib/favorites";
-import { publicPropertiesQuery, publicServicesQuery } from "@/lib/site-data";
+import { publicBuildingsQuery, publicPropertiesQuery, publicServicesQuery } from "@/lib/site-data";
 import { SITE_NAME, SITE_URL, absoluteSiteUrl } from "@/lib/site-meta";
 
 const SOCIAL_IMAGE = absoluteSiteUrl(socialCard.url);
@@ -84,6 +85,7 @@ function HomePage() {
   const sale = useQuery(publicPropertiesQuery("sale", 6));
   const services = useQuery(publicServicesQuery);
   const all = useQuery(publicPropertiesQuery(undefined, 200));
+  const buildings = useQuery(publicBuildingsQuery(undefined, 12));
 
   const [purpose, setPurpose] = useState("");
   const [type, setType] = useState("");
@@ -176,6 +178,16 @@ function HomePage() {
           onCompare={toggleCompare}
         />
       </Reveal>
+
+      {(buildings.data ?? []).length ? (
+        <Reveal as="section" className="mx-auto max-w-6xl px-4 py-10">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-[22px] font-bold text-foreground sm:text-[26px]">عماراتنا</h2>
+            <span className="text-[13px] text-muted-foreground">اضغط على العمارة لعرض شققها حسب الدور</span>
+          </div>
+          <BuildingGrid buildings={buildings.data ?? []} />
+        </Reveal>
+      ) : null}
 
       <Reveal as="section" className="mesh-bg py-16">
         <div className="mx-auto max-w-6xl px-4">

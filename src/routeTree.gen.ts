@@ -28,6 +28,7 @@ import { Route as AuthenticatedActivitiesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedActivityLogRouteImport } from './routes/_authenticated/activity-log'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
+import { Route as AuthenticatedBuildingsRouteImport } from './routes/_authenticated/buildings'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/crm'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -52,6 +53,7 @@ import { Route as AuthenticatedTaskFormRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedTeamChatRouteImport } from './routes/_authenticated/team-chat'
 import { Route as AuthenticatedWhatsappLinkRouteImport } from './routes/_authenticated/whatsapp-link'
+import { Route as BuildingsCodeRouteImport } from './routes/buildings.$code'
 import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PropertiesCodeRouteImport } from './routes/properties.$code'
 import { Route as AuthenticatedContractsIndexRouteImport } from './routes/_authenticated/contracts.index'
@@ -165,6 +167,11 @@ const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
 const AuthenticatedBackupRoute = AuthenticatedBackupRouteImport.update({
   id: '/backup',
   path: '/backup',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBuildingsRoute = AuthenticatedBuildingsRouteImport.update({
+  id: '/buildings',
+  path: '/buildings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
@@ -294,6 +301,11 @@ const AuthenticatedWhatsappLinkRoute =
     path: '/whatsapp-link',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const BuildingsCodeRoute = BuildingsCodeRouteImport.update({
+  id: '/buildings/$code',
+  path: '/buildings/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortalIndexRoute = PortalIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -421,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/activity-log': typeof AuthenticatedActivityLogRoute
   '/ai': typeof AuthenticatedAiRoute
   '/backup': typeof AuthenticatedBackupRoute
+  '/buildings': typeof AuthenticatedBuildingsRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -445,6 +458,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AuthenticatedTasksRoute
   '/team-chat': typeof AuthenticatedTeamChatRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
+  '/buildings/$code': typeof BuildingsCodeRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal/': typeof PortalIndexRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
@@ -483,6 +497,7 @@ export interface FileRoutesByTo {
   '/activity-log': typeof AuthenticatedActivityLogRoute
   '/ai': typeof AuthenticatedAiRoute
   '/backup': typeof AuthenticatedBackupRoute
+  '/buildings': typeof AuthenticatedBuildingsRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -507,6 +522,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksRoute
   '/team-chat': typeof AuthenticatedTeamChatRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
+  '/buildings/$code': typeof BuildingsCodeRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal': typeof PortalIndexRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
@@ -548,6 +564,7 @@ export interface FileRoutesById {
   '/_authenticated/activity-log': typeof AuthenticatedActivityLogRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
+  '/_authenticated/buildings': typeof AuthenticatedBuildingsRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -572,6 +589,7 @@ export interface FileRoutesById {
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/team-chat': typeof AuthenticatedTeamChatRoute
   '/_authenticated/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
+  '/buildings/$code': typeof BuildingsCodeRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal/': typeof PortalIndexRoute
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
@@ -613,6 +631,7 @@ export interface FileRouteTypes {
     | '/activity-log'
     | '/ai'
     | '/backup'
+    | '/buildings'
     | '/clients'
     | '/crm'
     | '/dashboard'
@@ -637,6 +656,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/team-chat'
     | '/whatsapp-link'
+    | '/buildings/$code'
     | '/properties/$code'
     | '/portal/'
     | '/contracts/$contractId'
@@ -675,6 +695,7 @@ export interface FileRouteTypes {
     | '/activity-log'
     | '/ai'
     | '/backup'
+    | '/buildings'
     | '/clients'
     | '/crm'
     | '/dashboard'
@@ -699,6 +720,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/team-chat'
     | '/whatsapp-link'
+    | '/buildings/$code'
     | '/properties/$code'
     | '/portal'
     | '/contracts/$contractId'
@@ -739,6 +761,7 @@ export interface FileRouteTypes {
     | '/_authenticated/activity-log'
     | '/_authenticated/ai'
     | '/_authenticated/backup'
+    | '/_authenticated/buildings'
     | '/_authenticated/clients'
     | '/_authenticated/crm'
     | '/_authenticated/dashboard'
@@ -763,6 +786,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks'
     | '/_authenticated/team-chat'
     | '/_authenticated/whatsapp-link'
+    | '/buildings/$code'
     | '/properties/$code'
     | '/portal/'
     | '/_authenticated/contracts/$contractId'
@@ -800,6 +824,7 @@ export interface RootRouteChildren {
   SysX9k2ControlRoute: typeof SysX9k2ControlRoute
   TermsRoute: typeof TermsRoute
   ThankYouRoute: typeof ThankYouRoute
+  BuildingsCodeRoute: typeof BuildingsCodeRoute
   PropertiesCodeRoute: typeof PropertiesCodeRoute
   ApiPublicN8nRoute: typeof ApiPublicN8nRoute
   ApiPublicFilesSplatRoute: typeof ApiPublicFilesSplatRoute
@@ -938,6 +963,13 @@ declare module '@tanstack/react-router' {
       path: '/backup'
       fullPath: '/backup'
       preLoaderRoute: typeof AuthenticatedBackupRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/buildings': {
+      id: '/_authenticated/buildings'
+      path: '/buildings'
+      fullPath: '/buildings'
+      preLoaderRoute: typeof AuthenticatedBuildingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clients': {
@@ -1108,6 +1140,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWhatsappLinkRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/buildings/$code': {
+      id: '/buildings/$code'
+      path: '/buildings/$code'
+      fullPath: '/buildings/$code'
+      preLoaderRoute: typeof BuildingsCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portal/': {
       id: '/portal/'
       path: '/'
@@ -1249,6 +1288,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedActivityLogRoute: typeof AuthenticatedActivityLogRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedBackupRoute: typeof AuthenticatedBackupRoute
+  AuthenticatedBuildingsRoute: typeof AuthenticatedBuildingsRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -1291,6 +1331,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActivityLogRoute: AuthenticatedActivityLogRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedBackupRoute: AuthenticatedBackupRoute,
+  AuthenticatedBuildingsRoute: AuthenticatedBuildingsRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
@@ -1370,6 +1411,7 @@ const rootRouteChildren: RootRouteChildren = {
   SysX9k2ControlRoute: SysX9k2ControlRoute,
   TermsRoute: TermsRoute,
   ThankYouRoute: ThankYouRoute,
+  BuildingsCodeRoute: BuildingsCodeRoute,
   PropertiesCodeRoute: PropertiesCodeRoute,
   ApiPublicN8nRoute: ApiPublicN8nRoute,
   ApiPublicFilesSplatRoute: ApiPublicFilesSplatRoute,
