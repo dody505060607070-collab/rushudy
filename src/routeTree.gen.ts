@@ -65,6 +65,7 @@ import { Route as AuthenticatedValuationRouteImport } from './routes/_authentica
 import { Route as AuthenticatedWhatsappLinkRouteImport } from './routes/_authenticated/whatsapp-link'
 import { Route as BuildingsCodeRouteImport } from './routes/buildings.$code'
 import { Route as PortalIndexRouteImport } from './routes/portal.index'
+import { Route as PortalCareRouteImport } from './routes/portal.care'
 import { Route as PortalFinanceRouteImport } from './routes/portal.finance'
 import { Route as PortalInsightsRouteImport } from './routes/portal.insights'
 import { Route as PortalUnitsRouteImport } from './routes/portal.units'
@@ -378,6 +379,11 @@ const PortalIndexRoute = PortalIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalCareRoute = PortalCareRouteImport.update({
+  id: '/care',
+  path: '/care',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalFinanceRoute = PortalFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
@@ -557,6 +563,7 @@ export interface FileRoutesByFullPath {
   '/valuation': typeof AuthenticatedValuationRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
+  '/portal/care': typeof PortalCareRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
   '/portal/units': typeof PortalUnitsRoute
@@ -635,6 +642,7 @@ export interface FileRoutesByTo {
   '/valuation': typeof AuthenticatedValuationRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
+  '/portal/care': typeof PortalCareRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
   '/portal/units': typeof PortalUnitsRoute
@@ -716,6 +724,7 @@ export interface FileRoutesById {
   '/_authenticated/valuation': typeof AuthenticatedValuationRoute
   '/_authenticated/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
+  '/portal/care': typeof PortalCareRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
   '/portal/units': typeof PortalUnitsRoute
@@ -797,6 +806,7 @@ export interface FileRouteTypes {
     | '/valuation'
     | '/whatsapp-link'
     | '/buildings/$code'
+    | '/portal/care'
     | '/portal/finance'
     | '/portal/insights'
     | '/portal/units'
@@ -875,6 +885,7 @@ export interface FileRouteTypes {
     | '/valuation'
     | '/whatsapp-link'
     | '/buildings/$code'
+    | '/portal/care'
     | '/portal/finance'
     | '/portal/insights'
     | '/portal/units'
@@ -955,6 +966,7 @@ export interface FileRouteTypes {
     | '/_authenticated/valuation'
     | '/_authenticated/whatsapp-link'
     | '/buildings/$code'
+    | '/portal/care'
     | '/portal/finance'
     | '/portal/insights'
     | '/portal/units'
@@ -1399,6 +1411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalIndexRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/care': {
+      id: '/portal/care'
+      path: '/care'
+      fullPath: '/portal/care'
+      preLoaderRoute: typeof PortalCareRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/finance': {
       id: '/portal/finance'
       path: '/finance'
@@ -1679,6 +1698,7 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface PortalRouteChildren {
+  PortalCareRoute: typeof PortalCareRoute
   PortalFinanceRoute: typeof PortalFinanceRoute
   PortalInsightsRoute: typeof PortalInsightsRoute
   PortalUnitsRoute: typeof PortalUnitsRoute
@@ -1690,6 +1710,7 @@ interface PortalRouteChildren {
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
+  PortalCareRoute: PortalCareRoute,
   PortalFinanceRoute: PortalFinanceRoute,
   PortalInsightsRoute: PortalInsightsRoute,
   PortalUnitsRoute: PortalUnitsRoute,
