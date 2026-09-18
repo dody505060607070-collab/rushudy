@@ -1170,3 +1170,14 @@ function UnitStat({
     </div>
   );
 }
+
+/** خلية تفصيل داخل بطاقة العقد. */
+function Detail({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+      <p className="text-[11.5px] text-muted-foreground">{label}</p>
+      <p className="mt-1 text-[13.5px] font-bold text-foreground">{value}</p>
+      {hint ? <p className="mt-0.5 text-[11.5px] text-muted-foreground">{hint}</p> : null}
+    </div>
+  );
+}
