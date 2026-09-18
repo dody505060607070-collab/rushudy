@@ -25,19 +25,23 @@ export function KillSwitchGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMounted(true);
     let active = true;
-    fetchKillSwitch().then((data) => {
+    const refresh = () => fetchKillSwitch().then((data) => {
       if (!active) return;
       setState({ locked: Boolean(data.locked), message: data.message || "" });
     });
-    const id = setInterval(() => {
-      fetchKillSwitch().then((data) => {
-        if (!active) return;
-        setState({ locked: Boolean(data.locked), message: data.message || "" });
-      });
-    }, 15_000);
+
+    void refresh();
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refresh();
+    }, 60_000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
     return () => {
       active = false;
-      clearInterval(id);
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 
