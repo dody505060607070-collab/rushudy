@@ -77,6 +77,8 @@ const statusOptions: [string, string][] = [
 const emptyForm = {
   name: "",
   code: "",
+  building_id: "",
+  floor: "",
   purpose: "rent",
   rent_period: "yearly",
   property_type: "",
@@ -254,6 +256,15 @@ function PropertyFormPage() {
     },
   });
 
+  const buildingsList = useQuery({
+    queryKey: ["buildings", "options"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("buildings").select("id, name").order("name");
+      if (error) throw error;
+      return (data ?? []) as { id: string; name: string }[];
+    },
+  });
+
   const [ownerId, setOwnerId] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
@@ -264,6 +275,8 @@ function PropertyFormPage() {
     setForm({
       name: row.name ?? "",
       code: row.code ?? "",
+      building_id: row.building_id ?? "",
+      floor: row.floor ?? "",
       purpose: row.purpose ?? "rent",
       rent_period: row.rent_period ?? "yearly",
       property_type: row.property_type ?? "",
@@ -422,6 +435,8 @@ function PropertyFormPage() {
       const payload = {
         name: form.name.trim(),
         code: form.code.trim() || `P-${Date.now().toString(36).toUpperCase()}`,
+        building_id: form.building_id || null,
+        floor: form.floor.trim() || null,
         purpose: form.purpose,
         rent_period: form.purpose === "rent" ? form.rent_period : null,
         property_type: form.property_type.trim() || null,
@@ -731,6 +746,23 @@ function PropertyFormPage() {
               value={form.code}
               onChange={(e) => set({ code: e.target.value })}
             />
+          </Field>
+          <Field label="العمارة" hint="اربط الشقة بعمارة لتظهر داخل صفحتها">
+            <select
+              className={inputClass}
+              value={form.building_id}
+              onChange={(e) => set({ building_id: e.target.value })}
+            >
+              <option value="">بدون عمارة</option>
+              {(buildingsList.data ?? []).map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="الدور" hint="مثال: الدور الأول">
+            <input className={inputClass} value={form.floor} onChange={(e) => set({ floor: e.target.value })} />
           </Field>
           <Field label="الغرض">
             <select
