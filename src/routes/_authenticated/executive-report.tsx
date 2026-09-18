@@ -42,7 +42,7 @@ function ExecutiveReportPage() {
     queryKey: ["executive-report", range],
     queryFn: async () => {
       const [payments, contracts, listing, supply, tasks, views, offers] = await Promise.all([
-        supabase.from("contract_payments").select("amount, status, due_date, paid_at"),
+        supabase.from("contract_payments").select("amount_due, amount_paid, status, due_date, updated_at"),
         supabase.from("contracts").select("id, status, total_value, annual_rent, created_at").gte("created_at", since),
         supabase.from("listing_requests").select("id, created_at").gte("created_at", since),
         supabase.from("supply_requests").select("id, created_at").gte("created_at", since),
@@ -51,16 +51,17 @@ function ExecutiveReportPage() {
         supabase.from("price_offers").select("id, offer_amount, status").gte("created_at", since),
       ]);
 
+      const today = new Date().toISOString().slice(0, 10);
       const paymentRows = payments.data ?? [];
       const collected = paymentRows
-        .filter((p) => p.status === "paid" && p.paid_at && p.paid_at >= since)
-        .reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+        .filter((p) => Number(p.amount_paid) > 0 && p.updated_at >= since)
+        .reduce((sum, p) => sum + Number(p.amount_paid ?? 0), 0);
       const overdue = paymentRows
-        .filter((p) => p.status !== "paid" && p.due_date && p.due_date < new Date().toISOString().slice(0, 10))
-        .reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+        .filter((p) => p.status !== "paid" && p.due_date < today)
+        .reduce((sum, p) => sum + Math.max(0, Number(p.amount_due ?? 0) - Number(p.amount_paid ?? 0)), 0);
       const upcoming = paymentRows
-        .filter((p) => p.status !== "paid" && p.due_date && p.due_date >= new Date().toISOString().slice(0, 10))
-        .reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+        .filter((p) => p.status !== "paid" && p.due_date >= today)
+        .reduce((sum, p) => sum + Math.max(0, Number(p.amount_due ?? 0) - Number(p.amount_paid ?? 0)), 0);
 
       const contractRows = contracts.data ?? [];
       const taskRows = tasks.data ?? [];
