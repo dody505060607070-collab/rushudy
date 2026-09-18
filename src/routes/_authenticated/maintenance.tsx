@@ -171,7 +171,7 @@ function MaintenancePage() {
   });
 
   const patch = useMutation({
-    mutationFn: async ({ id, values }: { id: string; values: Record<string, unknown> }) => {
+    mutationFn: async ({ id, values }: { id: string; values: { status?: string; rating?: number | null } }) => {
       const { error } = await supabase.from("maintenance_requests").update(values).eq("id", id);
       if (error) throw error;
     },
