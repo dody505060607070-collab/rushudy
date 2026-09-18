@@ -83,6 +83,7 @@ type UnitContract = {
   id: string;
   contract_number: string;
   property_id: string | null;
+  tenant_id: string | null;
   status: string;
   tenant: { full_name: string; phone: string | null } | null;
 };
@@ -162,7 +163,7 @@ function BuildingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, contract_number, property_id, status, tenant:tenant_id(full_name, phone)")
+        .select("id, contract_number, property_id, tenant_id, status, tenant:tenant_id(full_name, phone)")
         .not("property_id", "is", null)
         .in("status", ["active", "draft"])
         .order("created_at", { ascending: false });
@@ -180,12 +181,28 @@ function BuildingsPage() {
     return map;
   }, [contracts.data]);
 
+  const contractsByBuilding = useMemo(() => {
+    const map = new Map<string, UnitContract[]>();
+    const buildingIds = new Map(
+      (units.data ?? [])
+        .filter((unit): unit is UnitProperty & { building_id: string } => Boolean(unit.building_id))
+        .map((unit) => [unit.id, unit.building_id]),
+    );
+    for (const contract of contracts.data ?? []) {
+      const buildingId = contract.property_id ? buildingIds.get(contract.property_id) : undefined;
+      if (!buildingId) continue;
+      map.set(buildingId, [...(map.get(buildingId) ?? []), contract]);
+    }
+    return map;
+  }, [contracts.data, units.data]);
+
   const owners = useQuery({
     queryKey: ["contacts", "owners", "buildings"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("contacts")
         .select("id, full_name")
+        .contains("roles", ["owner"])
         .order("full_name")
         .limit(500);
       if (error) throw error;
@@ -416,6 +433,7 @@ function BuildingsPage() {
             const rate = list.length ? Math.round((busy / list.length) * 100) : 0;
             const expected = list.reduce((sum, u) => sum + monthlyValue(u), 0);
             const income = incomeByBuilding.get(b.id) ?? { due: 0, collected: 0 };
+            const buildingContracts = contractsByBuilding.get(b.id) ?? [];
             return (
               <article key={b.id} className="surface-card w-full overflow-hidden">
                 <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
@@ -618,7 +636,17 @@ function BuildingsPage() {
                                     <div className="mt-2 space-y-1 border-t border-border pt-2 text-[11.5px] text-muted-foreground">
                                       <p className="flex items-center gap-1.5">
                                         <UserRound className="size-3.5 text-primary" />
-                                        {contract.tenant?.full_name ?? "بدون مستأجر محدد"}
+                                        {contract.tenant_id ? (
+                                          <Link
+                                            to="/clients"
+                                            search={{ edit: contract.tenant_id }}
+                                            className="font-semibold text-primary hover:underline"
+                                          >
+                                            {contract.tenant?.full_name ?? "تعديل بيانات المستأجر"}
+                                          </Link>
+                                        ) : (
+                                          "بدون مستأجر محدد"
+                                        )}
                                       </p>
                                       <Link
                                         to="/contracts/$contractId"
@@ -645,6 +673,72 @@ function BuildingsPage() {
                       ))
                   )}
                 </div>
+
+                <section className="border-t border-border p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="flex items-center gap-2 text-[13px] font-bold text-foreground">
+                        <FileText className="size-4 text-primary" /> عقود وحدات العمارة
+                      </h3>
+                      <p className="mt-1 text-[11.5px] text-muted-foreground">
+                        العقود المرتبطة بوحدات هذه العمارة فقط، منفصلة عن باقي العقود.
+                      </p>
+                    </div>
+                    <Chip tone={buildingContracts.length ? "primary" : "neutral"}>
+                      {buildingContracts.length.toLocaleString("ar-SA")} عقد
+                    </Chip>
+                  </div>
+                  {buildingContracts.length ? (
+                    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                      {buildingContracts.map((contract) => {
+                        const unit = list.find((item) => item.id === contract.property_id);
+                        return (
+                          <article key={contract.id} className="rounded-lg border border-border p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <Link
+                                to="/contracts/$contractId"
+                                params={{ contractId: contract.id }}
+                                className="font-bold text-primary hover:underline"
+                              >
+                                العقد {contract.contract_number}
+                              </Link>
+                              <Chip tone={contract.status === "active" ? "success" : "warning"}>
+                                {contract.status === "active" ? "ساري" : "مسودة"}
+                              </Chip>
+                            </div>
+                            <p className="mt-2 text-[12px] text-muted-foreground">
+                              الوحدة: {unit?.name ?? "غير محددة"}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-3 text-[12px]">
+                              {contract.tenant_id ? (
+                                <Link
+                                  to="/clients"
+                                  search={{ edit: contract.tenant_id }}
+                                  className="font-semibold text-primary hover:underline"
+                                >
+                                  تعديل {contract.tenant?.full_name ?? "المستأجر"}
+                                </Link>
+                              ) : (
+                                <span className="text-muted-foreground">بدون مستأجر</span>
+                              )}
+                              <Link
+                                to="/contracts"
+                                search={{ edit: contract.id }}
+                                className="font-semibold text-foreground hover:text-primary"
+                              >
+                                تعديل العقد
+                              </Link>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="rounded-lg bg-muted/30 p-3 text-[12px] text-muted-foreground">
+                      لا توجد عقود مرتبطة بوحدات هذه العمارة.
+                    </p>
+                  )}
+                </section>
               </article>
             );
           })}

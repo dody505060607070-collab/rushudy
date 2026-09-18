@@ -489,8 +489,36 @@ function ContractsPage() {
                 className: "font-semibold",
               },
               { header: "النوع", cell: (r) => (r.contract_type === "sale" ? "بيع" : "إيجار") },
-              { header: "المالك", cell: (r) => r.owner?.full_name ?? "—" },
-              { header: "المستأجر / المشتري", cell: (r) => r.tenant?.full_name ?? "—" },
+              {
+                header: "المالك",
+                cell: (r) =>
+                  r.owner_id ? (
+                    <Link
+                      to="/owner-form"
+                      search={{ id: r.owner_id }}
+                      className="font-semibold text-primary hover:underline"
+                    >
+                      {r.owner?.full_name ?? "تعديل المالك"}
+                    </Link>
+                  ) : (
+                    "—"
+                  ),
+              },
+              {
+                header: "المستأجر / المشتري",
+                cell: (r) =>
+                  r.tenant_id ? (
+                    <Link
+                      to="/clients"
+                      search={{ edit: r.tenant_id }}
+                      className="font-semibold text-primary hover:underline"
+                    >
+                      {r.tenant?.full_name ?? "تعديل المستأجر"}
+                    </Link>
+                  ) : (
+                    "—"
+                  ),
+              },
               {
                 header: "من",
                 sortable: true,

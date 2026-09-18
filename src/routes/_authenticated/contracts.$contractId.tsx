@@ -503,7 +503,22 @@ function ContractViewPage() {
           <div className="grid gap-5 lg:grid-cols-2">
             <Section title="المالك" subtitle="بيانات الطرف المالك" icon={UserRound}>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Row label="الاسم" value={c.owner?.full_name} />
+                <Row
+                  label="الاسم"
+                  value={
+                    c.owner_id ? (
+                      <Link
+                        to="/owner-form"
+                        search={{ id: c.owner_id }}
+                        className="text-primary hover:underline"
+                      >
+                        {c.owner?.full_name ?? "تعديل بيانات المالك"}
+                      </Link>
+                    ) : (
+                      "—"
+                    )
+                  }
+                />
                 <Row label="رقم الهوية" value={c.owner?.national_id} />
                 <Row label="الجوال" value={c.owner?.phone} />
                 <Row label="البريد" value={c.owner?.email} />
@@ -511,7 +526,22 @@ function ContractViewPage() {
             </Section>
             <Section title="المستأجر / المشتري" subtitle="بيانات الطرف المستفيد" icon={UserRound}>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Row label="الاسم" value={c.tenant?.full_name} />
+                <Row
+                  label="الاسم"
+                  value={
+                    c.tenant_id ? (
+                      <Link
+                        to="/clients"
+                        search={{ edit: c.tenant_id }}
+                        className="text-primary hover:underline"
+                      >
+                        {c.tenant?.full_name ?? "تعديل بيانات المستأجر"}
+                      </Link>
+                    ) : (
+                      "—"
+                    )
+                  }
+                />
                 <Row label="رقم الهوية" value={c.tenant?.national_id} />
                 <Row label="الجوال" value={c.tenant?.phone} />
                 <Row label="البريد" value={c.tenant?.email} />

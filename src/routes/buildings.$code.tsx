@@ -170,53 +170,6 @@ function BuildingPage() {
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-border bg-card p-6 print:break-inside-avoid">
-          <h2 className="mb-4 text-[14px] font-bold text-foreground">مخطط الأدوار</h2>
-          <div className="space-y-3">
-            {floors.map(([floor, units]) => (
-              <div key={floor} className="flex flex-wrap items-center gap-2">
-                <span className="w-24 shrink-0 text-[12.5px] font-semibold text-muted-foreground">
-                  {floor}
-                </span>
-                {units.map((u) => (
-                  <Link
-                    key={u.id}
-                    to="/properties/$code"
-                    params={{ code: u.code }}
-                    title={`${u.name} — ${statusLabels[u.status] ?? u.status}`}
-                    className={`grid h-10 min-w-16 place-items-center rounded-lg border px-2 text-[11.5px] font-bold ${
-                      u.status === "available"
-                        ? "border-success/40 bg-success/15 text-success"
-                        : u.status === "reserved"
-                          ? "border-warning/40 bg-warning/15 text-warning"
-                          : "border-destructive/40 bg-destructive/10 text-destructive"
-                    }`}
-                  >
-                    {u.name.replace(/[^\d]/g, "") || u.code}
-                  </Link>
-                ))}
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 flex flex-wrap gap-4 text-[11.5px] text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="size-3 rounded bg-success/60" /> متاحة
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-3 rounded bg-warning/60" /> محجوزة
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-3 rounded bg-destructive/60" /> مؤجرة/مبيعة
-            </span>
-          </p>
-        </div>
-
-        {building.description ? (
-          <p className="whitespace-pre-wrap rounded-2xl border border-border bg-card p-6 text-[14px] leading-8 text-muted-foreground">
-            {building.description}
-          </p>
-        ) : null}
-
         {!floors.length ? (
           <p className="rounded-2xl border border-border bg-card p-10 text-center text-[14px] text-muted-foreground">
             لا توجد شقق معروضة في هذه العمارة حالياً.
@@ -311,6 +264,55 @@ function BuildingPage() {
             </div>
           </div>
         ))}
+
+        {building.description ? (
+          <p className="whitespace-pre-wrap rounded-2xl border border-border bg-card p-6 text-[14px] leading-8 text-muted-foreground">
+            {building.description}
+          </p>
+        ) : null}
+
+        {floors.length ? (
+          <div className="rounded-2xl border border-border bg-card p-6 print:break-inside-avoid">
+            <h2 className="mb-4 text-[14px] font-bold text-foreground">مخطط الأدوار</h2>
+            <div className="space-y-3">
+              {floors.map(([floor, units]) => (
+                <div key={floor} className="flex flex-wrap items-center gap-2">
+                  <span className="w-24 shrink-0 text-[12.5px] font-semibold text-muted-foreground">
+                    {floor}
+                  </span>
+                  {units.map((u) => (
+                    <Link
+                      key={u.id}
+                      to="/properties/$code"
+                      params={{ code: u.code }}
+                      title={`${u.name} — ${statusLabels[u.status] ?? u.status}`}
+                      className={`grid h-10 min-w-16 place-items-center rounded-lg border px-2 text-[11.5px] font-bold ${
+                        u.status === "available"
+                          ? "border-success/40 bg-success/15 text-success"
+                          : u.status === "reserved"
+                            ? "border-warning/40 bg-warning/15 text-warning"
+                            : "border-destructive/40 bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      {u.name.replace(/[^\d]/g, "") || u.code}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 flex flex-wrap gap-4 text-[11.5px] text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="size-3 rounded bg-success/60" /> متاحة
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-3 rounded bg-warning/60" /> محجوزة
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-3 rounded bg-destructive/60" /> مؤجرة/مبيعة
+              </span>
+            </p>
+          </div>
+        ) : null}
       </section>
     </SiteLayout>
   );

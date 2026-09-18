@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Contact, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/kit/Chip";
@@ -45,6 +45,8 @@ type Row = {
 };
 
 export const Route = createFileRoute("/_authenticated/clients")({
+  validateSearch: (search: Record<string, unknown>): { edit?: string } =>
+    typeof search["edit"] === "string" ? { edit: search["edit"] } : {},
   head: () => ({
     meta: [
       { title: "العملاء | الرشودي للعقارات" },
@@ -102,6 +104,7 @@ const emptyForm: FormState = {
 };
 
 function ClientsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState("all");
   const [open, setOpen] = useState(false);
@@ -147,6 +150,18 @@ function ClientsPage() {
     });
     setOpen(true);
   };
+
+  const { edit: editId } = Route.useSearch();
+  const handledEditId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!editId || handledEditId.current === editId) return;
+    const row = rows.find((item) => item.id === editId);
+    if (!row) return;
+    handledEditId.current = editId;
+    openEdit(row);
+    void navigate({ to: "/clients", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, rows]);
 
   const save = useMutation({
     mutationFn: async () => {
