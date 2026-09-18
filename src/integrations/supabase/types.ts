@@ -2350,6 +2350,86 @@ export type Database = {
           },
         ]
       }
+      owner_approvals: {
+        Row: {
+          amount: number | null
+          contract_id: string | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decision_note: string | null
+          details: string | null
+          id: string
+          kind: string
+          owner_id: string
+          property_id: string | null
+          status: string
+          title: string
+          unit_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decision_note?: string | null
+          details?: string | null
+          id?: string
+          kind?: string
+          owner_id: string
+          property_id?: string | null
+          status?: string
+          title: string
+          unit_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decision_note?: string | null
+          details?: string | null
+          id?: string
+          kind?: string
+          owner_id?: string
+          property_id?: string | null
+          status?: string
+          title?: string
+          unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_approvals_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owner_approvals_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owner_approvals_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owner_approvals_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       owner_delegates: {
         Row: {
           access_level: string
@@ -2392,6 +2472,208 @@ export type Database = {
           },
         ]
       }
+      owner_login_events: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          path: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id: string
+          path?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          path?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_login_events_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      owner_messages: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          owner_id: string
+          read_at: string | null
+          sender: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          owner_id: string
+          read_at?: string | null
+          sender?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          owner_id?: string
+          read_at?: string | null
+          sender?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_messages_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      owner_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          kind: string
+          link: string | null
+          owner_id: string
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind?: string
+          link?: string | null
+          owner_id: string
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind?: string
+          link?: string | null
+          owner_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_notifications_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      owner_payout_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          iban_last4: string | null
+          id: string
+          method: string
+          note: string | null
+          owner_id: string
+          processed_at: string | null
+          staff_note: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          iban_last4?: string | null
+          id?: string
+          method?: string
+          note?: string | null
+          owner_id: string
+          processed_at?: string | null
+          staff_note?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          iban_last4?: string | null
+          id?: string
+          method?: string
+          note?: string | null
+          owner_id?: string
+          processed_at?: string | null
+          staff_note?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_payout_requests_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      owner_preferences: {
+        Row: {
+          currency: string
+          expense_approval_limit: number
+          language: string
+          notify_email: boolean
+          notify_whatsapp: boolean
+          owner_id: string
+          report_frequency: string
+          updated_at: string
+        }
+        Insert: {
+          currency?: string
+          expense_approval_limit?: number
+          language?: string
+          notify_email?: boolean
+          notify_whatsapp?: boolean
+          owner_id: string
+          report_frequency?: string
+          updated_at?: string
+        }
+        Update: {
+          currency?: string
+          expense_approval_limit?: number
+          language?: string
+          notify_email?: boolean
+          notify_whatsapp?: boolean
+          owner_id?: string
+          report_frequency?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_preferences_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: true
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       owner_requests: {
         Row: {
           contract_id: string | null
@@ -2402,6 +2684,7 @@ export type Database = {
           kind: string
           owner_id: string
           property_id: string | null
+          staff_note: string | null
           status: string
           title: string
           unit_id: string | null
@@ -2416,6 +2699,7 @@ export type Database = {
           kind?: string
           owner_id: string
           property_id?: string | null
+          staff_note?: string | null
           status?: string
           title: string
           unit_id?: string | null
@@ -2430,6 +2714,7 @@ export type Database = {
           kind?: string
           owner_id?: string
           property_id?: string | null
+          staff_note?: string | null
           status?: string
           title?: string
           unit_id?: string | null
@@ -2462,6 +2747,114 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      owner_share_links: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          label: string | null
+          owner_id: string
+          revoked: boolean
+          token: string
+          views: number
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          label?: string | null
+          owner_id: string
+          revoked?: boolean
+          token: string
+          views?: number
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          label?: string | null
+          owner_id?: string
+          revoked?: boolean
+          token?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_share_links_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      owner_signatures: {
+        Row: {
+          contract_id: string | null
+          created_at: string
+          doc_title: string
+          document_id: string | null
+          id: string
+          otp_code: string | null
+          otp_expires_at: string | null
+          owner_id: string
+          signature_text: string | null
+          signed_at: string | null
+          signer_name: string
+          status: string
+        }
+        Insert: {
+          contract_id?: string | null
+          created_at?: string
+          doc_title: string
+          document_id?: string | null
+          id?: string
+          otp_code?: string | null
+          otp_expires_at?: string | null
+          owner_id: string
+          signature_text?: string | null
+          signed_at?: string | null
+          signer_name: string
+          status?: string
+        }
+        Update: {
+          contract_id?: string | null
+          created_at?: string
+          doc_title?: string
+          document_id?: string | null
+          id?: string
+          otp_code?: string | null
+          otp_expires_at?: string | null
+          owner_id?: string
+          signature_text?: string | null
+          signed_at?: string | null
+          signer_name?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_signatures_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owner_signatures_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "unit_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owner_signatures_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
         ]
@@ -3710,11 +4103,73 @@ export type Database = {
           },
         ]
       }
+      unit_condition_reports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          images: string[]
+          kind: string
+          owner_id: string
+          property_id: string | null
+          reported_on: string
+          summary: string | null
+          unit_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          images?: string[]
+          kind?: string
+          owner_id: string
+          property_id?: string | null
+          reported_on?: string
+          summary?: string | null
+          unit_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          images?: string[]
+          kind?: string
+          owner_id?: string
+          property_id?: string | null
+          reported_on?: string
+          summary?: string | null
+          unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unit_condition_reports_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_condition_reports_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_condition_reports_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unit_documents: {
         Row: {
           created_at: string
           created_by: string | null
           doc_type: string
+          expires_at: string | null
           id: string
           mime_type: string | null
           owner_id: string
@@ -3727,6 +4182,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           doc_type?: string
+          expires_at?: string | null
           id?: string
           mime_type?: string | null
           owner_id: string
@@ -3739,6 +4195,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           doc_type?: string
+          expires_at?: string | null
           id?: string
           mime_type?: string | null
           owner_id?: string
@@ -3825,6 +4282,70 @@ export type Database = {
           },
           {
             foreignKeyName: "unit_expenses_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unit_visits: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          feedback: string | null
+          id: string
+          owner_id: string | null
+          property_id: string | null
+          source: string | null
+          unit_id: string | null
+          visit_date: string
+          visitor_name: string
+          visitor_phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          feedback?: string | null
+          id?: string
+          owner_id?: string | null
+          property_id?: string | null
+          source?: string | null
+          unit_id?: string | null
+          visit_date?: string
+          visitor_name: string
+          visitor_phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          feedback?: string | null
+          id?: string
+          owner_id?: string | null
+          property_id?: string | null
+          source?: string | null
+          unit_id?: string | null
+          visit_date?: string
+          visitor_name?: string
+          visitor_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unit_visits_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_visits_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_visits_unit_id_fkey"
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"

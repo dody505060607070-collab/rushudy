@@ -65,6 +65,9 @@ import { Route as AuthenticatedValuationRouteImport } from './routes/_authentica
 import { Route as AuthenticatedWhatsappLinkRouteImport } from './routes/_authenticated/whatsapp-link'
 import { Route as BuildingsCodeRouteImport } from './routes/buildings.$code'
 import { Route as PortalIndexRouteImport } from './routes/portal.index'
+import { Route as PortalFinanceRouteImport } from './routes/portal.finance'
+import { Route as PortalInsightsRouteImport } from './routes/portal.insights'
+import { Route as PortalUnitsRouteImport } from './routes/portal.units'
 import { Route as PropertiesCodeRouteImport } from './routes/properties.$code'
 import { Route as AuthenticatedContractsIndexRouteImport } from './routes/_authenticated/contracts.index'
 import { Route as AuthenticatedContractsContractIdRouteImport } from './routes/_authenticated/contracts.$contractId'
@@ -375,6 +378,21 @@ const PortalIndexRoute = PortalIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalFinanceRoute = PortalFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalInsightsRoute = PortalInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalUnitsRoute = PortalUnitsRouteImport.update({
+  id: '/units',
+  path: '/units',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PropertiesCodeRoute = PropertiesCodeRouteImport.update({
   id: '/properties/$code',
   path: '/properties/$code',
@@ -539,6 +557,9 @@ export interface FileRoutesByFullPath {
   '/valuation': typeof AuthenticatedValuationRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
+  '/portal/finance': typeof PortalFinanceRoute
+  '/portal/insights': typeof PortalInsightsRoute
+  '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal/': typeof PortalIndexRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
@@ -614,6 +635,9 @@ export interface FileRoutesByTo {
   '/valuation': typeof AuthenticatedValuationRoute
   '/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
+  '/portal/finance': typeof PortalFinanceRoute
+  '/portal/insights': typeof PortalInsightsRoute
+  '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal': typeof PortalIndexRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
@@ -692,6 +716,9 @@ export interface FileRoutesById {
   '/_authenticated/valuation': typeof AuthenticatedValuationRoute
   '/_authenticated/whatsapp-link': typeof AuthenticatedWhatsappLinkRoute
   '/buildings/$code': typeof BuildingsCodeRoute
+  '/portal/finance': typeof PortalFinanceRoute
+  '/portal/insights': typeof PortalInsightsRoute
+  '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal/': typeof PortalIndexRoute
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
@@ -770,6 +797,9 @@ export interface FileRouteTypes {
     | '/valuation'
     | '/whatsapp-link'
     | '/buildings/$code'
+    | '/portal/finance'
+    | '/portal/insights'
+    | '/portal/units'
     | '/properties/$code'
     | '/portal/'
     | '/contracts/$contractId'
@@ -845,6 +875,9 @@ export interface FileRouteTypes {
     | '/valuation'
     | '/whatsapp-link'
     | '/buildings/$code'
+    | '/portal/finance'
+    | '/portal/insights'
+    | '/portal/units'
     | '/properties/$code'
     | '/portal'
     | '/contracts/$contractId'
@@ -922,6 +955,9 @@ export interface FileRouteTypes {
     | '/_authenticated/valuation'
     | '/_authenticated/whatsapp-link'
     | '/buildings/$code'
+    | '/portal/finance'
+    | '/portal/insights'
+    | '/portal/units'
     | '/properties/$code'
     | '/portal/'
     | '/_authenticated/contracts/$contractId'
@@ -1363,6 +1399,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalIndexRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/finance': {
+      id: '/portal/finance'
+      path: '/finance'
+      fullPath: '/portal/finance'
+      preLoaderRoute: typeof PortalFinanceRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/insights': {
+      id: '/portal/insights'
+      path: '/insights'
+      fullPath: '/portal/insights'
+      preLoaderRoute: typeof PortalInsightsRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/units': {
+      id: '/portal/units'
+      path: '/units'
+      fullPath: '/portal/units'
+      preLoaderRoute: typeof PortalUnitsRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/properties/$code': {
       id: '/properties/$code'
       path: '/properties/$code'
@@ -1622,6 +1679,9 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface PortalRouteChildren {
+  PortalFinanceRoute: typeof PortalFinanceRoute
+  PortalInsightsRoute: typeof PortalInsightsRoute
+  PortalUnitsRoute: typeof PortalUnitsRoute
   PortalIndexRoute: typeof PortalIndexRoute
   PortalContractsContractIdRoute: typeof PortalContractsContractIdRoute
   PortalInvoicesInvoiceIdRoute: typeof PortalInvoicesInvoiceIdRoute
@@ -1630,6 +1690,9 @@ interface PortalRouteChildren {
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
+  PortalFinanceRoute: PortalFinanceRoute,
+  PortalInsightsRoute: PortalInsightsRoute,
+  PortalUnitsRoute: PortalUnitsRoute,
   PortalIndexRoute: PortalIndexRoute,
   PortalContractsContractIdRoute: PortalContractsContractIdRoute,
   PortalInvoicesInvoiceIdRoute: PortalInvoicesInvoiceIdRoute,
