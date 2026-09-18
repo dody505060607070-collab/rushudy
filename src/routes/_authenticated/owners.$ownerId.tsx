@@ -238,6 +238,111 @@ function OwnerDetailPage() {
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر النقل"),
   });
 
+  const sectionsQuery = useQuery({
+    queryKey: ["owner-sections", ownerId],
+    queryFn: async () => {
+      const [sections, items] = await Promise.all([
+        supabase
+          .from("owner_asset_sections")
+          .select("id, name, sort_order")
+          .eq("owner_id", ownerId)
+          .order("sort_order")
+          .order("created_at"),
+        supabase
+          .from("owner_asset_section_items")
+          .select("id, section_id, item_type, item_id")
+          .eq("owner_id", ownerId),
+      ]);
+      if (sections.error) throw sections.error;
+      if (items.error) throw items.error;
+      return { sections: sections.data ?? [], items: items.data ?? [] };
+    },
+  });
+  const refreshSections = () =>
+    queryClient.invalidateQueries({ queryKey: ["owner-sections", ownerId] });
+
+  const createSection = useMutation({
+    mutationFn: async (name: string) => {
+      const clean = name.trim();
+      if (!clean) throw new Error("اكتب اسم القسم أولًا");
+      const { error } = await supabase
+        .from("owner_asset_sections")
+        .insert({ owner_id: ownerId, name: clean });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setNewSectionName("");
+      refreshSections();
+      toast.success("تمت إضافة القسم");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّرت الإضافة"),
+  });
+
+  const renameSection = useMutation({
+    mutationFn: async (payload: { id: string; name: string }) => {
+      const clean = payload.name.trim();
+      if (!clean) throw new Error("اسم القسم مطلوب");
+      const { error } = await supabase
+        .from("owner_asset_sections")
+        .update({ name: clean })
+        .eq("id", payload.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refreshSections();
+      toast.success("تم تعديل اسم القسم");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر التعديل"),
+  });
+
+  const deleteSection = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("owner_asset_sections").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refreshSections();
+      toast.success("تم حذف القسم");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الحذف"),
+  });
+
+  const assignToSection = useMutation({
+    mutationFn: async (payload: {
+      sectionId: string | null;
+      itemType: "building" | "property" | "unit";
+      itemId: string;
+    }) => {
+      if (!payload.sectionId) {
+        const { error } = await supabase
+          .from("owner_asset_section_items")
+          .delete()
+          .eq("owner_id", ownerId)
+          .eq("item_type", payload.itemType)
+          .eq("item_id", payload.itemId);
+        if (error) throw error;
+        return;
+      }
+      const { error } = await supabase.from("owner_asset_section_items").upsert(
+        {
+          owner_id: ownerId,
+          section_id: payload.sectionId,
+          item_type: payload.itemType,
+          item_id: payload.itemId,
+        },
+        { onConflict: "owner_id,item_type,item_id" },
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setDragGroup(null);
+      refreshSections();
+      toast.success("تم ترتيب العنصر داخل القسم");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الترتيب"),
+  });
+
+
   const assignContract = useMutation({
     mutationFn: (unitId: string) => {
       if (!dragContractId) throw new Error("اختر العقد أولًا");
