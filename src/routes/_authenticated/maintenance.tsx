@@ -29,7 +29,10 @@ export const Route = createFileRoute("/_authenticated/maintenance")({
   component: MaintenancePage,
 });
 
-const statuses: Record<string, { label: string; tone: "info" | "warning" | "success" | "danger" | "muted" }> = {
+const statuses: Record<
+  string,
+  { label: string; tone: "info" | "warning" | "success" | "danger" | "muted" }
+> = {
   new: { label: "جديد", tone: "info" },
   assigned: { label: "مُسند لفني", tone: "warning" },
   in_progress: { label: "جارٍ التنفيذ", tone: "warning" },
@@ -125,7 +128,9 @@ function MaintenancePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("owner_requests")
-        .select("id, title, details, status, created_at, property_id, owner:owner_id(full_name, phone), property:property_id(name, code)")
+        .select(
+          "id, title, details, status, created_at, property_id, owner:owner_id(full_name, phone), property:property_id(name, code)",
+        )
         .eq("kind", "maintenance")
         .order("created_at", { ascending: false })
         .limit(100);
@@ -146,7 +151,10 @@ function MaintenancePage() {
         status: "new",
       });
       if (insert.error) throw insert.error;
-      const update = await supabase.from("owner_requests").update({ status: "in_progress" }).eq("id", row.id);
+      const update = await supabase
+        .from("owner_requests")
+        .update({ status: "in_progress" })
+        .eq("id", row.id);
       if (update.error) throw update.error;
     },
     onSuccess: () => {
@@ -160,7 +168,11 @@ function MaintenancePage() {
   const { data: properties } = useQuery({
     queryKey: ["maintenance-properties"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("properties").select("id, name, code").order("name").limit(500);
+      const { data, error } = await supabase
+        .from("properties")
+        .select("id, name, code")
+        .order("name")
+        .limit(500);
       if (error) throw error;
       return data ?? [];
     },
@@ -175,13 +187,18 @@ function MaintenancePage() {
 
   const visible = useMemo(() => {
     if (tab === "all") return rows;
-    if (tab === "open") return rows.filter((r) => ["new", "assigned", "in_progress"].includes(r.status));
+    if (tab === "open")
+      return rows.filter((r) => ["new", "assigned", "in_progress"].includes(r.status));
     return rows.filter((r) => r.status === tab);
   }, [rows, tab]);
 
-  const totalCost = rows.filter((r) => r.status === "done").reduce((s, r) => s + Number(r.cost ?? 0), 0);
+  const totalCost = rows
+    .filter((r) => r.status === "done")
+    .reduce((s, r) => s + Number(r.cost ?? 0), 0);
   const rated = rows.filter((r) => r.rating != null);
-  const avgRating = rated.length ? rated.reduce((s, r) => s + Number(r.rating), 0) / rated.length : 0;
+  const avgRating = rated.length
+    ? rated.reduce((s, r) => s + Number(r.rating), 0) / rated.length
+    : 0;
 
   const save = useMutation({
     mutationFn: async () => {
@@ -202,7 +219,10 @@ function MaintenancePage() {
         throw new Error("الاسم والجوال ووصف البلاغ مطلوبة");
       }
       if (editId) {
-        const { error } = await supabase.from("maintenance_requests").update(payload).eq("id", editId);
+        const { error } = await supabase
+          .from("maintenance_requests")
+          .update(payload)
+          .eq("id", editId);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("maintenance_requests").insert(payload);
@@ -220,7 +240,13 @@ function MaintenancePage() {
   });
 
   const patch = useMutation({
-    mutationFn: async ({ id, values }: { id: string; values: { status?: string; rating?: number | null } }) => {
+    mutationFn: async ({
+      id,
+      values,
+    }: {
+      id: string;
+      values: { status?: string; rating?: number | null };
+    }) => {
       const { error } = await supabase.from("maintenance_requests").update(values).eq("id", id);
       if (error) throw error;
     },
@@ -240,7 +266,8 @@ function MaintenancePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const field = "h-10 w-full rounded-lg border border-border bg-background px-3 text-[13px] text-foreground";
+  const field =
+    "h-10 w-full rounded-lg border border-border bg-background px-3 text-[13px] text-foreground";
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -276,7 +303,9 @@ function MaintenancePage() {
                 <div>
                   <p className="text-[13px] font-bold text-foreground">{row.title}</p>
                   <p className="mt-0.5 text-[12px] text-muted-foreground">
-                    {[row.owner?.full_name, row.property?.name, row.details].filter(Boolean).join(" · ")}
+                    {[row.owner?.full_name, row.property?.name, row.details]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 </div>
                 <button
@@ -324,15 +353,23 @@ function MaintenancePage() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">جارٍ التحميل…</div>
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+          جارٍ التحميل…
+        </div>
       ) : visible.length === 0 ? (
-        <EmptyState text="لا توجد بلاغات في هذا التبويب" hint="سجّل بلاغًا جديدًا أو جرّب تبويبًا آخر." />
+        <EmptyState
+          text="لا توجد بلاغات في هذا التبويب"
+          hint="سجّل بلاغًا جديدًا أو جرّب تبويبًا آخر."
+        />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {visible.map((row) => {
             const info = statuses[row.status] ?? statuses["new"]!;
             return (
-              <article key={row.id} className="rounded-2xl border border-border bg-card p-5 shadow-card">
+              <article
+                key={row.id}
+                className="rounded-2xl border border-border bg-card p-5 shadow-card"
+              >
                 <header className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="text-base font-bold text-foreground">
@@ -343,7 +380,15 @@ function MaintenancePage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Chip tone={row.priority === "urgent" ? "danger" : row.priority === "high" ? "warning" : "muted"}>
+                    <Chip
+                      tone={
+                        row.priority === "urgent"
+                          ? "danger"
+                          : row.priority === "high"
+                            ? "warning"
+                            : "muted"
+                      }
+                    >
                       {priorities[row.priority] ?? "عادية"}
                     </Chip>
                     <Chip tone={info.tone}>{info.label}</Chip>
@@ -357,22 +402,30 @@ function MaintenancePage() {
                 <dl className="mt-3 grid grid-cols-2 gap-3 text-[12.5px] sm:grid-cols-3">
                   <div className="rounded-lg border border-border bg-background p-3">
                     <dt className="text-muted-foreground">الفني</dt>
-                    <dd className="mt-1 font-semibold text-foreground">{row.technician_name ?? "لم يُسند"}</dd>
+                    <dd className="mt-1 font-semibold text-foreground">
+                      {row.technician_name ?? "لم يُسند"}
+                    </dd>
                   </div>
                   <div className="rounded-lg border border-border bg-background p-3">
                     <dt className="text-muted-foreground">التكلفة</dt>
-                    <dd className="mt-1 font-semibold text-foreground">{formatCurrency(row.cost)}</dd>
+                    <dd className="mt-1 font-semibold text-foreground">
+                      {formatCurrency(row.cost)}
+                    </dd>
                   </div>
                   <div className="rounded-lg border border-border bg-background p-3">
                     <dt className="text-muted-foreground">التقييم</dt>
-                    <dd className="mt-1 font-semibold text-foreground">{row.rating ? `${row.rating} / 5` : "—"}</dd>
+                    <dd className="mt-1 font-semibold text-foreground">
+                      {row.rating ? `${row.rating} / 5` : "—"}
+                    </dd>
                   </div>
                 </dl>
 
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <select
                     value={row.status}
-                    onChange={(e) => patch.mutate({ id: row.id, values: { status: e.target.value } })}
+                    onChange={(e) =>
+                      patch.mutate({ id: row.id, values: { status: e.target.value } })
+                    }
                     className="h-9 rounded-lg border border-border bg-background px-2 text-[12.5px] text-foreground"
                   >
                     {Object.entries(statuses).map(([key, value]) => (
@@ -384,7 +437,10 @@ function MaintenancePage() {
                   <select
                     value={row.rating ?? ""}
                     onChange={(e) =>
-                      patch.mutate({ id: row.id, values: { rating: e.target.value ? Number(e.target.value) : null } })
+                      patch.mutate({
+                        id: row.id,
+                        values: { rating: e.target.value ? Number(e.target.value) : null },
+                      })
                     }
                     className="h-9 rounded-lg border border-border bg-background px-2 text-[12.5px] text-foreground"
                   >

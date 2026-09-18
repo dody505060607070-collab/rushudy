@@ -53,7 +53,10 @@ function bucketOf(days: number | null) {
   return "later";
 }
 
-const buckets: Record<string, { label: string; tone: "danger" | "warning" | "info" | "muted" | "neutral" }> = {
+const buckets: Record<
+  string,
+  { label: string; tone: "danger" | "warning" | "info" | "muted" | "neutral" }
+> = {
   expired: { label: "منتهٍ بالفعل", tone: "danger" },
   d30: { label: "أقل من 30 يومًا", tone: "danger" },
   d60: { label: "خلال 60 يومًا", tone: "warning" },
@@ -99,7 +102,11 @@ function RenewalsPage() {
     () =>
       data
         .filter((row) => !["cancelled", "closed"].includes(row.status))
-        .map((row) => ({ row, days: daysLeft(row.end_date), bucket: bucketOf(daysLeft(row.end_date)) })),
+        .map((row) => ({
+          row,
+          days: daysLeft(row.end_date),
+          bucket: bucketOf(daysLeft(row.end_date)),
+        })),
     [data],
   );
 
@@ -114,7 +121,7 @@ function RenewalsPage() {
     return item.bucket === tab;
   });
 
-  const atRisk = (counts['d30'] ?? 0) + (counts['expired'] ?? 0);
+  const atRisk = (counts["d30"] ?? 0) + (counts["expired"] ?? 0);
   const valueAtRisk = enriched
     .filter((i) => ["d30", "d60", "d90", "expired"].includes(i.bucket))
     .reduce((sum, i) => sum + Number(i.row.annual_rent ?? i.row.total_value ?? 0), 0);
@@ -136,16 +143,22 @@ function RenewalsPage() {
         defaultKey="d90"
         onChange={setTab}
         items={[
-          { key: "d90", label: "خلال 90 يومًا", count: (counts['d30'] ?? 0) + (counts['d60'] ?? 0) + (counts['d90'] ?? 0) },
-          { key: "d30", label: "أقل من 30 يومًا", count: counts['d30'] ?? 0 },
-          { key: "d60", label: "خلال 60 يومًا", count: counts['d60'] ?? 0 },
-          { key: "expired", label: "منتهية", count: counts['expired'] ?? 0 },
+          {
+            key: "d90",
+            label: "خلال 90 يومًا",
+            count: (counts["d30"] ?? 0) + (counts["d60"] ?? 0) + (counts["d90"] ?? 0),
+          },
+          { key: "d30", label: "أقل من 30 يومًا", count: counts["d30"] ?? 0 },
+          { key: "d60", label: "خلال 60 يومًا", count: counts["d60"] ?? 0 },
+          { key: "expired", label: "منتهية", count: counts["expired"] ?? 0 },
           { key: "all", label: "كل العقود", count: enriched.length },
         ]}
       />
 
       {isLoading ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">جارٍ التحميل…</div>
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+          جارٍ التحميل…
+        </div>
       ) : visible.length === 0 ? (
         <EmptyState text="لا توجد عقود في هذه الفترة" hint="جرّب تبويبًا آخر." />
       ) : (
@@ -155,12 +168,18 @@ function RenewalsPage() {
             const reminderId = nextPayments.get(row.id) ?? null;
 
             return (
-              <article key={row.id} className="rounded-2xl border border-border bg-card p-5 shadow-card">
+              <article
+                key={row.id}
+                className="rounded-2xl border border-border bg-card p-5 shadow-card"
+              >
                 <header className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-base font-bold text-foreground">عقد {row.contract_number}</h2>
+                    <h2 className="text-base font-bold text-foreground">
+                      عقد {row.contract_number}
+                    </h2>
                     <p className="mt-1 text-[12.5px] text-muted-foreground">
-                      {row.property?.name ?? "بدون عقار"} — المستأجر: {row.tenant?.full_name ?? "غير محدد"}
+                      {row.property?.name ?? "بدون عقار"} — المستأجر:{" "}
+                      {row.tenant?.full_name ?? "غير محدد"}
                     </p>
                   </div>
                   <Chip tone={info.tone}>
@@ -171,15 +190,21 @@ function RenewalsPage() {
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-[12.5px] sm:grid-cols-3">
                   <div className="rounded-lg border border-border bg-muted/40 p-3">
                     <dt className="text-muted-foreground">تاريخ الانتهاء</dt>
-                    <dd className="mt-1 font-semibold text-foreground">{formatDate(row.end_date)}</dd>
+                    <dd className="mt-1 font-semibold text-foreground">
+                      {formatDate(row.end_date)}
+                    </dd>
                   </div>
                   <div className="rounded-lg border border-border bg-muted/40 p-3">
                     <dt className="text-muted-foreground">الإيجار السنوي</dt>
-                    <dd className="mt-1 font-semibold text-foreground">{formatCurrency(row.annual_rent)}</dd>
+                    <dd className="mt-1 font-semibold text-foreground">
+                      {formatCurrency(row.annual_rent)}
+                    </dd>
                   </div>
                   <div className="rounded-lg border border-border bg-muted/40 p-3">
                     <dt className="text-muted-foreground">المالك</dt>
-                    <dd className="mt-1 font-semibold text-foreground">{row.owner?.full_name ?? "—"}</dd>
+                    <dd className="mt-1 font-semibold text-foreground">
+                      {row.owner?.full_name ?? "—"}
+                    </dd>
                   </div>
                 </dl>
 
