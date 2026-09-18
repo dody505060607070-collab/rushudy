@@ -97,7 +97,9 @@ async function fetchProperties(purpose?: "rent" | "sale", limit = 60) {
   const args = purpose ? { _purpose: purpose, _limit: limit } : { _limit: limit };
   const { data, error } = await supabase.rpc("get_public_properties", args);
   if (error) throw error;
-  return (Array.isArray(data) ? data : []) as unknown as PublicProperty[];
+  const rows = (Array.isArray(data) ? data : []) as unknown as PublicProperty[];
+  // في الموقع العام تظهر العمارة كإعلان واحد، ولا تظهر شققها منفردة.
+  return rows.filter((row) => !row.building_id);
 }
 
 export const publicPropertiesQuery = (purpose?: "rent" | "sale", limit?: number) =>

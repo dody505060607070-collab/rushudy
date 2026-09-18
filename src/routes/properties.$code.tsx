@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 import { FavoriteButton } from "@/components/site/FavoriteButton";
 import { Lightbox } from "@/components/kit/Lightbox";
-import { PriceOfferForm } from "@/components/site/PriceOfferForm";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { SOCIAL_PLATFORMS, SocialGlyph } from "@/components/site/SocialIcons";
@@ -332,10 +331,6 @@ function PropertyPage() {
               </div>
             </div>
           </aside>
-        </div>
-
-        <div className="mt-12">
-          <PriceOfferForm propertyId={property.id} propertyName={property.name} />
         </div>
 
         {others.length > 0 ? (
