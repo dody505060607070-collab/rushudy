@@ -135,6 +135,9 @@ export type PublicBuildingUnit = {
   whatsapp_number: string | null;
   city: string | null;
   district: string | null;
+  link_tour: string | null;
+  latitude: number | null;
+  longitude: number | null;
   images: { url: string; is_cover: boolean; sort_order: number }[];
 };
 
@@ -151,6 +154,9 @@ export type PublicBuilding = {
   cover_url: string | null;
   sort_order: number;
   created_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  map_url: string | null;
   units: PublicBuildingUnit[];
 };
 
@@ -186,6 +192,13 @@ export function buildingCover(building: PublicBuilding) {
     if (cover) return cover.url;
   }
   return null;
+}
+
+/** نسبة إشغال العمارة من حالات شققها. */
+export function buildingOccupancy(units: { status: string }[]) {
+  const total = units.length;
+  const busy = units.filter((u) => u.status === "rented" || u.status === "sold" || u.status === "reserved").length;
+  return { total, busy, free: total - busy, rate: total ? Math.round((busy / total) * 100) : 0 };
 }
 
 /** ترتيب شقق العمارة حسب الأدوار. */

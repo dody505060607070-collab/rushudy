@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Building2, DoorOpen, Eye, EyeOff, Layers, Loader2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Building2, DoorOpen, Eye, EyeOff, Layers, Loader2, MapPin, Pencil, Plus, Printer, Sparkles, Trash2, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -39,6 +39,8 @@ type BuildingRow = {
   is_visible: boolean;
   sort_order: number;
   owner_id: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 type UnitProperty = {
@@ -50,6 +52,8 @@ type UnitProperty = {
   is_visible: boolean;
   price_value: number | null;
   building_id: string | null;
+  purpose: string;
+  rent_period: string | null;
 };
 
 type FormState = {
@@ -65,6 +69,8 @@ type FormState = {
   sort_order: string;
   owner_id: string;
   is_visible: boolean;
+  latitude: string;
+  longitude: string;
 };
 
 const emptyForm: FormState = {
@@ -80,6 +86,8 @@ const emptyForm: FormState = {
   sort_order: "0",
   owner_id: "",
   is_visible: true,
+  latitude: "",
+  longitude: "",
 };
 
 function BuildingsPage() {
@@ -94,7 +102,7 @@ function BuildingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("buildings")
-        .select("id, code, name, city, district, address, description, purpose, floors_count, cover_url, is_visible, sort_order, owner_id")
+        .select("id, code, name, city, district, address, description, purpose, floors_count, cover_url, is_visible, sort_order, owner_id, latitude, longitude")
         .order("sort_order")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -107,7 +115,7 @@ function BuildingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("id, code, name, floor, status, is_visible, price_value, building_id")
+        .select("id, code, name, floor, status, is_visible, price_value, building_id, purpose, rent_period")
         .not("building_id", "is", null)
         .order("floor")
         .order("name");
@@ -138,6 +146,53 @@ function BuildingsPage() {
     return map;
   }, [units.data]);
 
+  const monthRange = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+    return { start, end };
+  }, []);
+
+  const payments = useQuery({
+    queryKey: ["building-income", monthRange.start],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contract_payments")
+        .select("amount_due, amount_paid, status, due_date, contract:contract_id(property_id)")
+        .gte("due_date", monthRange.start)
+        .lte("due_date", monthRange.end);
+      if (error) throw error;
+      return (data ?? []) as unknown as {
+        amount_due: number;
+        amount_paid: number;
+        status: string;
+        due_date: string;
+        contract: { property_id: string | null } | null;
+      }[];
+    },
+  });
+
+  const buildingByProperty = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of units.data ?? []) if (u.building_id) map.set(u.id, u.building_id);
+    return map;
+  }, [units.data]);
+
+  const incomeByBuilding = useMemo(() => {
+    const map = new Map<string, { due: number; collected: number }>();
+    for (const p of payments.data ?? []) {
+      const propertyId = p.contract?.property_id;
+      const buildingId = propertyId ? buildingByProperty.get(propertyId) : undefined;
+      if (!buildingId) continue;
+      const prev = map.get(buildingId) ?? { due: 0, collected: 0 };
+      map.set(buildingId, {
+        due: prev.due + Number(p.amount_due ?? 0),
+        collected: prev.collected + Number(p.amount_paid ?? 0),
+      });
+    }
+    return map;
+  }, [payments.data, buildingByProperty]);
+
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
   const openCreate = () => {
@@ -161,6 +216,8 @@ function BuildingsPage() {
       sort_order: String(row.sort_order ?? 0),
       owner_id: row.owner_id ?? "",
       is_visible: row.is_visible,
+      latitude: row.latitude != null ? String(row.latitude) : "",
+      longitude: row.longitude != null ? String(row.longitude) : "",
     });
     setOpen(true);
   };
@@ -181,6 +238,8 @@ function BuildingsPage() {
         sort_order: Number(form.sort_order) || 0,
         owner_id: form.owner_id || null,
         is_visible: form.is_visible,
+        latitude: form.latitude ? Number(form.latitude) : null,
+        longitude: form.longitude ? Number(form.longitude) : null,
       };
       const res = editing
         ? await supabase.from("buildings").update(values).eq("id", editing.id)
@@ -257,6 +316,10 @@ function BuildingsPage() {
               const key = (u.floor ?? "").trim() || "بدون دور";
               floors.set(key, [...(floors.get(key) ?? []), u]);
             }
+            const busy = list.filter((u) => u.status === "rented" || u.status === "sold" || u.status === "reserved").length;
+            const rate = list.length ? Math.round((busy / list.length) * 100) : 0;
+            const expected = list.reduce((sum, u) => sum + monthlyValue(u), 0);
+            const income = incomeByBuilding.get(b.id) ?? { due: 0, collected: 0 };
             return (
               <article key={b.id} className="surface-card w-full overflow-hidden">
                 <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
@@ -282,6 +345,25 @@ function BuildingsPage() {
                       title={b.is_visible ? "إخفاء من الموقع" : "عرض على الموقع"}
                     >
                       {b.is_visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                    {b.latitude != null && b.longitude != null ? (
+                      <a
+                        href={`https://www.google.com/maps?q=${b.latitude},${b.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="الموقع على الخريطة"
+                        className="grid size-9 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-muted"
+                      >
+                        <MapPin className="size-4" />
+                      </a>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => printBuilding(b, list)}
+                      title="طباعة كرت PDF"
+                      className="grid size-9 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-muted"
+                    >
+                      <Printer className="size-4" />
                     </button>
                     <button
                       type="button"
@@ -310,6 +392,44 @@ function BuildingsPage() {
                     </button>
                   </div>
                 </header>
+
+                <div className="grid gap-3 border-b border-border p-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <Metric label="نسبة الإشغال" value={`${rate}%`} hint={`${busy.toLocaleString("ar-SA")} مشغولة من ${list.length.toLocaleString("ar-SA")}`} bar={rate} />
+                  <Metric label="الدخل الشهري المتوقع" value={money(expected)} hint="من أسعار الشقق المعروضة" />
+                  <Metric label="مستحق هذا الشهر" value={money(income.due)} hint="دفعات العقود المرتبطة" />
+                  <Metric label="المحصّل هذا الشهر" value={money(income.collected)} hint={income.due ? `نسبة التحصيل ${Math.round((income.collected / income.due) * 100)}%` : "لا توجد دفعات"} />
+                </div>
+
+                {list.length ? (
+                  <div className="space-y-2 border-b border-border p-4">
+                    <p className="flex items-center gap-2 text-[13px] font-bold text-foreground">
+                      <Layers className="size-4 text-primary" /> مخطط الأدوار
+                    </p>
+                    {[...floors.entries()]
+                      .sort((a, b2) => a[0].localeCompare(b2[0], "ar", { numeric: true }))
+                      .map(([floor, items]) => (
+                        <div key={floor} className="flex flex-wrap items-center gap-2">
+                          <span className="w-24 shrink-0 text-[12px] text-muted-foreground">{floor}</span>
+                          {items.map((u) => (
+                            <Link
+                              key={u.id}
+                              to="/property-form"
+                              search={{ id: u.id }}
+                              title={`${u.name} — ${unitStatusLabels[u.status] ?? u.status}`}
+                              className={`grid h-9 min-w-14 place-items-center rounded-lg border px-2 text-[11.5px] font-bold ${statusClass(u.status)}`}
+                            >
+                              {u.name.replace(/[^\d]/g, "") || u.code || "—"}
+                            </Link>
+                          ))}
+                        </div>
+                      ))}
+                    <p className="flex flex-wrap gap-4 pt-1 text-[11.5px] text-muted-foreground">
+                      <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-success/60" /> متاحة</span>
+                      <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-warning/60" /> محجوزة</span>
+                      <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-destructive/60" /> مؤجرة/مبيعة</span>
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="space-y-4 p-4">
                   {!list.length ? (
@@ -416,6 +536,12 @@ function BuildingsPage() {
               onChange={(e) => set({ sort_order: e.target.value })}
             />
           </Field>
+          <Field label="خط العرض (Latitude)" hint="من رابط خرائط جوجل">
+            <input className={inputClass} dir="ltr" value={form.latitude} onChange={(e) => set({ latitude: e.target.value })} />
+          </Field>
+          <Field label="خط الطول (Longitude)">
+            <input className={inputClass} dir="ltr" value={form.longitude} onChange={(e) => set({ longitude: e.target.value })} />
+          </Field>
           <Field label="رابط صورة الغلاف" className="sm:col-span-2" hint="اتركه فارغًا لاستخدام صورة أول شقة">
             <input className={inputClass} dir="ltr" value={form.cover_url} onChange={(e) => set({ cover_url: e.target.value })} />
           </Field>
@@ -445,6 +571,78 @@ function BuildingsPage() {
       />
     </>
   );
+}
+
+const unitStatusLabels: Record<string, string> = {
+  available: "متاحة",
+  reserved: "محجوزة",
+  rented: "مؤجرة",
+  sold: "مبيعة",
+};
+
+function statusClass(status: string) {
+  if (status === "available") return "border-success/40 bg-success/15 text-success";
+  if (status === "reserved") return "border-warning/40 bg-warning/15 text-warning";
+  return "border-destructive/40 bg-destructive/10 text-destructive";
+}
+
+function money(value: number) {
+  return `${Math.round(value).toLocaleString("ar-SA")} ريال`;
+}
+
+/** القيمة الشهرية التقديرية للشقة حسب مدة الإيجار. */
+function monthlyValue(unit: UnitProperty) {
+  const price = Number(unit.price_value ?? 0);
+  if (!price || unit.purpose === "sale") return 0;
+  if (unit.rent_period === "monthly") return price;
+  if (unit.rent_period === "daily") return price * 30;
+  return price / 12;
+}
+
+/** بطاقة مؤشر صغيرة. */
+function Metric({ label, value, hint, bar }: { label: string; value: string; hint?: string; bar?: number }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-3">
+      <p className="text-[11.5px] text-muted-foreground">{label}</p>
+      <p className="mt-1 text-[14px] font-bold text-foreground">{value}</p>
+      {typeof bar === "number" ? (
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(bar, 100)}%` }} />
+        </div>
+      ) : null}
+      {hint ? <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p> : null}
+    </div>
+  );
+}
+
+/** طباعة كرت PDF للعمارة يشمل كل الشقق وأسعارها. */
+function printBuilding(building: BuildingRow, units: UnitProperty[]) {
+  const rows = units
+    .map(
+      (u) =>
+        `<tr><td>${u.name}</td><td>${u.code ?? "—"}</td><td>${u.floor ?? "—"}</td><td>${
+          unitStatusLabels[u.status] ?? u.status
+        }</td><td>${u.price_value ? Number(u.price_value).toLocaleString("ar-SA") + " ريال" : "—"}</td></tr>`,
+    )
+    .join("");
+  const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${building.name}</title>
+    <style>body{font-family:system-ui,'Segoe UI',sans-serif;padding:24px;color:#111}h1{font-size:20px;margin:0}
+    p{color:#555;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px}
+    th,td{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f4f4f5}</style></head><body>
+    <h1>${building.name} <small>(${building.code})</small></h1>
+    <p>${[building.district, building.city, building.address].filter(Boolean).join(" — ")}</p>
+    <p>عدد الأدوار: ${building.floors_count ?? "—"} — عدد الشقق: ${units.length}</p>
+    <table><thead><tr><th>الشقة</th><th>الكود</th><th>الدور</th><th>الحالة</th><th>السعر</th></tr></thead>
+    <tbody>${rows}</tbody></table></body></html>`;
+  const win = window.open("", "_blank", "noopener,width=900,height=700");
+  if (!win) {
+    toast.error("اسمح بالنوافذ المنبثقة للطباعة");
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  win.print();
 }
 
 /** توليد شقق العمارة: عدد الأدوار × عدد الشقق في الدور. */

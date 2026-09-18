@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Building2, DoorOpen, Layers, MapPin } from "lucide-react";
+import { Building2, DoorOpen, Layers, MapPin, Printer, Video } from "lucide-react";
 
 import { SiteLayout } from "@/components/site/SiteLayout";
 import {
   buildingCover,
+  buildingOccupancy,
   groupUnitsByFloor,
   propertyEnquiryText,
   publicBuildingQuery,
@@ -76,6 +77,11 @@ function BuildingPage() {
 
   const cover = buildingCover(building);
   const floors = groupUnitsByFloor(building.units ?? []);
+  const occ = buildingOccupancy(building.units ?? []);
+  const hasGeo = typeof building.latitude === "number" && typeof building.longitude === "number";
+  const mapsHref = hasGeo
+    ? `https://www.google.com/maps?q=${building.latitude},${building.longitude}`
+    : building.map_url ?? null;
 
   return (
     <SiteLayout>
@@ -111,6 +117,76 @@ function BuildingPage() {
       </section>
 
       <section className="mx-auto max-w-6xl space-y-10 px-4 py-12">
+        <div className="grid gap-4 rounded-2xl border border-border bg-card p-6 sm:grid-cols-[1fr_auto] sm:items-center print:hidden">
+          <div className="space-y-2">
+            <p className="text-[13px] font-bold text-foreground">
+              متاح الآن {occ.free.toLocaleString("ar-SA")} شقة من {occ.total.toLocaleString("ar-SA")} — نسبة الإشغال {occ.rate}%
+            </p>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${occ.rate}%` }} />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border px-4 text-[13px] font-semibold text-foreground hover:bg-muted"
+          >
+            <Printer className="size-4" /> طباعة كرت العمارة
+          </button>
+        </div>
+
+        {mapsHref ? (
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
+              <h2 className="text-[14px] font-bold text-foreground">موقع العمارة</h2>
+              <a href={mapsHref} target="_blank" rel="noreferrer" className="text-[12.5px] font-semibold text-primary hover:underline">
+                افتح في خرائط جوجل
+              </a>
+            </div>
+            {hasGeo ? (
+              <iframe
+                title="موقع العمارة"
+                className="h-72 w-full border-0"
+                loading="lazy"
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(building.longitude) - 0.004}%2C${Number(building.latitude) - 0.003}%2C${Number(building.longitude) + 0.004}%2C${Number(building.latitude) + 0.003}&layer=mapnik&marker=${building.latitude}%2C${building.longitude}`}
+              />
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="rounded-2xl border border-border bg-card p-6 print:break-inside-avoid">
+          <h2 className="mb-4 text-[14px] font-bold text-foreground">مخطط الأدوار</h2>
+          <div className="space-y-3">
+            {floors.map(([floor, units]) => (
+              <div key={floor} className="flex flex-wrap items-center gap-2">
+                <span className="w-24 shrink-0 text-[12.5px] font-semibold text-muted-foreground">{floor}</span>
+                {units.map((u) => (
+                  <Link
+                    key={u.id}
+                    to="/properties/$code"
+                    params={{ code: u.code }}
+                    title={`${u.name} — ${statusLabels[u.status] ?? u.status}`}
+                    className={`grid h-10 min-w-16 place-items-center rounded-lg border px-2 text-[11.5px] font-bold ${
+                      u.status === "available"
+                        ? "border-success/40 bg-success/15 text-success"
+                        : u.status === "reserved"
+                          ? "border-warning/40 bg-warning/15 text-warning"
+                          : "border-destructive/40 bg-destructive/10 text-destructive"
+                    }`}
+                  >
+                    {u.name.replace(/[^\d]/g, "") || u.code}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 flex flex-wrap gap-4 text-[11.5px] text-muted-foreground">
+            <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-success/60" /> متاحة</span>
+            <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-warning/60" /> محجوزة</span>
+            <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-destructive/60" /> مؤجرة/مبيعة</span>
+          </p>
+        </div>
+
         {building.description ? (
           <p className="whitespace-pre-wrap rounded-2xl border border-border bg-card p-6 text-[14px] leading-8 text-muted-foreground">
             {building.description}
@@ -188,6 +264,17 @@ function BuildingPage() {
                         >
                           واتساب
                         </a>
+                        {unit.link_tour ? (
+                          <a
+                            href={unit.link_tour}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="جولة افتراضية 360"
+                            className="grid size-10 place-items-center rounded-lg border border-border text-foreground"
+                          >
+                            <Video className="size-4" />
+                          </a>
+                        ) : null}
                       </div>
                     </div>
                   </article>
