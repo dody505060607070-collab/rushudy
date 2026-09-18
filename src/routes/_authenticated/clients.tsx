@@ -50,7 +50,10 @@ export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({
     meta: [
       { title: "العملاء | الرشودي للعقارات" },
-      { name: "description", content: "قاعدة العملاء والوسطاء وبيانات التواصل والميزانيات والمتابعة." },
+      {
+        name: "description",
+        content: "قاعدة العملاء والوسطاء وبيانات التواصل والميزانيات والمتابعة.",
+      },
       { property: "og:title", content: "العملاء | الرشودي للعقارات" },
       { property: "og:description", content: "إدارة كاملة لبيانات العملاء وأدوارهم وتفضيلاتهم." },
       { property: "og:type", content: "website" },
@@ -595,7 +598,9 @@ function ClientsPage() {
             ))}
           </dl>
         ) : null}
-        {detail ? <ClientAccessPanel contactId={detail.id} phone={detail.whatsapp ?? detail.phone} /> : null}
+        {detail ? (
+          <ClientAccessPanel contactId={detail.id} phone={detail.whatsapp ?? detail.phone} />
+        ) : null}
       </Modal>
     </>
   );
@@ -640,8 +645,8 @@ function ClientAccessPanel({ contactId, phone }: { contactId: string; phone: str
     <div className="mt-4 rounded-xl border border-border p-4">
       <h3 className="text-[13px] font-bold text-foreground">بيانات دخول بوابة العميل</h3>
       <p className="mt-1 text-[12px] leading-6 text-muted-foreground">
-        تُنشأ تلقائيًا من العقد (اسم المستخدم = رقم الهوية، كلمة المرور = الجوال 05…). ولو العقد بدون
-        هوية أو جوال يولّد النظام بيانات دخول تلقائية يمكنك تسليمها للعميل.
+        تُنشأ تلقائيًا من العقد (اسم المستخدم = رقم الهوية، كلمة المرور = الجوال 05…). ولو العقد
+        بدون هوية أو جوال يولّد النظام بيانات دخول تلقائية يمكنك تسليمها للعميل.
       </p>
 
       <div className="mt-3 text-[12.5px]">

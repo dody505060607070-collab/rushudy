@@ -163,7 +163,9 @@ function BuildingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, contract_number, property_id, tenant_id, status, tenant:tenant_id(full_name, phone)")
+        .select(
+          "id, contract_number, property_id, tenant_id, status, tenant:tenant_id(full_name, phone)",
+        )
         .not("property_id", "is", null)
         .in("status", ["active", "draft"])
         .order("created_at", { ascending: false });
@@ -693,7 +695,10 @@ function BuildingsPage() {
                       {buildingContracts.map((contract) => {
                         const unit = list.find((item) => item.id === contract.property_id);
                         return (
-                          <article key={contract.id} className="rounded-lg border border-border p-3">
+                          <article
+                            key={contract.id}
+                            className="rounded-lg border border-border p-3"
+                          >
                             <div className="flex items-center justify-between gap-2">
                               <Link
                                 to="/contracts/$contractId"
