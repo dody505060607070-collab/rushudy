@@ -195,10 +195,9 @@ export const publicBuildingQuery = (code: string) =>
     queryFn: async () => (await fetchBuildings({ code, limit: 1 }))[0] ?? null,
   });
 
-/** غلاف العمارة ثابت من هوية الموقع ولا يتأثر بصور الإدارة أو الوحدات. */
+/** غلاف العمارة المحفوظ ثابت ولا يمكن تغييره من شاشة الإدارة. */
 export function buildingCover(building: PublicBuilding) {
-  void building;
-  return null;
+  return building.cover_url;
 }
 
 /** نسبة إشغال العمارة من حالات شققها. */

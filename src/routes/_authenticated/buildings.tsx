@@ -95,7 +95,6 @@ type FormState = {
   district: string;
   address: string;
   description: string;
-  cover_url: string;
   floors_count: string;
   sort_order: string;
   owner_id: string;
@@ -112,7 +111,6 @@ const emptyForm: FormState = {
   district: "",
   address: "",
   description: "",
-  cover_url: "",
   floors_count: "4",
   sort_order: "0",
   owner_id: "",
@@ -269,7 +267,6 @@ function BuildingsPage() {
       district: row.district ?? "",
       address: row.address ?? "",
       description: row.description ?? "",
-      cover_url: row.cover_url ?? "",
       floors_count: row.floors_count != null ? String(row.floors_count) : "",
       sort_order: String(row.sort_order ?? 0),
       owner_id: row.owner_id ?? "",
@@ -291,7 +288,6 @@ function BuildingsPage() {
         district: form.district.trim() || null,
         address: form.address.trim() || null,
         description: form.description.trim() || null,
-        cover_url: form.cover_url.trim() || null,
         floors_count: form.floors_count ? Number(form.floors_count) : null,
         sort_order: Number(form.sort_order) || 0,
         owner_id: form.owner_id || null,
@@ -761,18 +757,6 @@ function BuildingsPage() {
               dir="ltr"
               value={form.longitude}
               onChange={(e) => set({ longitude: e.target.value })}
-            />
-          </Field>
-          <Field
-            label="رابط صورة الغلاف"
-            className="sm:col-span-2"
-            hint="اتركه فارغًا لاستخدام صورة أول شقة"
-          >
-            <input
-              className={inputClass}
-              dir="ltr"
-              value={form.cover_url}
-              onChange={(e) => set({ cover_url: e.target.value })}
             />
           </Field>
           <Field label="وصف العمارة" className="sm:col-span-2">

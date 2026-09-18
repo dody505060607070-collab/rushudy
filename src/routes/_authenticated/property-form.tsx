@@ -37,7 +37,9 @@ import { approveListingRequest } from "@/lib/requests.functions";
 export const Route = createFileRoute("/_authenticated/property-form")({
   validateSearch: (search: Record<string, unknown>) => ({
     id: typeof search["id"] === "string" ? (search["id"] as string) : "",
-    buildingId: typeof search["buildingId"] === "string" ? (search["buildingId"] as string) : "",
+    ...(typeof search["buildingId"] === "string"
+      ? { buildingId: search["buildingId"] as string }
+      : {}),
     ...(typeof search["requestId"] === "string"
       ? { requestId: search["requestId"] as string }
       : {}),
@@ -150,7 +152,7 @@ function SectionCard({
 }
 
 function PropertyFormPage() {
-  const { id, buildingId, requestId = "" } = Route.useSearch();
+  const { id, buildingId = "", requestId = "" } = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -504,9 +506,6 @@ function PropertyFormPage() {
       }
       let unitId: string | null = null;
       if (payload.building_id) {
-        const selectedBuilding = buildingsList.data?.find(
-          (building) => building.id === payload.building_id,
-        );
         const unitNumber = payload.code || `${Date.now().toString(36).toUpperCase()}`;
         const unitResult = await supabase
           .from("units")
@@ -524,9 +523,6 @@ function PropertyFormPage() {
           .single();
         if (unitResult.error) throw unitResult.error;
         unitId = unitResult.data.id;
-        if (selectedBuilding) {
-          payload.city ||= null;
-        }
       }
       const { data, error } = await supabase
         .from("properties")
