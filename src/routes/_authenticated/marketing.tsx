@@ -201,7 +201,7 @@ function MarketingPage() {
     return {
       marketers: raw.marketers,
       visits: raw.visits.filter((item) => within(item.visited_at)),
-      leads: raw.leads.filter((item) => within(item.attributed_at ?? item.created_at)),
+      leads: raw.leads.filter((item) => within(item.attributed_at)),
       commissions: raw.commissions.filter((item) => within(item.created_at)),
       shares: raw.shares.filter((item) => within(item.sent_at)),
     };
@@ -265,7 +265,7 @@ function MarketingPage() {
       if (key) buckets.get(key)!.visits += 1;
     }
     for (const lead of data.leads) {
-      const key = bucketFor(lead.attributed_at ?? lead.created_at);
+      const key = bucketFor(lead.attributed_at);
       if (!key) continue;
       buckets.get(key)!.leads += 1;
       if (lead.status === "won") buckets.get(key)!.won += 1;
@@ -650,7 +650,7 @@ function MarketingPage() {
             <Panel icon={Target} title="قمع التسويق" subtitle="من الزيارة حتى إغلاق الصفقة.">
               <div className="space-y-3">
                 {funnel.map((stage, index) => {
-                  const base = funnel[0].value || 1;
+                  const base = (funnel[0]?.value ?? 1) || 1;
                   const width = Math.max(4, (stage.value / base) * 100);
                   return (
                     <div key={stage.label}>
@@ -658,8 +658,8 @@ function MarketingPage() {
                         <span className="text-foreground">{stage.label}</span>
                         <span className="text-muted-foreground">
                           {stage.value.toLocaleString("ar-EG")}
-                          {index > 0 && funnel[index - 1].value
-                            ? ` · ${((stage.value / funnel[index - 1].value) * 100).toFixed(0)}%`
+                          {index > 0 && (funnel[index - 1]?.value ?? 0)
+                            ? ` · ${((stage.value / (funnel[index - 1]?.value ?? 0)) * 100).toFixed(0)}%`
                             : ""}
                         </span>
                       </div>
@@ -907,7 +907,7 @@ function MarketingPage() {
                       <td className="px-2 py-2">{marketerName(lead.marketer_id)}</td>
                       <td className="px-2 py-2 text-muted-foreground">{lead.source || "رابط إحالة"}</td>
                       <td className="px-2 py-2 tabular-nums">{lead.estimated_value ? money(lead.estimated_value) : "—"}</td>
-                      <td className="px-2 py-2 text-muted-foreground">{shortDate(lead.attributed_at ?? lead.created_at)}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{shortDate(lead.attributed_at)}</td>
                       <td className="px-2 py-2">
                         <div className="flex items-center gap-2">
                           <Chip tone={leadStatusTone[lead.status] ?? "neutral"}>{leadStatusLabel[lead.status] ?? lead.status}</Chip>
@@ -1033,7 +1033,7 @@ function MarketingPage() {
             ) : (
               <ul className="space-y-2">
                 {topSources.map((item) => {
-                  const max = topSources[0].value || 1;
+                  const max = (topSources[0]?.value ?? 1) || 1;
                   return (
                     <li key={item.label}>
                       <div className="flex items-center justify-between text-xs font-semibold">
