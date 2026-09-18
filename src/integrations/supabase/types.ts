@@ -2765,6 +2765,33 @@ export type Database = {
         }
         Relationships: []
       }
+      site_page_views: {
+        Row: {
+          id: string
+          path: string
+          referrer_host: string | null
+          user_id: string | null
+          visited_at: string
+          visitor_id: string
+        }
+        Insert: {
+          id?: string
+          path: string
+          referrer_host?: string | null
+          user_id?: string | null
+          visited_at?: string
+          visitor_id: string
+        }
+        Update: {
+          id?: string
+          path?: string
+          referrer_host?: string | null
+          user_id?: string | null
+          visited_at?: string
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       supply_requests: {
         Row: {
           admin_notes: string | null
