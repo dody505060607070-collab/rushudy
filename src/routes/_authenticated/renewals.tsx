@@ -99,7 +99,7 @@ function RenewalsPage() {
     return item.bucket === tab;
   });
 
-  const atRisk = (counts.d30 ?? 0) + (counts.expired ?? 0);
+  const atRisk = (counts['d30'] ?? 0) + (counts['expired'] ?? 0);
   const valueAtRisk = enriched
     .filter((i) => ["d30", "d60", "d90", "expired"].includes(i.bucket))
     .reduce((sum, i) => sum + Number(i.row.annual_rent ?? i.row.total_value ?? 0), 0);
@@ -121,10 +121,10 @@ function RenewalsPage() {
         defaultKey="d90"
         onChange={setTab}
         items={[
-          { key: "d90", label: "خلال 90 يومًا", count: (counts.d30 ?? 0) + (counts.d60 ?? 0) + (counts.d90 ?? 0) },
-          { key: "d30", label: "أقل من 30 يومًا", count: counts.d30 ?? 0 },
-          { key: "d60", label: "خلال 60 يومًا", count: counts.d60 ?? 0 },
-          { key: "expired", label: "منتهية", count: counts.expired ?? 0 },
+          { key: "d90", label: "خلال 90 يومًا", count: (counts['d30'] ?? 0) + (counts['d60'] ?? 0) + (counts['d90'] ?? 0) },
+          { key: "d30", label: "أقل من 30 يومًا", count: counts['d30'] ?? 0 },
+          { key: "d60", label: "خلال 60 يومًا", count: counts['d60'] ?? 0 },
+          { key: "expired", label: "منتهية", count: counts['expired'] ?? 0 },
           { key: "all", label: "كل العقود", count: enriched.length },
         ]}
       />
@@ -136,7 +136,7 @@ function RenewalsPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {visible.map(({ row, days, bucket }) => {
-            const info = buckets[bucket];
+            const info = buckets[bucket] ?? buckets["later"]!;
             const phone = row.tenant?.phone;
             const message = [
               "السلام عليكم ورحمة الله 🌿",

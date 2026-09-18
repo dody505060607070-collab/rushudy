@@ -35,7 +35,7 @@ const ranges: Record<string, { label: string; days: number }> = {
 
 function ExecutiveReportPage() {
   const [range, setRange] = useState("week");
-  const days = ranges[range].days;
+  const days = ranges[range]?.days ?? 7;
   const since = useMemo(() => new Date(Date.now() - days * 86_400_000).toISOString(), [days]);
 
   const { data, isLoading } = useQuery({
@@ -88,7 +88,7 @@ function ExecutiveReportPage() {
   const text = useMemo(() => {
     if (!data) return "";
     return [
-      `📊 التقرير التنفيذي — ${ranges[range].label}`,
+      `📊 التقرير التنفيذي — ${ranges[range]?.label ?? ""}`,
       "",
       `• المحصل: ${formatCurrency(data.collected)}`,
       `• متأخرات: ${formatCurrency(data.overdue)}`,

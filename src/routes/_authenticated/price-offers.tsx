@@ -108,7 +108,7 @@ function PriceOffersPage() {
         icon={Gavel}
         stats={[
           { value: String(data.length), label: "عرض مستلم" },
-          { value: String(counts.new ?? 0), label: "بانتظار المراجعة" },
+          { value: String(counts['new'] ?? 0), label: "بانتظار المراجعة" },
           { value: formatCurrency(highest), label: "أعلى عرض" },
         ]}
       />
@@ -118,10 +118,10 @@ function PriceOffersPage() {
         onChange={setTab}
         items={[
           { key: "all", label: "الكل", count: data.length },
-          { key: "new", label: "جديد", count: counts.new ?? 0 },
-          { key: "reviewing", label: "قيد الدراسة", count: counts.reviewing ?? 0 },
+          { key: "new", label: "جديد", count: counts['new'] ?? 0 },
+          { key: "reviewing", label: "قيد الدراسة", count: counts['reviewing'] ?? 0 },
           { key: "accepted", label: "مقبول", count: accepted },
-          { key: "rejected", label: "مرفوض", count: counts.rejected ?? 0 },
+          { key: "rejected", label: "مرفوض", count: counts['rejected'] ?? 0 },
         ]}
       />
 
@@ -134,7 +134,7 @@ function PriceOffersPage() {
           {visible.map((row) => {
             const asking = row.property?.price_value ?? 0;
             const gap = asking ? ((Number(row.offer_amount) - asking) / asking) * 100 : 0;
-            const info = statusLabels[row.status] ?? statusLabels.new;
+            const info = statusLabels[row.status] ?? statusLabels['new']!;
             return (
               <article key={row.id} className="rounded-2xl border border-border bg-card p-5 shadow-card">
                 <header className="flex flex-wrap items-start justify-between gap-3">
