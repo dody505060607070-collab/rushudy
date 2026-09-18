@@ -220,7 +220,7 @@ function ContractsPage() {
     if (!row) return;
     handledEditId.current = editId;
     openEdit(row);
-    void navigate({ to: "/contracts", search: { edit: undefined }, replace: true });
+    void navigate({ to: "/contracts", search: {}, replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId, rows]);
 
