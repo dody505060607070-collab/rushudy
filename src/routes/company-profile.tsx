@@ -2,8 +2,22 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Download, ExternalLink } from "lucide-react";
 
 import profileAsset from "@/assets/alrashudi-real-estate-profile.pdf.asset.json";
+import page01 from "@/assets/company-profile-page-01.jpg.asset.json";
+import page02 from "@/assets/company-profile-page-02.jpg.asset.json";
+import page03 from "@/assets/company-profile-page-03.jpg.asset.json";
+import page04 from "@/assets/company-profile-page-04.jpg.asset.json";
+import page05 from "@/assets/company-profile-page-05.jpg.asset.json";
+import page06 from "@/assets/company-profile-page-06.jpg.asset.json";
+import page07 from "@/assets/company-profile-page-07.jpg.asset.json";
+import page08 from "@/assets/company-profile-page-08.jpg.asset.json";
+import page09 from "@/assets/company-profile-page-09.jpg.asset.json";
+import page10 from "@/assets/company-profile-page-10.jpg.asset.json";
+import page11 from "@/assets/company-profile-page-11.jpg.asset.json";
+import page12 from "@/assets/company-profile-page-12.jpg.asset.json";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+const profilePages = [page01, page02, page03, page04, page05, page06, page07, page08, page09, page10, page11, page12];
 
 export const Route = createFileRoute("/company-profile")({
   head: () => ({
@@ -68,20 +82,19 @@ function CompanyProfilePage() {
         </div>
       </header>
 
-      <section className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col p-2 sm:p-4">
-        <object
-          data={profileAsset.url}
-          type="application/pdf"
-          aria-label="ملف هوية الرشودي"
-          className="min-h-[calc(100svh-90px)] w-full flex-1 rounded-lg border border-border bg-card"
-        >
-          <div className="flex min-h-[70svh] flex-col items-center justify-center gap-4 px-5 text-center">
-            <p className="text-[14px] text-muted-foreground">متصفحك لا يدعم عرض الملف داخل الصفحة.</p>
-            <a href={profileAsset.url} className={buttonVariants()}>
-              فتح ملف الهوية
-            </a>
-          </div>
-        </object>
+      <section className="mx-auto w-full max-w-5xl space-y-3 p-2 sm:space-y-5 sm:p-5">
+        {profilePages.map((page, index) => (
+          <img
+            key={page.url}
+            src={page.url}
+            alt={`ملف هوية الرشودي — صفحة ${index + 1}`}
+            width={935}
+            height={1210}
+            loading={index === 0 ? "eager" : "lazy"}
+            fetchPriority={index === 0 ? "high" : "auto"}
+            className="h-auto w-full rounded-lg border border-border bg-card shadow-card"
+          />
+        ))}
       </section>
     </main>
   );
