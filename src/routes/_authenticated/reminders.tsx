@@ -58,6 +58,16 @@ export const Route = createFileRoute("/_authenticated/reminders")({
   component: RemindersPage,
 });
 
+const repeatOptions = [
+  { key: "once", label: "مرة واحدة" },
+  { key: "12_hours", label: "كل 12 ساعة" },
+  { key: "daily", label: "كل يوم" },
+  { key: "three_days", label: "كل 3 أيام" },
+  { key: "weekly", label: "كل أسبوع" },
+  { key: "biweekly", label: "كل أسبوعين" },
+  { key: "monthly", label: "كل شهر" },
+];
+
 function RemindersPage() {
   const queryClient = useQueryClient();
 

@@ -76,9 +76,8 @@ export const Route = createFileRoute("/_authenticated/contracts/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    edit: typeof search.edit === "string" ? search.edit : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { edit?: string } =>
+    typeof search["edit"] === "string" ? { edit: search["edit"] } : {},
   component: ContractsPage,
 });
 
