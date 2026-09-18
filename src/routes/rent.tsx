@@ -92,7 +92,12 @@ function RentPage() {
             placeholder="ابحث بالاسم أو رقم العقار"
             className={selectClass}
           />
-          <select value={type} onChange={(e) => setType(e.target.value)} aria-label="نوع العقار" className={selectClass}>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            aria-label="نوع العقار"
+            className={selectClass}
+          >
             <option value="">كل أنواع العقارات</option>
             {types.map((t) => (
               <option key={t} value={t}>
@@ -100,7 +105,12 @@ function RentPage() {
               </option>
             ))}
           </select>
-          <select value={district} onChange={(e) => setDistrict(e.target.value)} aria-label="الحي" className={selectClass}>
+          <select
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            aria-label="الحي"
+            className={selectClass}
+          >
             <option value="">كل الأحياء</option>
             {districts.map((d) => (
               <option key={d} value={d}>
@@ -115,7 +125,12 @@ function RentPage() {
             placeholder="أعلى سعر (ريال)"
             className={selectClass}
           />
-          <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="الترتيب" className={selectClass}>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            aria-label="الترتيب"
+            className={selectClass}
+          >
             <option value="featured">المميزة أولاً</option>
             <option value="price-asc">الأقل سعراً</option>
             <option value="price-desc">الأعلى سعراً</option>
@@ -125,10 +140,18 @@ function RentPage() {
         <p className="mb-4 text-[13px] text-muted-foreground">
           النتائج: {(filtered.length + (buildings.data?.length ?? 0)).toLocaleString("ar-SA")} عقار
         </p>
-        {isLoading || buildings.isLoading ? <PropertyGrid properties={undefined} loading /> : error || buildings.error ? <PropertyGrid properties={undefined} error={error ?? buildings.error} /> : (
+        {isLoading || buildings.isLoading ? (
+          <PropertyGrid properties={undefined} loading />
+        ) : error || buildings.error ? (
+          <PropertyGrid properties={undefined} error={error ?? buildings.error} />
+        ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {(buildings.data ?? []).map((building) => <BuildingCard key={`building-${building.id}`} building={building} />)}
-            {filtered.map((property) => <PropertyCard key={`property-${property.id}`} property={property} />)}
+            {(buildings.data ?? []).map((building) => (
+              <BuildingCard key={`building-${building.id}`} building={building} />
+            ))}
+            {filtered.map((property) => (
+              <PropertyCard key={`property-${property.id}`} property={property} />
+            ))}
           </div>
         )}
       </section>

@@ -72,10 +72,30 @@ export const Route = createFileRoute("/")({
 });
 
 const fallbackServices = [
-  { id: "s1", title: "تأجير الوحدات", description: "شقق وفلل ومكاتب جاهزة للسكن والعمل.", icon: "KeyRound" },
-  { id: "s2", title: "بيع العقارات", description: "أراضٍ وفلل وعمائر بأسعار السوق الحقيقية.", icon: "Home" },
-  { id: "s3", title: "إدارة الأملاك", description: "متابعة العقود والتحصيل والصيانة عن المالك.", icon: "ShieldCheck" },
-  { id: "s4", title: "الوساطة العقارية", description: "تفاوض ووساطة موثوقة بين المالك والمستأجر.", icon: "Handshake" },
+  {
+    id: "s1",
+    title: "تأجير الوحدات",
+    description: "شقق وفلل ومكاتب جاهزة للسكن والعمل.",
+    icon: "KeyRound",
+  },
+  {
+    id: "s2",
+    title: "بيع العقارات",
+    description: "أراضٍ وفلل وعمائر بأسعار السوق الحقيقية.",
+    icon: "Home",
+  },
+  {
+    id: "s3",
+    title: "إدارة الأملاك",
+    description: "متابعة العقود والتحصيل والصيانة عن المالك.",
+    icon: "ShieldCheck",
+  },
+  {
+    id: "s4",
+    title: "الوساطة العقارية",
+    description: "تفاوض ووساطة موثوقة بين المالك والمستأجر.",
+    icon: "Handshake",
+  },
 ];
 
 const serviceIcons = { KeyRound, Home, ShieldCheck, Handshake, Building2 } as const;
@@ -112,7 +132,8 @@ function HomePage() {
         (!purpose || p.purpose === purpose) &&
         (!type || p.property_type === type) &&
         (!district || p.district === district) &&
-        (!rentPeriod || `${p.name} ${p.description ?? ""} ${p.price_text ?? ""}`.includes(rentPeriod)),
+        (!rentPeriod ||
+          `${p.name} ${p.description ?? ""} ${p.price_text ?? ""}`.includes(rentPeriod)),
     );
   }, [all.data, purpose, type, district, rentPeriod, searchSubmitted]);
 
@@ -144,7 +165,10 @@ function HomePage() {
         onSearch={() => {
           setPurpose(rentPeriod ? "rent" : "");
           setSearchSubmitted(true);
-          window.setTimeout(() => document.querySelector("#search-results")?.scrollIntoView({ behavior: "smooth" }), 0);
+          window.setTimeout(
+            () => document.querySelector("#search-results")?.scrollIntoView({ behavior: "smooth" }),
+            0,
+          );
         }}
       />
 
@@ -164,15 +188,31 @@ function HomePage() {
 
       <Reveal as="section" className="mx-auto max-w-6xl px-4 py-16">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-          <h2 className="text-[22px] font-bold text-foreground sm:text-[26px]">أحدث عقارات الإيجار</h2>
+          <h2 className="text-[22px] font-bold text-foreground sm:text-[26px]">
+            أحدث عقارات الإيجار
+          </h2>
           <Link to="/rent" className="text-[13.5px] font-semibold text-primary hover:underline">
             عرض الكل
           </Link>
         </div>
-        {rent.isLoading || buildings.isLoading ? <PropertyGrid properties={undefined} loading /> : (
+        {rent.isLoading || buildings.isLoading ? (
+          <PropertyGrid properties={undefined} loading />
+        ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {(buildings.data ?? []).filter((building) => building.purpose === "rent").slice(0, 3).map((building) => <BuildingCard key={`rent-building-${building.id}`} building={building} />)}
-            {(rent.data ?? []).map((property) => <PropertyCard key={property.id} property={property} comparing={compareIds.includes(property.id)} onCompare={toggleCompare} />)}
+            {(buildings.data ?? [])
+              .filter((building) => building.purpose === "rent")
+              .slice(0, 3)
+              .map((building) => (
+                <BuildingCard key={`rent-building-${building.id}`} building={building} />
+              ))}
+            {(rent.data ?? []).map((property) => (
+              <PropertyCard
+                key={property.id}
+                property={property}
+                comparing={compareIds.includes(property.id)}
+                onCompare={toggleCompare}
+              />
+            ))}
           </div>
         )}
       </Reveal>
@@ -180,22 +220,40 @@ function HomePage() {
       <Reveal as="section" className="mesh-bg py-16">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-6 flex items-end justify-between">
-            <h2 className="text-[22px] font-bold text-foreground sm:text-[26px]">أحدث عقارات البيع</h2>
+            <h2 className="text-[22px] font-bold text-foreground sm:text-[26px]">
+              أحدث عقارات البيع
+            </h2>
             <Link to="/sale" className="text-[13.5px] font-semibold text-primary hover:underline">
               عرض الكل
             </Link>
           </div>
-          {sale.isLoading || buildings.isLoading ? <PropertyGrid properties={undefined} loading /> : (
+          {sale.isLoading || buildings.isLoading ? (
+            <PropertyGrid properties={undefined} loading />
+          ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {(buildings.data ?? []).filter((building) => building.purpose === "sale").slice(0, 3).map((building) => <BuildingCard key={`sale-building-${building.id}`} building={building} />)}
-              {(sale.data ?? []).map((property) => <PropertyCard key={property.id} property={property} comparing={compareIds.includes(property.id)} onCompare={toggleCompare} />)}
+              {(buildings.data ?? [])
+                .filter((building) => building.purpose === "sale")
+                .slice(0, 3)
+                .map((building) => (
+                  <BuildingCard key={`sale-building-${building.id}`} building={building} />
+                ))}
+              {(sale.data ?? []).map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  comparing={compareIds.includes(property.id)}
+                  onCompare={toggleCompare}
+                />
+              ))}
             </div>
           )}
         </div>
       </Reveal>
 
       <Reveal as="section" className="mx-auto max-w-6xl px-4 py-20">
-        <h2 className="text-center text-[24px] font-bold text-foreground sm:text-[30px]">خدماتنا</h2>
+        <h2 className="text-center text-[24px] font-bold text-foreground sm:text-[30px]">
+          خدماتنا
+        </h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-[13.5px] leading-7 text-muted-foreground">
           نغطي رحلة العقار كاملة: العرض، التفاوض، العقد، ثم المتابعة والتحصيل.
         </p>
@@ -204,10 +262,7 @@ function HomePage() {
             const Icon =
               serviceIcons[(service.icon ?? "Building2") as keyof typeof serviceIcons] ?? Building2;
             return (
-              <div
-                key={service.id}
-                className="glass lift rounded-2xl p-6 text-center"
-              >
+              <div key={service.id} className="glass lift rounded-2xl p-6 text-center">
                 <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-card">
                   <Icon className="size-6" />
                 </span>
@@ -223,7 +278,9 @@ function HomePage() {
 
       {recent.length > 0 ? (
         <Reveal as="section" className="mx-auto max-w-6xl px-4 pb-6">
-          <h2 className="mb-6 text-[22px] font-bold text-foreground sm:text-[26px]">شاهدتها مؤخراً</h2>
+          <h2 className="mb-6 text-[22px] font-bold text-foreground sm:text-[26px]">
+            شاهدتها مؤخراً
+          </h2>
           <PropertyGrid properties={recent} />
         </Reveal>
       ) : null}
@@ -259,7 +316,10 @@ function HomePage() {
         open={compareOpen}
         onOpenChange={setCompareOpen}
         onRemove={(id) => setCompareIds((current) => current.filter((item) => item !== id))}
-        onClear={() => { setCompareIds([]); setCompareOpen(false); }}
+        onClear={() => {
+          setCompareIds([]);
+          setCompareOpen(false);
+        }}
       />
     </SiteLayout>
   );
