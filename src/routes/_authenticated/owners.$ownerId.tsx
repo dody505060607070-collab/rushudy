@@ -251,7 +251,6 @@ function OwnerDetailPage() {
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر نقل العقد"),
   });
 
-
   const exportOwner = async (aiSummary?: string) => {
     if (!data) return;
     const ownerRows: ExportRow[] = [
@@ -899,8 +898,8 @@ function OwnerDetailPage() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-[13.5px] font-bold">لوحة الترتيب اليدوي</h3>
             <p className="text-[12px] text-muted-foreground">
-              اسحب أي وحدة أو عقار من الشريط وأسقطه على العمارة اللي تختارها، أو استخدم قائمة
-              «نقل إلى».
+              اسحب أي وحدة أو عقار من الشريط وأسقطه على العمارة اللي تختارها، أو استخدم قائمة «نقل
+              إلى».
             </p>
           </div>
 
