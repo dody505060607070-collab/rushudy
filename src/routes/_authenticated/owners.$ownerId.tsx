@@ -216,6 +216,28 @@ function OwnerDetailPage() {
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر تجهيز الحساب"),
   });
 
+  const moveItem = useMutation({
+    mutationFn: (payload: {
+      itemId: string;
+      itemType: "unit" | "property";
+      buildingId: string | null;
+    }) =>
+      moveOwnerAsset({
+        data: {
+          ownerId,
+          buildingId: payload.buildingId,
+          itemId: payload.itemId,
+          itemType: payload.itemType,
+        },
+      }),
+    onSuccess: () => {
+      setDragAsset(null);
+      queryClient.invalidateQueries({ queryKey: ["owner-dossier", ownerId] });
+      toast.success("تم تحديث مكان الوحدة");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر النقل"),
+  });
+
   const assignContract = useMutation({
     mutationFn: (unitId: string) => {
       if (!dragContractId) throw new Error("اختر العقد أولًا");
@@ -872,10 +894,102 @@ function OwnerDetailPage() {
         icon={House}
         count={groups.reduce((s, g) => s + g.items.length, 0)}
       >
-        <p className="mb-3 text-[12px] text-muted-foreground">
-          اسحب الوحدة أو العقار بين المباني، أو اسحب عقدًا نشطًا من قسم العقود وأسقطه على وحدة
-          شاغرة.
-        </p>
+        <div className="mb-4 rounded-md border border-dashed border-primary/40 bg-secondary/20 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-[13.5px] font-bold">لوحة الترتيب اليدوي</h3>
+            <p className="text-[12px] text-muted-foreground">
+              اسحب أي وحدة أو عقار من الشريط وأسقطه على العمارة اللي تختارها، أو استخدم قائمة «نقل
+              إلى».
+            </p>
+          </div>
+
+          <p className="mt-3 text-[12px] font-semibold text-muted-foreground">
+            وحدات وعقارات غير مرتبطة بعمارة
+          </p>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {[
+              ...data.properties
+                .filter((p) => !p.building_id)
+                .map((p) => ({ id: p.id, type: "property" as const, label: p.name })),
+              ...data.units
+                .filter((u) => !u.building_id)
+                .map((u) => ({
+                  id: u.id,
+                  type: "unit" as const,
+                  label: `وحدة رقم ${u.unit_number}`,
+                })),
+            ].map((item) => (
+              <div
+                key={item.id}
+                draggable
+                onDragStart={() => setDragAsset({ id: item.id, type: item.type })}
+                onDragEnd={() => setDragAsset(null)}
+                className="shrink-0 cursor-grab rounded-md border border-border bg-card px-3 py-2 text-[12.5px] font-semibold active:cursor-grabbing"
+              >
+                {item.label}
+              </div>
+            ))}
+            {!data.properties.some((p) => !p.building_id) &&
+            !data.units.some((u) => !u.building_id) ? (
+              <span className="text-[12px] text-muted-foreground">
+                كل الوحدات والعقارات مرتبة داخل العمارات.
+              </span>
+            ) : null}
+          </div>
+
+          <p className="mt-4 text-[12px] font-semibold text-muted-foreground">
+            العمارات — أسقط هنا للإضافة
+          </p>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {data.buildings.map((building, index) => (
+              <button
+                key={building.id}
+                type="button"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => {
+                  if (!dragAsset) return;
+                  moveItem.mutate({
+                    itemId: dragAsset.id,
+                    itemType: dragAsset.type,
+                    buildingId: building.id,
+                  });
+                }}
+                onClick={() =>
+                  dragAsset
+                    ? moveItem.mutate({
+                        itemId: dragAsset.id,
+                        itemType: dragAsset.type,
+                        buildingId: building.id,
+                      })
+                    : toast.info("اختر وحدة من الشريط أولًا")
+                }
+                className="min-w-[170px] shrink-0 rounded-md border border-border bg-card p-3 text-start transition-colors hover:border-primary"
+              >
+                <span className="block text-[12px] text-muted-foreground">عمارة {index + 1}</span>
+                <span className="block text-[13px] font-bold">{building.name}</span>
+                <span className="mt-1 block text-[12px] text-muted-foreground">
+                  {data.units.filter((u) => u.building_id === building.id).length} وحدة
+                </span>
+              </button>
+            ))}
+            <button
+              type="button"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => {
+                if (!dragAsset) return;
+                moveItem.mutate({
+                  itemId: dragAsset.id,
+                  itemType: dragAsset.type,
+                  buildingId: null,
+                });
+              }}
+              className="min-w-[150px] shrink-0 rounded-md border border-dashed border-border bg-card/50 p-3 text-start text-[12.5px] font-semibold text-muted-foreground hover:border-primary"
+            >
+              إخراج من العمارات (مستقل)
+            </button>
+          </div>
+        </div>
+
         <div className="grid w-full grid-cols-1 gap-4">
           {groups.map((group) => {
             const collapsed = collapsedGroups[group.key];
@@ -944,7 +1058,27 @@ function OwnerDetailPage() {
                                   ? `${contract.tenant?.full_name ?? "مستأجر غير مسجل"}${contract.tenant?.phone ? ` · ${contract.tenant.phone}` : ""} · ينتهي ${formatDate(contract.end_date)}`
                                   : item.subtitle || "لا يوجد عقد نشط"}
                               </p>
+                              <select
+                                value={group.key === "__standalone" ? "" : group.key}
+                                onChange={(event) =>
+                                  moveItem.mutate({
+                                    itemId: item.key,
+                                    itemType: item.assetType,
+                                    buildingId: event.target.value || null,
+                                  })
+                                }
+                                className="mt-2 h-8 rounded-md border border-border bg-card px-2 text-[12px]"
+                                aria-label="نقل إلى عمارة"
+                              >
+                                <option value="">بدون عمارة (مستقل)</option>
+                                {data.buildings.map((b, i) => (
+                                  <option key={b.id} value={b.id}>
+                                    عمارة {i + 1} — {b.name}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
+
                             <div className="flex flex-wrap items-center gap-2">
                               {contract ? (
                                 <span className="rounded-md bg-secondary px-3 py-1 text-[12.5px] font-bold">
