@@ -53,6 +53,7 @@ export const navGroups: NavGroup[] = [
       { label: "تنبيهات التجديد", to: "/renewals", module: "contracts" },
       { label: "الفواتير", to: "/invoices", countKey: "invoices", module: "invoices" },
       { label: "إدارة التذكيرات", to: "/reminders", countKey: "followups", module: "reminders" },
+      { label: "الصيانة", to: "/maintenance", module: "maintenance" },
     ],
   },
   {
@@ -121,6 +122,7 @@ export const permissionModules: { key: string; label: string; actions: string[] 
   { key: "contacts", label: "العملاء", actions: ["view", "add", "edit", "delete"] },
   { key: "crm", label: "CRM", actions: ["view", "edit"] },
   { key: "marketing", label: "التسويق العقاري", actions: ["view", "add", "edit", "delete", "send", "approve"] },
+  { key: "maintenance", label: "الصيانة", actions: ["view", "add", "edit", "delete"] },
   { key: "chat", label: "المحادثات الداخلية", actions: ["view"] },
   { key: "settings", label: "الإعدادات", actions: ["view", "edit"] },
   { key: "employees", label: "الموظفون", actions: ["view", "manage"] },

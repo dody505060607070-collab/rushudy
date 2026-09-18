@@ -133,6 +133,22 @@ export async function runHourlyAutomation(): Promise<RunResult> {
   const now = new Date();
   const nowIso = now.toISOString();
 
+  // مفتاح رئيسي: لا يُرسل أي شيء تلقائيًا على واتساب إلا إذا فعّله المستخدم صراحةً.
+  const { data: settingsRow } = await supabaseAdmin
+    .from("app_settings")
+    .select("whatsapp_auto_send_enabled")
+    .maybeSingle();
+  if (!settingsRow?.whatsapp_auto_send_enabled) {
+    return {
+      ok: true,
+      skipped: true,
+      ranAt: nowIso,
+      reminders: { due: 0, sent: 0, failed: 0 },
+      tasks: { due: 0, sent: 0, failed: 0, skippedNoPhone: 0 },
+      overdue: { payments: 0, notified: 0 },
+    };
+  }
+
   const { data: acquired, error: leaseError } = await supabaseAdmin.rpc("acquire_automation_lease", {
     _job_name: JOB_NAME,
     _lease_seconds: 3300,

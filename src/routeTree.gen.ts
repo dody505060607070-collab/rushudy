@@ -17,6 +17,7 @@ import { Route as CompanyProfileRouteImport } from './routes/company-profile'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as ListPropertyRouteImport } from './routes/list-property'
+import { Route as MaintenanceRequestRouteImport } from './routes/maintenance-request'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RentRouteImport } from './routes/rent'
@@ -40,6 +41,7 @@ import { Route as AuthenticatedErrorLogRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedExecutiveReportRouteImport } from './routes/_authenticated/executive-report'
 import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
 import { Route as AuthenticatedInvoiceFormRouteImport } from './routes/_authenticated/invoice-form'
+import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
 import { Route as AuthenticatedMarketingRouteImport } from './routes/_authenticated/marketing'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedOpportunitiesRouteImport } from './routes/_authenticated/opportunities'
@@ -120,6 +122,11 @@ const FavoritesRoute = FavoritesRouteImport.update({
 const ListPropertyRoute = ListPropertyRouteImport.update({
   id: '/list-property',
   path: '/list-property',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaintenanceRequestRoute = MaintenanceRequestRouteImport.update({
+  id: '/maintenance-request',
+  path: '/maintenance-request',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortalRoute = PortalRouteImport.update({
@@ -239,6 +246,12 @@ const AuthenticatedInvoiceFormRoute =
   AuthenticatedInvoiceFormRouteImport.update({
     id: '/invoice-form',
     path: '/invoice-form',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMaintenanceRoute =
+  AuthenticatedMaintenanceRouteImport.update({
+    id: '/maintenance',
+    path: '/maintenance',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedMarketingRoute = AuthenticatedMarketingRouteImport.update({
@@ -479,6 +492,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
+  '/maintenance-request': typeof MaintenanceRequestRoute
   '/portal': typeof PortalRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/rent': typeof RentRoute
@@ -502,6 +516,7 @@ export interface FileRoutesByFullPath {
   '/executive-report': typeof AuthenticatedExecutiveReportRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/invoice-form': typeof AuthenticatedInvoiceFormRoute
+  '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/marketing': typeof AuthenticatedMarketingRouteWithChildren
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/opportunities': typeof AuthenticatedOpportunitiesRoute
@@ -553,6 +568,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
+  '/maintenance-request': typeof MaintenanceRequestRoute
   '/privacy': typeof PrivacyRoute
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
@@ -575,6 +591,7 @@ export interface FileRoutesByTo {
   '/executive-report': typeof AuthenticatedExecutiveReportRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/invoice-form': typeof AuthenticatedInvoiceFormRoute
+  '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/marketing': typeof AuthenticatedMarketingRouteWithChildren
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/opportunities': typeof AuthenticatedOpportunitiesRoute
@@ -628,6 +645,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
+  '/maintenance-request': typeof MaintenanceRequestRoute
   '/portal': typeof PortalRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/rent': typeof RentRoute
@@ -651,6 +669,7 @@ export interface FileRoutesById {
   '/_authenticated/executive-report': typeof AuthenticatedExecutiveReportRoute
   '/_authenticated/goals': typeof AuthenticatedGoalsRoute
   '/_authenticated/invoice-form': typeof AuthenticatedInvoiceFormRoute
+  '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/marketing': typeof AuthenticatedMarketingRouteWithChildren
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/opportunities': typeof AuthenticatedOpportunitiesRoute
@@ -704,6 +723,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/favorites'
     | '/list-property'
+    | '/maintenance-request'
     | '/portal'
     | '/privacy'
     | '/rent'
@@ -727,6 +747,7 @@ export interface FileRouteTypes {
     | '/executive-report'
     | '/goals'
     | '/invoice-form'
+    | '/maintenance'
     | '/marketing'
     | '/notifications'
     | '/opportunities'
@@ -778,6 +799,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/favorites'
     | '/list-property'
+    | '/maintenance-request'
     | '/privacy'
     | '/rent'
     | '/sale'
@@ -800,6 +822,7 @@ export interface FileRouteTypes {
     | '/executive-report'
     | '/goals'
     | '/invoice-form'
+    | '/maintenance'
     | '/marketing'
     | '/notifications'
     | '/opportunities'
@@ -852,6 +875,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/favorites'
     | '/list-property'
+    | '/maintenance-request'
     | '/portal'
     | '/privacy'
     | '/rent'
@@ -875,6 +899,7 @@ export interface FileRouteTypes {
     | '/_authenticated/executive-report'
     | '/_authenticated/goals'
     | '/_authenticated/invoice-form'
+    | '/_authenticated/maintenance'
     | '/_authenticated/marketing'
     | '/_authenticated/notifications'
     | '/_authenticated/opportunities'
@@ -928,6 +953,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   FavoritesRoute: typeof FavoritesRoute
   ListPropertyRoute: typeof ListPropertyRoute
+  MaintenanceRequestRoute: typeof MaintenanceRequestRoute
   PortalRoute: typeof PortalRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RentRoute: typeof RentRoute
@@ -999,6 +1025,13 @@ declare module '@tanstack/react-router' {
       path: '/list-property'
       fullPath: '/list-property'
       preLoaderRoute: typeof ListPropertyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/maintenance-request': {
+      id: '/maintenance-request'
+      path: '/maintenance-request'
+      fullPath: '/maintenance-request'
+      preLoaderRoute: typeof MaintenanceRequestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portal': {
@@ -1160,6 +1193,13 @@ declare module '@tanstack/react-router' {
       path: '/invoice-form'
       fullPath: '/invoice-form'
       preLoaderRoute: typeof AuthenticatedInvoiceFormRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/maintenance': {
+      id: '/_authenticated/maintenance'
+      path: '/maintenance'
+      fullPath: '/maintenance'
+      preLoaderRoute: typeof AuthenticatedMaintenanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/marketing': {
@@ -1489,6 +1529,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedExecutiveReportRoute: typeof AuthenticatedExecutiveReportRoute
   AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
   AuthenticatedInvoiceFormRoute: typeof AuthenticatedInvoiceFormRoute
+  AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedMarketingRoute: typeof AuthenticatedMarketingRouteWithChildren
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOpportunitiesRoute: typeof AuthenticatedOpportunitiesRoute
@@ -1538,6 +1579,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExecutiveReportRoute: AuthenticatedExecutiveReportRoute,
   AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
   AuthenticatedInvoiceFormRoute: AuthenticatedInvoiceFormRoute,
+  AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedMarketingRoute: AuthenticatedMarketingRouteWithChildren,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOpportunitiesRoute: AuthenticatedOpportunitiesRoute,
@@ -1607,6 +1649,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   FavoritesRoute: FavoritesRoute,
   ListPropertyRoute: ListPropertyRoute,
+  MaintenanceRequestRoute: MaintenanceRequestRoute,
   PortalRoute: PortalRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RentRoute: RentRoute,
