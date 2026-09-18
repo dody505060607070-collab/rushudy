@@ -28,6 +28,7 @@ import { Route as AuthenticatedActivitiesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedActivityLogRouteImport } from './routes/_authenticated/activity-log'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
+import { Route as AuthenticatedBuildingsRouteImport } from './routes/_authenticated/buildings'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/crm'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -166,6 +167,11 @@ const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
 const AuthenticatedBackupRoute = AuthenticatedBackupRouteImport.update({
   id: '/backup',
   path: '/backup',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBuildingsRoute = AuthenticatedBuildingsRouteImport.update({
+  id: '/buildings',
+  path: '/buildings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
@@ -427,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/activity-log': typeof AuthenticatedActivityLogRoute
   '/ai': typeof AuthenticatedAiRoute
   '/backup': typeof AuthenticatedBackupRoute
+  '/buildings': typeof AuthenticatedBuildingsRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -490,6 +497,7 @@ export interface FileRoutesByTo {
   '/activity-log': typeof AuthenticatedActivityLogRoute
   '/ai': typeof AuthenticatedAiRoute
   '/backup': typeof AuthenticatedBackupRoute
+  '/buildings': typeof AuthenticatedBuildingsRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -556,6 +564,7 @@ export interface FileRoutesById {
   '/_authenticated/activity-log': typeof AuthenticatedActivityLogRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
+  '/_authenticated/buildings': typeof AuthenticatedBuildingsRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -622,6 +631,7 @@ export interface FileRouteTypes {
     | '/activity-log'
     | '/ai'
     | '/backup'
+    | '/buildings'
     | '/clients'
     | '/crm'
     | '/dashboard'
@@ -685,6 +695,7 @@ export interface FileRouteTypes {
     | '/activity-log'
     | '/ai'
     | '/backup'
+    | '/buildings'
     | '/clients'
     | '/crm'
     | '/dashboard'
@@ -750,6 +761,7 @@ export interface FileRouteTypes {
     | '/_authenticated/activity-log'
     | '/_authenticated/ai'
     | '/_authenticated/backup'
+    | '/_authenticated/buildings'
     | '/_authenticated/clients'
     | '/_authenticated/crm'
     | '/_authenticated/dashboard'
@@ -951,6 +963,13 @@ declare module '@tanstack/react-router' {
       path: '/backup'
       fullPath: '/backup'
       preLoaderRoute: typeof AuthenticatedBackupRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/buildings': {
+      id: '/_authenticated/buildings'
+      path: '/buildings'
+      fullPath: '/buildings'
+      preLoaderRoute: typeof AuthenticatedBuildingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clients': {
@@ -1269,6 +1288,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedActivityLogRoute: typeof AuthenticatedActivityLogRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedBackupRoute: typeof AuthenticatedBackupRoute
+  AuthenticatedBuildingsRoute: typeof AuthenticatedBuildingsRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -1311,6 +1331,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActivityLogRoute: AuthenticatedActivityLogRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedBackupRoute: AuthenticatedBackupRoute,
+  AuthenticatedBuildingsRoute: AuthenticatedBuildingsRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
