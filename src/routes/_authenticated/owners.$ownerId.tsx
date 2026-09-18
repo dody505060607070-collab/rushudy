@@ -1059,7 +1059,27 @@ function OwnerDetailPage() {
                                   ? `${contract.tenant?.full_name ?? "مستأجر غير مسجل"}${contract.tenant?.phone ? ` · ${contract.tenant.phone}` : ""} · ينتهي ${formatDate(contract.end_date)}`
                                   : item.subtitle || "لا يوجد عقد نشط"}
                               </p>
+                              <select
+                                value={group.key === "__standalone" ? "" : group.key}
+                                onChange={(event) =>
+                                  moveItem.mutate({
+                                    itemId: item.key,
+                                    itemType: item.assetType,
+                                    buildingId: event.target.value || null,
+                                  })
+                                }
+                                className="mt-2 h-8 rounded-md border border-border bg-card px-2 text-[12px]"
+                                aria-label="نقل إلى عمارة"
+                              >
+                                <option value="">بدون عمارة (مستقل)</option>
+                                {data.buildings.map((b, i) => (
+                                  <option key={b.id} value={b.id}>
+                                    عمارة {i + 1} — {b.name}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
+
                             <div className="flex flex-wrap items-center gap-2">
                               {contract ? (
                                 <span className="rounded-md bg-secondary px-3 py-1 text-[12.5px] font-bold">
