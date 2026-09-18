@@ -455,8 +455,7 @@ function MarketingPage() {
 
   const updateCommission = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const payload: Record<string, unknown> = { status };
-      if (status === "paid") payload.paid_at = new Date().toISOString();
+      const payload = status === "paid" ? { status, paid_at: new Date().toISOString() } : { status };
       const result = await supabase.from("marketer_commissions").update(payload).eq("id", id);
       if (result.error) throw result.error;
     },
