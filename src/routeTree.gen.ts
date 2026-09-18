@@ -40,6 +40,7 @@ import { Route as AuthenticatedErrorLogRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedExecutiveReportRouteImport } from './routes/_authenticated/executive-report'
 import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
 import { Route as AuthenticatedInvoiceFormRouteImport } from './routes/_authenticated/invoice-form'
+import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
 import { Route as AuthenticatedMarketingRouteImport } from './routes/_authenticated/marketing'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedOpportunitiesRouteImport } from './routes/_authenticated/opportunities'
@@ -239,6 +240,12 @@ const AuthenticatedInvoiceFormRoute =
   AuthenticatedInvoiceFormRouteImport.update({
     id: '/invoice-form',
     path: '/invoice-form',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMaintenanceRoute =
+  AuthenticatedMaintenanceRouteImport.update({
+    id: '/maintenance',
+    path: '/maintenance',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedMarketingRoute = AuthenticatedMarketingRouteImport.update({
@@ -502,6 +509,7 @@ export interface FileRoutesByFullPath {
   '/executive-report': typeof AuthenticatedExecutiveReportRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/invoice-form': typeof AuthenticatedInvoiceFormRoute
+  '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/marketing': typeof AuthenticatedMarketingRouteWithChildren
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/opportunities': typeof AuthenticatedOpportunitiesRoute
@@ -575,6 +583,7 @@ export interface FileRoutesByTo {
   '/executive-report': typeof AuthenticatedExecutiveReportRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/invoice-form': typeof AuthenticatedInvoiceFormRoute
+  '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/marketing': typeof AuthenticatedMarketingRouteWithChildren
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/opportunities': typeof AuthenticatedOpportunitiesRoute
@@ -651,6 +660,7 @@ export interface FileRoutesById {
   '/_authenticated/executive-report': typeof AuthenticatedExecutiveReportRoute
   '/_authenticated/goals': typeof AuthenticatedGoalsRoute
   '/_authenticated/invoice-form': typeof AuthenticatedInvoiceFormRoute
+  '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/marketing': typeof AuthenticatedMarketingRouteWithChildren
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/opportunities': typeof AuthenticatedOpportunitiesRoute
@@ -727,6 +737,7 @@ export interface FileRouteTypes {
     | '/executive-report'
     | '/goals'
     | '/invoice-form'
+    | '/maintenance'
     | '/marketing'
     | '/notifications'
     | '/opportunities'
@@ -800,6 +811,7 @@ export interface FileRouteTypes {
     | '/executive-report'
     | '/goals'
     | '/invoice-form'
+    | '/maintenance'
     | '/marketing'
     | '/notifications'
     | '/opportunities'
@@ -875,6 +887,7 @@ export interface FileRouteTypes {
     | '/_authenticated/executive-report'
     | '/_authenticated/goals'
     | '/_authenticated/invoice-form'
+    | '/_authenticated/maintenance'
     | '/_authenticated/marketing'
     | '/_authenticated/notifications'
     | '/_authenticated/opportunities'
@@ -1160,6 +1173,13 @@ declare module '@tanstack/react-router' {
       path: '/invoice-form'
       fullPath: '/invoice-form'
       preLoaderRoute: typeof AuthenticatedInvoiceFormRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/maintenance': {
+      id: '/_authenticated/maintenance'
+      path: '/maintenance'
+      fullPath: '/maintenance'
+      preLoaderRoute: typeof AuthenticatedMaintenanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/marketing': {
@@ -1489,6 +1509,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedExecutiveReportRoute: typeof AuthenticatedExecutiveReportRoute
   AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
   AuthenticatedInvoiceFormRoute: typeof AuthenticatedInvoiceFormRoute
+  AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedMarketingRoute: typeof AuthenticatedMarketingRouteWithChildren
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOpportunitiesRoute: typeof AuthenticatedOpportunitiesRoute
@@ -1538,6 +1559,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExecutiveReportRoute: AuthenticatedExecutiveReportRoute,
   AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
   AuthenticatedInvoiceFormRoute: AuthenticatedInvoiceFormRoute,
+  AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedMarketingRoute: AuthenticatedMarketingRouteWithChildren,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOpportunitiesRoute: AuthenticatedOpportunitiesRoute,
