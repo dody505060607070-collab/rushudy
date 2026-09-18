@@ -138,7 +138,7 @@ function MaintenancePage() {
     mutationFn: async (row: OwnerRequestRow) => {
       const insert = await supabase.from("maintenance_requests").insert({
         reporter_name: row.owner?.full_name ?? "المالك",
-        reporter_phone: row.owner?.phone ?? null,
+        reporter_phone: row.owner?.phone ?? "",
         ...(row.property_id ? { property_id: row.property_id } : {}),
         category: "owner",
         priority: "normal",
