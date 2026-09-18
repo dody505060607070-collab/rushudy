@@ -350,12 +350,32 @@ function OwnerDetailPage() {
     );
     return { unit: u, contract, remaining };
   });
+  // الأصول = الوحدات داخل العمارات + العقارات المستقلة، والإشغال يُقرأ من العقد النشط أولًا ثم الحالة المخزنة
+  const assetRows: { status: string | null; hasContract: boolean }[] = [
+    ...data.units.map((u) => ({
+      status: u.status ?? null,
+      hasContract: Boolean(contractByUnit.get(u.id)),
+    })),
+    ...data.properties.map((p) => ({
+      status: p.status ?? null,
+      hasContract: Boolean(contractByProperty.get(p.id)),
+    })),
+  ];
+  const norm = (s: string | null) => (s ?? "").trim().toLowerCase();
+  const occupiedStatuses = ["occupied", "rented", "leased", "sold", "busy", "مؤجرة", "مؤجر", "مشغولة"];
+  const outStatuses = ["maintenance", "out_of_service", "inactive", "disabled", "صيانة", "خارج الخدمة"];
   const unitCounts = {
-    total: data.units.length,
-    occupied: data.units.filter((u) => u.status === "occupied").length,
-    vacant: data.units.filter((u) => u.status === "available" || u.status === "vacant").length,
-    outOfService: data.units.filter(
-      (u) => u.status === "maintenance" || u.status === "out_of_service",
+    total: assetRows.length,
+    occupied: assetRows.filter((a) => a.hasContract || occupiedStatuses.includes(norm(a.status)))
+      .length,
+    outOfService: assetRows.filter(
+      (a) => !a.hasContract && outStatuses.includes(norm(a.status)),
+    ).length,
+    vacant: assetRows.filter(
+      (a) =>
+        !a.hasContract &&
+        !occupiedStatuses.includes(norm(a.status)) &&
+        !outStatuses.includes(norm(a.status)),
     ).length,
   };
 
