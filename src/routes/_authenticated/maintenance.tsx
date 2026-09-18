@@ -72,6 +72,17 @@ type Row = {
   property: { name: string; code: string } | null;
 };
 
+type OwnerRequestRow = {
+  id: string;
+  title: string;
+  details: string | null;
+  status: string;
+  created_at: string;
+  property_id: string | null;
+  owner: { full_name: string; phone: string | null } | null;
+  property: { name: string; code: string | null } | null;
+};
+
 const emptyForm = {
   reporter_name: "",
   reporter_phone: "",
@@ -106,6 +117,44 @@ function MaintenancePage() {
       if (error) throw error;
       return (data ?? []) as unknown as Row[];
     },
+  });
+
+  // بلاغات الصيانة القادمة من بوابة المالك تصل هنا مباشرة.
+  const ownerRequests = useQuery({
+    queryKey: ["owner-maintenance-requests"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("owner_requests")
+        .select("id, title, details, status, created_at, property_id, owner:owner_id(full_name, phone), property:property_id(name, code)")
+        .eq("kind", "maintenance")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as unknown as OwnerRequestRow[];
+    },
+  });
+
+  const convertOwnerRequest = useMutation({
+    mutationFn: async (row: OwnerRequestRow) => {
+      const insert = await supabase.from("maintenance_requests").insert({
+        reporter_name: row.owner?.full_name ?? "المالك",
+        reporter_phone: row.owner?.phone ?? null,
+        property_id: row.property_id,
+        category: "owner",
+        priority: "normal",
+        description: [row.title, row.details].filter(Boolean).join(" — "),
+        status: "new",
+      });
+      if (insert.error) throw insert.error;
+      const update = await supabase.from("owner_requests").update({ status: "in_progress" }).eq("id", row.id);
+      if (update.error) throw update.error;
+    },
+    onSuccess: () => {
+      toast.success("تم تحويل طلب المالك إلى بلاغ صيانة");
+      void qc.invalidateQueries({ queryKey: ["owner-maintenance-requests"] });
+      void qc.invalidateQueries({ queryKey: ["maintenance-requests"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const { data: properties } = useQuery({
@@ -205,6 +254,44 @@ function MaintenancePage() {
           { value: formatCurrency(totalCost), label: "تكلفة منجزة" },
         ]}
       />
+
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <header className="mb-3">
+          <h2 className="text-[14px] font-bold text-foreground">طلبات الصيانة الواردة من الملاك</h2>
+          <p className="text-[12px] text-muted-foreground">
+            كل طلب صيانة يرسله المالك من بوابته يصل هنا، وتحوّله إلى بلاغ داخلي بضغطة واحدة.
+          </p>
+        </header>
+        {!ownerRequests.data?.length ? (
+          <p className="rounded-lg border border-dashed border-border p-6 text-center text-[12.5px] text-muted-foreground">
+            لا توجد طلبات صيانة واردة من الملاك حاليًا.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {ownerRequests.data.map((row) => (
+              <div
+                key={row.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
+              >
+                <div>
+                  <p className="text-[13px] font-bold text-foreground">{row.title}</p>
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">
+                    {[row.owner?.full_name, row.property?.name, row.details].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={row.status !== "new" || convertOwnerRequest.isPending}
+                  onClick={() => convertOwnerRequest.mutate(row)}
+                  className="inline-flex h-9 items-center rounded-lg bg-primary px-3 text-[12.5px] font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  {row.status === "new" ? "تحويل إلى بلاغ" : "تم التحويل"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Pills
