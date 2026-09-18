@@ -195,16 +195,9 @@ export const publicBuildingQuery = (code: string) =>
     queryFn: async () => (await fetchBuildings({ code, limit: 1 }))[0] ?? null,
   });
 
-/** غلاف العمارة: الصورة المرفوعة أو أول صورة من شققها. */
+/** غلاف العمارة المحفوظ ثابت ولا يمكن تغييره من شاشة الإدارة. */
 export function buildingCover(building: PublicBuilding) {
-  if (building.cover_url) return building.cover_url;
-  for (const unit of building.units ?? []) {
-    const cover = [...(unit.images ?? [])].sort(
-      (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order,
-    )[0];
-    if (cover) return cover.url;
-  }
-  return null;
+  return building.cover_url;
 }
 
 /** نسبة إشغال العمارة من حالات شققها. */

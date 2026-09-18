@@ -1,7 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Building2, ChevronLeft, Loader2, Megaphone, Pencil, Plus, Send, Trash2, TriangleAlert } from "lucide-react";
+import {
+  Building2,
+  ChevronLeft,
+  Loader2,
+  Megaphone,
+  Pencil,
+  Plus,
+  Send,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -41,6 +51,7 @@ type PropertyRow = {
   needs_review: boolean;
   sort_order: number | null;
   created_at: string;
+  building_id: string | null;
 };
 
 export const Route = createFileRoute("/_authenticated/properties")({
@@ -66,7 +77,7 @@ const statusLabels: Record<string, string> = {
 };
 
 const SELECT =
-  "id, code, name, purpose, property_type, status, price_value, price_text, city, district, description, map_url, whatsapp_number, is_visible, is_featured, needs_review, sort_order, created_at";
+  "id, code, name, purpose, property_type, status, price_value, price_text, city, district, description, map_url, whatsapp_number, is_visible, is_featured, needs_review, sort_order, created_at, building_id";
 
 type FormState = {
   name: string;
@@ -117,7 +128,11 @@ function PropertiesPage() {
   const marketers = useQuery({
     queryKey: ["marketing-active-list"],
     queryFn: async () => {
-      const { data: items, error: marketersError } = await supabase.from("marketers").select("id, full_name, phone").eq("status", "active").order("full_name");
+      const { data: items, error: marketersError } = await supabase
+        .from("marketers")
+        .select("id, full_name, phone")
+        .eq("status", "active")
+        .order("full_name");
       if (marketersError) throw marketersError;
       return items ?? [];
     },
@@ -128,7 +143,8 @@ function PropertiesPage() {
     orderBy: { column: "created_at" },
   });
 
-  const rows = data ?? [];
+  // وحدات العمارات تُدار من صفحة العمارات فقط حتى لا تختلط بقائمة العقارات المستقلة.
+  const rows = (data ?? []).filter((row) => !row.building_id);
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
   const openCreate = () => {
@@ -235,9 +251,15 @@ function PropertiesPage() {
   const share = useMutation({
     mutationFn: async () => {
       if (!shareProperty || !selectedMarketer) throw new Error("اختر المسوق");
-      return sendToMarketer({ data: { marketerId: selectedMarketer, propertyId: shareProperty.id } });
+      return sendToMarketer({
+        data: { marketerId: selectedMarketer, propertyId: shareProperty.id },
+      });
     },
-    onSuccess: () => { toast.success("تم إرسال العقار للمسوق برابطه الخاص"); setShareProperty(null); setSelectedMarketer(""); },
+    onSuccess: () => {
+      toast.success("تم إرسال العقار للمسوق برابطه الخاص");
+      setShareProperty(null);
+      setSelectedMarketer("");
+    },
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الإرسال"),
   });
 
@@ -322,7 +344,15 @@ function PropertiesPage() {
       ) : (
         <DataTable<PropertyRow>
           rows={filtered}
-          rowClassName={(r) => r.needs_review ? "bg-warning/8" : r.status === "available" ? "bg-success/5" : r.status === "reserved" ? "bg-primary/5" : ""}
+          rowClassName={(r) =>
+            r.needs_review
+              ? "bg-warning/8"
+              : r.status === "available"
+                ? "bg-success/5"
+                : r.status === "reserved"
+                  ? "bg-primary/5"
+                  : ""
+          }
           onRowClick={(r) => navigate({ to: "/property-form", search: { id: r.id } })}
           selectable
           showColumnsButton
@@ -343,7 +373,12 @@ function PropertiesPage() {
               cell: (r) => r.name,
               className: "font-semibold",
             },
-            { header: "الكود", sortable: true, value: (r) => r.code ?? "", cell: (r) => r.code ?? "—" },
+            {
+              header: "الكود",
+              sortable: true,
+              value: (r) => r.code ?? "",
+              cell: (r) => r.code ?? "—",
+            },
             {
               header: "النوع",
               cell: (r) => (
@@ -416,7 +451,11 @@ function PropertiesPage() {
                   </Link>
                   <button
                     type="button"
-                    onClick={(event) => { event.stopPropagation(); setShareProperty(r); setSelectedMarketer(""); }}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setShareProperty(r);
+                      setSelectedMarketer("");
+                    }}
                     className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary"
                   >
                     <Megaphone className="size-4" />
@@ -599,15 +638,42 @@ function PropertiesPage() {
         onClose={() => setShareProperty(null)}
         title="إرسال العقار لمسوق"
         subtitle={`سيُرسل «${shareProperty?.name ?? "العقار"}» عبر واتساب برابط إحالة خاص. لن يحدث أي إرسال قبل تأكيدك.`}
-        footer={<><GhostButton onClick={() => setShareProperty(null)}>إلغاء</GhostButton><PrimaryButton onClick={() => share.mutate()} disabled={share.isPending || !selectedMarketer}>{share.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}إرسال الآن</PrimaryButton></>}
+        footer={
+          <>
+            <GhostButton onClick={() => setShareProperty(null)}>إلغاء</GhostButton>
+            <PrimaryButton
+              onClick={() => share.mutate()}
+              disabled={share.isPending || !selectedMarketer}
+            >
+              {share.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Send className="size-4" />
+              )}
+              إرسال الآن
+            </PrimaryButton>
+          </>
+        }
       >
         <Field label="المسوق المستلم" required>
-          <select className={inputClass} value={selectedMarketer} onChange={(event) => setSelectedMarketer(event.target.value)}>
+          <select
+            className={inputClass}
+            value={selectedMarketer}
+            onChange={(event) => setSelectedMarketer(event.target.value)}
+          >
             <option value="">اختر مسوقًا واحدًا</option>
-            {(marketers.data ?? []).map((marketer) => <option key={marketer.id} value={marketer.id}>{marketer.full_name} — {marketer.phone}</option>)}
+            {(marketers.data ?? []).map((marketer) => (
+              <option key={marketer.id} value={marketer.id}>
+                {marketer.full_name} — {marketer.phone}
+              </option>
+            ))}
           </select>
         </Field>
-        {(marketers.data ?? []).length === 0 ? <p className="mt-3 text-xs text-muted-foreground">أضف مسوقًا نشطًا من قسم التسويق العقاري أولًا.</p> : null}
+        {(marketers.data ?? []).length === 0 ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            أضف مسوقًا نشطًا من قسم التسويق العقاري أولًا.
+          </p>
+        ) : null}
       </Modal>
     </>
   );

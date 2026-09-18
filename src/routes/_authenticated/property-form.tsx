@@ -12,7 +12,6 @@ import {
   NotebookPen,
   Plus,
   ShieldCheck,
-
   Trash2,
   UploadCloud,
   ChevronLeft,
@@ -38,17 +37,26 @@ import { approveListingRequest } from "@/lib/requests.functions";
 export const Route = createFileRoute("/_authenticated/property-form")({
   validateSearch: (search: Record<string, unknown>) => ({
     id: typeof search["id"] === "string" ? (search["id"] as string) : "",
-    ...(typeof search["requestId"] === "string" ? { requestId: search["requestId"] as string } : {}),
+    ...(typeof search["buildingId"] === "string"
+      ? { buildingId: search["buildingId"] as string }
+      : {}),
+    ...(typeof search["requestId"] === "string"
+      ? { requestId: search["requestId"] as string }
+      : {}),
   }),
   head: () => ({
     meta: [
       { title: "إضافة / تعديل عقار | الرشودي للعقارات" },
       {
         name: "description",
-        content: "نموذج كامل لإضافة عقار: البيانات، السعر، الموقع، الصور، الفيديوهات والملاحظات الداخلية.",
+        content:
+          "نموذج كامل لإضافة عقار: البيانات، السعر، الموقع، الصور، الفيديوهات والملاحظات الداخلية.",
       },
       { property: "og:title", content: "إضافة / تعديل عقار | الرشودي للعقارات" },
-      { property: "og:description", content: "نموذج كامل لبيانات العقار ووسائطه وموقعه على الخريطة." },
+      {
+        property: "og:description",
+        content: "نموذج كامل لبيانات العقار ووسائطه وموقعه على الخريطة.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -56,7 +64,15 @@ export const Route = createFileRoute("/_authenticated/property-form")({
   component: PropertyFormPage,
 });
 
-type MediaRow = { id: string; url: string; sort_order: number; is_cover?: boolean; title?: string | null; focal_x?: number; focal_y?: number };
+type MediaRow = {
+  id: string;
+  url: string;
+  sort_order: number;
+  is_cover?: boolean;
+  title?: string | null;
+  focal_x?: number;
+  focal_y?: number;
+};
 
 const DEFAULT_SALE_GUARANTEES = [
   { name: "الأنابيب الخضراء", years: 15 },
@@ -136,7 +152,7 @@ function SectionCard({
 }
 
 function PropertyFormPage() {
-  const { id, requestId = "" } = Route.useSearch();
+  const { id, buildingId = "", requestId = "" } = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -153,6 +169,9 @@ function PropertyFormPage() {
   const [quickType, setQuickType] = useState("");
   const [quickDistrict, setQuickDistrict] = useState("");
 
+  useEffect(() => {
+    if (!id && buildingId) setForm((current) => ({ ...current, building_id: buildingId }));
+  }, [buildingId, id]);
 
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
@@ -192,7 +211,6 @@ function PropertyFormPage() {
       window.clearTimeout(timer);
     };
   }, [mapUrlValue]);
-
 
   const property = useQuery({
     queryKey: ["property", id],
@@ -420,8 +438,6 @@ function PropertyFormPage() {
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحذف"),
   });
 
-
-
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["properties"] });
     queryClient.invalidateQueries({ queryKey: ["public-properties"] });
@@ -488,9 +504,29 @@ function PropertyFormPage() {
         if (error) throw error;
         return id;
       }
+      let unitId: string | null = null;
+      if (payload.building_id) {
+        const unitNumber = payload.code || `${Date.now().toString(36).toUpperCase()}`;
+        const unitResult = await supabase
+          .from("units")
+          .insert({
+            building_id: payload.building_id,
+            owner_id: payload.owner_id,
+            unit_number: unitNumber,
+            unit_type: payload.property_type ?? "شقة",
+            floor: payload.floor,
+            status: payload.status,
+            is_rentable: payload.purpose === "rent",
+            notes: payload.internal_notes,
+          })
+          .select("id")
+          .single();
+        if (unitResult.error) throw unitResult.error;
+        unitId = unitResult.data.id;
+      }
       const { data, error } = await supabase
         .from("properties")
-        .insert(payload)
+        .insert({ ...payload, unit_id: unitId })
         .select("id")
         .single();
       if (error) throw error;
@@ -499,7 +535,11 @@ function PropertyFormPage() {
     onSuccess: (newId) => {
       invalidateAll();
       toast.success(id ? "تم تحديث العقار" : "تم إضافة العقار");
-      if (!id) navigate({ to: "/property-form", search: requestId ? { id: newId, requestId } : { id: newId } });
+      if (!id)
+        navigate({
+          to: "/property-form",
+          search: requestId ? { id: newId, requestId } : { id: newId },
+        });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
   });
@@ -512,7 +552,11 @@ function PropertyFormPage() {
     },
     onSuccess: (result) => {
       invalidateAll();
-      toast.success(result.whatsapp.ok ? "تم اعتماد العقار ونشره وإشعار المالك عبر واتساب" : "تم اعتماد العقار ونشره");
+      toast.success(
+        result.whatsapp.ok
+          ? "تم اعتماد العقار ونشره وإشعار المالك عبر واتساب"
+          : "تم اعتماد العقار ونشره",
+      );
       void navigate({ to: "/listing-requests/$requestId", params: { requestId } });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الاعتماد والنشر"),
@@ -586,7 +630,9 @@ function PropertyFormPage() {
       if (!moved) return;
       current.splice(targetIndex, 0, moved);
       const updates = await Promise.all(
-        current.map((row, index) => supabase.from("property_images").update({ sort_order: index }).eq("id", row.id)),
+        current.map((row, index) =>
+          supabase.from("property_images").update({ sort_order: index }).eq("id", row.id),
+        ),
       );
       const failed = updates.find((result) => result.error);
       if (failed?.error) throw failed.error;
@@ -600,8 +646,19 @@ function PropertyFormPage() {
   });
 
   const updateFocalPoint = useMutation({
-    mutationFn: async ({ rowId, focalX, focalY }: { rowId: string; focalX: number; focalY: number }) => {
-      const { error } = await supabase.from("property_images").update({ focal_x: focalX, focal_y: focalY }).eq("id", rowId);
+    mutationFn: async ({
+      rowId,
+      focalX,
+      focalY,
+    }: {
+      rowId: string;
+      focalX: number;
+      focalY: number;
+    }) => {
+      const { error } = await supabase
+        .from("property_images")
+        .update({ focal_x: focalX, focal_y: focalY })
+        .eq("id", rowId);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["property-images", id] }),
@@ -629,13 +686,21 @@ function PropertyFormPage() {
     mutationFn: async (input: { kind: "type" | "district"; name: string }) => {
       if (!input.name.trim()) throw new Error("اكتب الاسم أولًا");
       if (input.kind === "type") {
-        const { data, error } = await supabase.from("property_types").insert({ name: input.name.trim(), sort_order: types.data?.length ?? 0 }).select("id, name").single();
+        const { data, error } = await supabase
+          .from("property_types")
+          .insert({ name: input.name.trim(), sort_order: types.data?.length ?? 0 })
+          .select("id, name")
+          .single();
         if (error) throw error;
         return { kind: input.kind, ...data };
       }
       const city = cities.data?.find((row) => row.name === form.city);
       if (!city) throw new Error("اختر المدينة أولًا");
-      const { data, error } = await supabase.from("districts").insert({ city_id: city.id, name: input.name.trim(), sort_order: cityDistricts.length }).select("id, name").single();
+      const { data, error } = await supabase
+        .from("districts")
+        .insert({ city_id: city.id, name: input.name.trim(), sort_order: cityDistricts.length })
+        .select("id, name")
+        .single();
       if (error) throw error;
       return { kind: input.kind, ...data };
     },
@@ -712,699 +777,867 @@ function PropertyFormPage() {
 
       <div className="flex items-center justify-between gap-3">
         <Link
-          to="/properties"
+          to={form.building_id ? "/buildings" : "/properties"}
           className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"
         >
           <ArrowRight className="size-4" />
-          رجوع لقائمة العقارات
+          {form.building_id ? "رجوع للعمارات" : "رجوع لقائمة العقارات"}
         </Link>
       </div>
 
-      <nav aria-label="خطوات نموذج العقار" className="surface-card grid grid-cols-2 gap-2 p-3 sm:grid-cols-4">
-        {steps.map((label, index) => <button key={label} type="button" onClick={() => setStep(index)} className={`rounded-lg px-3 py-2 text-[12.5px] font-bold transition ${step === index ? "bg-primary text-primary-foreground" : index < step ? "bg-success/12 text-success" : "bg-secondary text-muted-foreground"}`}><span className="me-1">{index + 1}.</span>{label}</button>)}
+      <nav
+        aria-label="خطوات نموذج العقار"
+        className="surface-card grid grid-cols-2 gap-2 p-3 sm:grid-cols-4"
+      >
+        {steps.map((label, index) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => setStep(index)}
+            className={`rounded-lg px-3 py-2 text-[12.5px] font-bold transition ${step === index ? "bg-primary text-primary-foreground" : index < step ? "bg-success/12 text-success" : "bg-secondary text-muted-foreground"}`}
+          >
+            <span className="me-1">{index + 1}.</span>
+            {label}
+          </button>
+        ))}
       </nav>
 
-      {step === 0 ? <>
-      <SectionCard
-        title="البيانات الأساسية"
-        subtitle="اسم العقار وكوده والغرض منه ونوعه وموقعه الإداري."
-        icon={Building2}
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="اسم العقار" className="sm:col-span-2">
-            <input
-              className={inputClass}
-              value={form.name}
-              onChange={(e) => set({ name: e.target.value })}
-              placeholder="مثال: شقة في حي الرحاب"
-            />
-          </Field>
-          <Field label="كود العقار" hint="يُولَّد تلقائيًا إذا تركته فارغًا">
-            <input
-              className={inputClass}
-              dir="ltr"
-              value={form.code}
-              onChange={(e) => set({ code: e.target.value })}
-            />
-          </Field>
-          <Field label="العمارة" hint="اربط الشقة بعمارة لتظهر داخل صفحتها">
-            <select
-              className={inputClass}
-              value={form.building_id}
-              onChange={(e) => set({ building_id: e.target.value })}
-            >
-              <option value="">بدون عمارة</option>
-              {(buildingsList.data ?? []).map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="الدور" hint="مثال: الدور الأول">
-            <input className={inputClass} value={form.floor} onChange={(e) => set({ floor: e.target.value })} />
-          </Field>
-          <Field label="الغرض">
-            <select
-              className={inputClass}
-              value={form.purpose}
-              onChange={(e) => set({ purpose: e.target.value })}
-            >
-              <option value="rent">إيجار</option>
-              <option value="sale">بيع</option>
-              <option value="investment">استثمار</option>
-            </select>
-          </Field>
-          {form.purpose === "rent" ? (
-            <Field label="مدة الإيجار" hint="تظهر للعميل بجانب نوع العرض">
-              <select
-                className={inputClass}
-                value={form.rent_period}
-                onChange={(e) => set({ rent_period: e.target.value })}
-              >
-                <option value="yearly">سنوي</option>
-                <option value="monthly">شهري</option>
-                <option value="daily">يومي</option>
-              </select>
-            </Field>
-          ) : null}
-          <Field label="نوع العقار" hint="القائمة تُدار من إعدادات الموقع ← الأنواع والأحياء">
-            <select
-              className={inputClass}
-              value={form.property_type}
-              onChange={(e) => set({ property_type: e.target.value })}
-            >
-              <option value="">— اختر —</option>
-              {(types.data ?? []).map((t) => (
-                <option key={t.id} value={t.name}>
-                  {t.name}
-                </option>
-              ))}
-              {form.property_type &&
-              !(types.data ?? []).some((t) => t.name === form.property_type) ? (
-                <option value={form.property_type}>{form.property_type}</option>
-              ) : null}
-            </select>
-            <div className="mt-2 flex gap-2">
-              <input className={inputClass} value={quickType} onChange={(e) => setQuickType(e.target.value)} placeholder="إضافة نوع جديد سريعًا" />
-              <button type="button" className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-bold text-primary" onClick={() => quickAddLookup.mutate({ kind: "type", name: quickType })}><Plus className="size-4" /> إضافة</button>
-            </div>
-          </Field>
-          <Field label="الحالة">
-            <select
-              className={inputClass}
-              value={form.status}
-              onChange={(e) => set({ status: e.target.value })}
-            >
-              {statusOptions.map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="المدينة">
-            <select
-              className={inputClass}
-              value={form.city}
-              onChange={(e) => set({ city: e.target.value, district: "" })}
-            >
-              <option value="">— اختر —</option>
-              {(cities.data ?? []).map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-              {form.city && !(cities.data ?? []).some((c) => c.name === form.city) ? (
-                <option value={form.city}>{form.city}</option>
-              ) : null}
-            </select>
-          </Field>
-          <Field label="الحي">
-            <select
-              className={inputClass}
-              value={form.district}
-              onChange={(e) => set({ district: e.target.value })}
-            >
-              <option value="">— اختر —</option>
-              {cityDistricts.map((d) => (
-                <option key={d.id} value={d.name}>
-                  {d.name}
-                </option>
-              ))}
-              {form.district && !cityDistricts.some((d) => d.name === form.district) ? (
-                <option value={form.district}>{form.district}</option>
-              ) : null}
-            </select>
-            <div className="mt-2 flex gap-2">
-              <input className={inputClass} value={quickDistrict} onChange={(e) => setQuickDistrict(e.target.value)} placeholder="إضافة حي جديد سريعًا" />
-              <button type="button" className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-bold text-primary" onClick={() => quickAddLookup.mutate({ kind: "district", name: quickDistrict })}><Plus className="size-4" /> إضافة</button>
-            </div>
-          </Field>
-          <Field label="المالك" hint="اختياري: اربطه بسجل المالك أو اكتب الاسم والجوال يدويًا">
-            <select
-              className={inputClass}
-              value={ownerId}
-              onChange={(e) => setOwnerId(e.target.value)}
-            >
-              <option value="">— بدون —</option>
-              {(owners.data ?? []).map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.full_name}
-                </option>
-              ))}
-            </select>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              <input
-                className={inputClass}
-                value={ownerName}
-                onChange={(e) => setOwnerName(e.target.value)}
-                placeholder="اسم المالك (اختياري)"
-              />
-              <input
-                className={inputClass}
-                value={ownerPhone}
-                onChange={(e) => setOwnerPhone(e.target.value)}
-                placeholder="جوال المالك (اختياري)"
-                inputMode="tel"
-                dir="ltr"
-              />
-            </div>
-          </Field>
-        </div>
-      </SectionCard>
-      </> : null}
-
-      {step === 1 ? <>
-      <SectionCard
-        title="السعر والوصف والنشر"
-        subtitle="السعر المعروض على الموقع، الوصف، رقم الواتساب وحالة الظهور."
-        icon={Check}
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="السعر كنص للعرض">
-            <input
-              className={inputClass}
-              value={form.price_text}
-              onChange={(e) => set({ price_text: e.target.value })}
-              placeholder="35,000 ريال سنويًا"
-            />
-          </Field>
-          <Field label="السعر كرقم" hint="يُستخدم في الفرز والفلاتر">
-            <input
-              className={inputClass}
-              dir="ltr"
-              inputMode="numeric"
-              value={form.price_value}
-              onChange={(e) => set({ price_value: e.target.value })}
-            />
-          </Field>
-          <Field label="رقم واتساب للتواصل">
-            <input
-              className={inputClass}
-              dir="ltr"
-              value={form.whatsapp_number}
-              onChange={(e) => set({ whatsapp_number: e.target.value })}
-            />
-          </Field>
-          <Field label="ترتيب الظهور">
-            <input
-              className={inputClass}
-              dir="ltr"
-              inputMode="numeric"
-              value={form.sort_order}
-              onChange={(e) => set({ sort_order: e.target.value })}
-            />
-          </Field>
-          <Field label="وصف العقار" className="sm:col-span-2">
-            <textarea
-              className={textareaClass}
-              value={form.description}
-              onChange={(e) => set({ description: e.target.value })}
-            />
-          </Field>
-          <div className="flex flex-wrap items-center gap-6 sm:col-span-2">
-            <span className="flex items-center gap-2 text-[12.5px] font-semibold">
-              <Toggle
-                label="مرئي على الموقع"
-                checked={form.is_visible}
-                onChange={(v) => set({ is_visible: v })}
-              />
-              مرئي على الموقع
-            </span>
-            <span className="flex items-center gap-2 text-[12.5px] font-semibold">
-              <Toggle
-                label="عقار مميز"
-                checked={form.is_featured}
-                onChange={(v) => set({ is_featured: v })}
-              />
-              عقار مميز
-            </span>
-            <span className="flex items-center gap-2 text-[12.5px] font-semibold">
-              <Toggle
-                label="بحاجة مراجعة"
-                checked={form.needs_review}
-                onChange={(v) => set({ needs_review: v })}
-              />
-              بحاجة مراجعة
-            </span>
-          </div>
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        title="الموقع على الخريطة"
-        subtitle="أدخل رابط خرائط جوجل أو الإحداثيات ليظهر العقار على خريطة الموقع."
-        icon={MapPin}
-      >
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="رابط خرائط جوجل" className="sm:col-span-3">
-            <input
-              className={inputClass}
-              dir="ltr"
-              value={form.map_url}
-              onChange={(e) => set({ map_url: e.target.value })}
-              placeholder="https://maps.google.com/..."
-            />
-            <p className="mt-1 text-[12px] text-muted-foreground">
-              {geoBusy
-                ? "جارٍ تحديد الموقع من الرابط..."
-                : "الصق الرابط وسيتم ملء خط الطول والعرض تلقائياً."}
-            </p>
-          </Field>
-
-          <Field label="خط العرض (Latitude)">
-            <input
-              className={inputClass}
-              dir="ltr"
-              value={form.latitude}
-              onChange={(e) => set({ latitude: e.target.value })}
-              placeholder="26.3260"
-            />
-          </Field>
-          <Field label="خط الطول (Longitude)">
-            <input
-              className={inputClass}
-              dir="ltr"
-              value={form.longitude}
-              onChange={(e) => set({ longitude: e.target.value })}
-              placeholder="43.9750"
-            />
-          </Field>
-          <div className="sm:col-span-3">
-            <LocationPicker
-              latitude={form.latitude ? Number(form.latitude) : null}
-              longitude={form.longitude ? Number(form.longitude) : null}
-              onChange={(latitude, longitude) => set({ latitude: String(latitude), longitude: String(longitude) })}
-            />
-          </div>
-        </div>
-      </SectionCard>
-      </> : null}
-
-      {step === 2 ? <>
-      <SectionCard
-        title="روابط التواصل والوسائط"
-        subtitle="كل منصة لها خانة مستقلة، وتظهر بأيقونتها الحقيقية في صفحة العقار على الموقع."
-        icon={Film}
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          {SOCIAL_PLATFORMS.map((p) => (
-            <Field key={p.key} label={p.label}>
-              <div className="flex items-center gap-2">
-                <span
-                  className="grid size-9 shrink-0 place-items-center rounded-lg border border-border"
-                  style={{ color: p.color }}
-                >
-                  <SocialGlyph platform={p.key} />
-                </span>
+      {step === 0 ? (
+        <>
+          <SectionCard
+            title="البيانات الأساسية"
+            subtitle="اسم العقار وكوده والغرض منه ونوعه وموقعه الإداري."
+            icon={Building2}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="اسم العقار" className="sm:col-span-2">
+                <input
+                  className={inputClass}
+                  value={form.name}
+                  onChange={(e) => set({ name: e.target.value })}
+                  placeholder="مثال: شقة في حي الرحاب"
+                />
+              </Field>
+              <Field label="كود العقار" hint="يُولَّد تلقائيًا إذا تركته فارغًا">
                 <input
                   className={inputClass}
                   dir="ltr"
-                  value={form[p.key]}
-                  onChange={(e) => set({ [p.key]: e.target.value } as Partial<FormState>)}
-                  placeholder={p.placeholder}
+                  value={form.code}
+                  onChange={(e) => set({ code: e.target.value })}
+                />
+              </Field>
+              <Field label="العمارة" hint="اربط الشقة بعمارة لتظهر داخل صفحتها">
+                <select
+                  className={inputClass}
+                  value={form.building_id}
+                  onChange={(e) => set({ building_id: e.target.value })}
+                >
+                  <option value="">بدون عمارة</option>
+                  {(buildingsList.data ?? []).map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="الدور" hint="مثال: الدور الأول">
+                <input
+                  className={inputClass}
+                  value={form.floor}
+                  onChange={(e) => set({ floor: e.target.value })}
+                />
+              </Field>
+              <Field label="الغرض">
+                <select
+                  className={inputClass}
+                  value={form.purpose}
+                  onChange={(e) => set({ purpose: e.target.value })}
+                >
+                  <option value="rent">إيجار</option>
+                  <option value="sale">بيع</option>
+                  <option value="investment">استثمار</option>
+                </select>
+              </Field>
+              {form.purpose === "rent" ? (
+                <Field label="مدة الإيجار" hint="تظهر للعميل بجانب نوع العرض">
+                  <select
+                    className={inputClass}
+                    value={form.rent_period}
+                    onChange={(e) => set({ rent_period: e.target.value })}
+                  >
+                    <option value="yearly">سنوي</option>
+                    <option value="monthly">شهري</option>
+                    <option value="daily">يومي</option>
+                  </select>
+                </Field>
+              ) : null}
+              <Field label="نوع العقار" hint="القائمة تُدار من إعدادات الموقع ← الأنواع والأحياء">
+                <select
+                  className={inputClass}
+                  value={form.property_type}
+                  onChange={(e) => set({ property_type: e.target.value })}
+                >
+                  <option value="">— اختر —</option>
+                  {(types.data ?? []).map((t) => (
+                    <option key={t.id} value={t.name}>
+                      {t.name}
+                    </option>
+                  ))}
+                  {form.property_type &&
+                  !(types.data ?? []).some((t) => t.name === form.property_type) ? (
+                    <option value={form.property_type}>{form.property_type}</option>
+                  ) : null}
+                </select>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    className={inputClass}
+                    value={quickType}
+                    onChange={(e) => setQuickType(e.target.value)}
+                    placeholder="إضافة نوع جديد سريعًا"
+                  />
+                  <button
+                    type="button"
+                    className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-bold text-primary"
+                    onClick={() => quickAddLookup.mutate({ kind: "type", name: quickType })}
+                  >
+                    <Plus className="size-4" /> إضافة
+                  </button>
+                </div>
+              </Field>
+              <Field label="الحالة">
+                <select
+                  className={inputClass}
+                  value={form.status}
+                  onChange={(e) => set({ status: e.target.value })}
+                >
+                  {statusOptions.map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="المدينة">
+                <select
+                  className={inputClass}
+                  value={form.city}
+                  onChange={(e) => set({ city: e.target.value, district: "" })}
+                >
+                  <option value="">— اختر —</option>
+                  {(cities.data ?? []).map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                  {form.city && !(cities.data ?? []).some((c) => c.name === form.city) ? (
+                    <option value={form.city}>{form.city}</option>
+                  ) : null}
+                </select>
+              </Field>
+              <Field label="الحي">
+                <select
+                  className={inputClass}
+                  value={form.district}
+                  onChange={(e) => set({ district: e.target.value })}
+                >
+                  <option value="">— اختر —</option>
+                  {cityDistricts.map((d) => (
+                    <option key={d.id} value={d.name}>
+                      {d.name}
+                    </option>
+                  ))}
+                  {form.district && !cityDistricts.some((d) => d.name === form.district) ? (
+                    <option value={form.district}>{form.district}</option>
+                  ) : null}
+                </select>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    className={inputClass}
+                    value={quickDistrict}
+                    onChange={(e) => setQuickDistrict(e.target.value)}
+                    placeholder="إضافة حي جديد سريعًا"
+                  />
+                  <button
+                    type="button"
+                    className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-bold text-primary"
+                    onClick={() => quickAddLookup.mutate({ kind: "district", name: quickDistrict })}
+                  >
+                    <Plus className="size-4" /> إضافة
+                  </button>
+                </div>
+              </Field>
+              <Field label="المالك" hint="اختياري: اربطه بسجل المالك أو اكتب الاسم والجوال يدويًا">
+                <select
+                  className={inputClass}
+                  value={ownerId}
+                  onChange={(e) => setOwnerId(e.target.value)}
+                >
+                  <option value="">— بدون —</option>
+                  {(owners.data ?? []).map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.full_name}
+                    </option>
+                  ))}
+                </select>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <input
+                    className={inputClass}
+                    value={ownerName}
+                    onChange={(e) => setOwnerName(e.target.value)}
+                    placeholder="اسم المالك (اختياري)"
+                  />
+                  <input
+                    className={inputClass}
+                    value={ownerPhone}
+                    onChange={(e) => setOwnerPhone(e.target.value)}
+                    placeholder="جوال المالك (اختياري)"
+                    inputMode="tel"
+                    dir="ltr"
+                  />
+                </div>
+              </Field>
+            </div>
+          </SectionCard>
+        </>
+      ) : null}
+
+      {step === 1 ? (
+        <>
+          <SectionCard
+            title="السعر والوصف والنشر"
+            subtitle="السعر المعروض على الموقع، الوصف، رقم الواتساب وحالة الظهور."
+            icon={Check}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="السعر كنص للعرض">
+                <input
+                  className={inputClass}
+                  value={form.price_text}
+                  onChange={(e) => set({ price_text: e.target.value })}
+                  placeholder="35,000 ريال سنويًا"
+                />
+              </Field>
+              <Field label="السعر كرقم" hint="يُستخدم في الفرز والفلاتر">
+                <input
+                  className={inputClass}
+                  dir="ltr"
+                  inputMode="numeric"
+                  value={form.price_value}
+                  onChange={(e) => set({ price_value: e.target.value })}
+                />
+              </Field>
+              <Field label="رقم واتساب للتواصل">
+                <input
+                  className={inputClass}
+                  dir="ltr"
+                  value={form.whatsapp_number}
+                  onChange={(e) => set({ whatsapp_number: e.target.value })}
+                />
+              </Field>
+              <Field label="ترتيب الظهور">
+                <input
+                  className={inputClass}
+                  dir="ltr"
+                  inputMode="numeric"
+                  value={form.sort_order}
+                  onChange={(e) => set({ sort_order: e.target.value })}
+                />
+              </Field>
+              <Field label="وصف العقار" className="sm:col-span-2">
+                <textarea
+                  className={textareaClass}
+                  value={form.description}
+                  onChange={(e) => set({ description: e.target.value })}
+                />
+              </Field>
+              <div className="flex flex-wrap items-center gap-6 sm:col-span-2">
+                <span className="flex items-center gap-2 text-[12.5px] font-semibold">
+                  <Toggle
+                    label="مرئي على الموقع"
+                    checked={form.is_visible}
+                    onChange={(v) => set({ is_visible: v })}
+                  />
+                  مرئي على الموقع
+                </span>
+                <span className="flex items-center gap-2 text-[12.5px] font-semibold">
+                  <Toggle
+                    label="عقار مميز"
+                    checked={form.is_featured}
+                    onChange={(v) => set({ is_featured: v })}
+                  />
+                  عقار مميز
+                </span>
+                <span className="flex items-center gap-2 text-[12.5px] font-semibold">
+                  <Toggle
+                    label="بحاجة مراجعة"
+                    checked={form.needs_review}
+                    onChange={(v) => set({ needs_review: v })}
+                  />
+                  بحاجة مراجعة
+                </span>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="الموقع على الخريطة"
+            subtitle="أدخل رابط خرائط جوجل أو الإحداثيات ليظهر العقار على خريطة الموقع."
+            icon={MapPin}
+          >
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="رابط خرائط جوجل" className="sm:col-span-3">
+                <input
+                  className={inputClass}
+                  dir="ltr"
+                  value={form.map_url}
+                  onChange={(e) => set({ map_url: e.target.value })}
+                  placeholder="https://maps.google.com/..."
+                />
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  {geoBusy
+                    ? "جارٍ تحديد الموقع من الرابط..."
+                    : "الصق الرابط وسيتم ملء خط الطول والعرض تلقائياً."}
+                </p>
+              </Field>
+
+              <Field label="خط العرض (Latitude)">
+                <input
+                  className={inputClass}
+                  dir="ltr"
+                  value={form.latitude}
+                  onChange={(e) => set({ latitude: e.target.value })}
+                  placeholder="26.3260"
+                />
+              </Field>
+              <Field label="خط الطول (Longitude)">
+                <input
+                  className={inputClass}
+                  dir="ltr"
+                  value={form.longitude}
+                  onChange={(e) => set({ longitude: e.target.value })}
+                  placeholder="43.9750"
+                />
+              </Field>
+              <div className="sm:col-span-3">
+                <LocationPicker
+                  latitude={form.latitude ? Number(form.latitude) : null}
+                  longitude={form.longitude ? Number(form.longitude) : null}
+                  onChange={(latitude, longitude) =>
+                    set({ latitude: String(latitude), longitude: String(longitude) })
+                  }
                 />
               </div>
-            </Field>
-          ))}
-        </div>
-      </SectionCard>
+            </div>
+          </SectionCard>
+        </>
+      ) : null}
 
-      {form.purpose === "sale" ? (
-        <SectionCard
-          title="الضمانات المقدمة في هذا العقار"
-          subtitle="علّم على الضمانات المتوفرة، وعدّل الاسم أو عدد السنوات عند الحاجة لتظهر للزوار في صفحة العقار."
-          icon={ShieldCheck}
-        >
-          {!id ? (
-            <p className="rounded-xl border border-dashed border-border p-6 text-center text-[13px] text-muted-foreground">
-              احفظ عقار البيع أولًا ثم أضِف الضمانات.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              <ul className="space-y-3">
-                {(guarantees.data ?? []).map((g) => (
-                  <li key={g.id} className="overflow-hidden rounded-xl border border-border bg-card">
-                    <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-                      <label className="flex items-center gap-2 text-[12.5px] font-bold text-foreground">
-                        <input type="checkbox" checked readOnly className="size-4 accent-primary" />
-                        متضمن
-                      </label>
-                      <span className="text-[12px] font-bold text-foreground">{g.name}</span>
+      {step === 2 ? (
+        <>
+          <SectionCard
+            title="روابط التواصل والوسائط"
+            subtitle="كل منصة لها خانة مستقلة، وتظهر بأيقونتها الحقيقية في صفحة العقار على الموقع."
+            icon={Film}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              {SOCIAL_PLATFORMS.map((p) => (
+                <Field key={p.key} label={p.label}>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="grid size-9 shrink-0 place-items-center rounded-lg border border-border"
+                      style={{ color: p.color }}
+                    >
+                      <SocialGlyph platform={p.key} />
+                    </span>
+                    <input
+                      className={inputClass}
+                      dir="ltr"
+                      value={form[p.key]}
+                      onChange={(e) => set({ [p.key]: e.target.value } as Partial<FormState>)}
+                      placeholder={p.placeholder}
+                    />
+                  </div>
+                </Field>
+              ))}
+            </div>
+          </SectionCard>
+
+          {form.purpose === "sale" ? (
+            <SectionCard
+              title="الضمانات المقدمة في هذا العقار"
+              subtitle="علّم على الضمانات المتوفرة، وعدّل الاسم أو عدد السنوات عند الحاجة لتظهر للزوار في صفحة العقار."
+              icon={ShieldCheck}
+            >
+              {!id ? (
+                <p className="rounded-xl border border-dashed border-border p-6 text-center text-[13px] text-muted-foreground">
+                  احفظ عقار البيع أولًا ثم أضِف الضمانات.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <ul className="space-y-3">
+                    {(guarantees.data ?? []).map((g) => (
+                      <li
+                        key={g.id}
+                        className="overflow-hidden rounded-xl border border-border bg-card"
+                      >
+                        <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+                          <label className="flex items-center gap-2 text-[12.5px] font-bold text-foreground">
+                            <input
+                              type="checkbox"
+                              checked
+                              readOnly
+                              className="size-4 accent-primary"
+                            />
+                            متضمن
+                          </label>
+                          <span className="text-[12px] font-bold text-foreground">{g.name}</span>
+                          <button
+                            type="button"
+                            aria-label="حذف الضمان"
+                            onClick={() => removeGuarantee.mutate(g.id)}
+                            className="grid size-8 place-items-center rounded-md text-destructive transition hover:bg-destructive/10"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                        <div className="grid gap-3 p-4 sm:grid-cols-2">
+                          <Field label="الضمان">
+                            <input
+                              className={inputClass}
+                              defaultValue={g.name}
+                              onBlur={(e) => {
+                                const name = e.target.value.trim();
+                                if (name && name !== g.name)
+                                  updateGuarantee.mutate({ rowId: g.id, name });
+                              }}
+                            />
+                          </Field>
+                          <Field label="السنوات">
+                            <input
+                              type="number"
+                              min={0}
+                              defaultValue={g.years}
+                              onBlur={(e) =>
+                                updateGuarantee.mutate({
+                                  rowId: g.id,
+                                  years: Number(e.target.value) || 0,
+                                })
+                              }
+                              className={inputClass}
+                            />
+                          </Field>
+                        </div>
+                      </li>
+                    ))}
+                    {!guarantees.data?.length ? (
+                      <li className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
+                        لا توجد ضمانات مضافة
+                      </li>
+                    ) : null}
+                  </ul>
+
+                  <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-4">
+                    <p className="mb-3 text-[12.5px] font-bold text-foreground">
+                      الضمانات الأساسية
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {[
+                        ...DEFAULT_SALE_GUARANTEES,
+                        ...(presets.data ?? []).map((p) => ({
+                          name: p.name,
+                          years: p.default_years ?? 0,
+                        })),
+                      ]
+                        .filter(
+                          (preset, index, list) =>
+                            list.findIndex((item) => item.name === preset.name) === index,
+                        )
+                        .map((preset) => {
+                          const selected = (guarantees.data ?? []).some(
+                            (g) => g.name === preset.name,
+                          );
+                          return (
+                            <label
+                              key={preset.name}
+                              className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-3 transition ${selected ? "border-primary bg-accent" : "border-border bg-card hover:border-primary/50"}`}
+                            >
+                              <span className="flex items-center gap-2 text-[12.5px] font-semibold text-foreground">
+                                <input
+                                  type="checkbox"
+                                  checked={selected}
+                                  disabled={addGuarantee.isPending || removeGuarantee.isPending}
+                                  onChange={() => {
+                                    const row = (guarantees.data ?? []).find(
+                                      (g) => g.name === preset.name,
+                                    );
+                                    if (row) removeGuarantee.mutate(row.id);
+                                    else addGuarantee.mutate(preset);
+                                  }}
+                                  className="size-4 accent-primary"
+                                />
+                                {preset.name}
+                              </span>
+                              <span className="text-[11px] font-bold text-primary">
+                                {preset.years} سنوات
+                              </span>
+                            </label>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  <div className="grid items-end gap-3 border-t border-border pt-5 sm:grid-cols-[1fr_180px_auto]">
+                    <Field label="الضمان">
+                      <input
+                        className={inputClass}
+                        value={guaranteeName}
+                        onChange={(e) => setGuaranteeName(e.target.value)}
+                        placeholder="مثال: ضمان السباكة"
+                      />
+                    </Field>
+                    <Field label="السنوات">
+                      <input
+                        className={inputClass}
+                        type="number"
+                        min={0}
+                        value={guaranteeYears}
+                        onChange={(e) => setGuaranteeYears(e.target.value)}
+                        placeholder="عدد السنوات"
+                      />
+                    </Field>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        addGuarantee.mutate({
+                          name: guaranteeName.trim(),
+                          years: Number(guaranteeYears) || 0,
+                        })
+                      }
+                      disabled={addGuarantee.isPending}
+                      className="inline-flex h-10 items-center justify-center gap-1 rounded-lg bg-primary px-5 text-[12.5px] font-bold text-primary-foreground disabled:opacity-50"
+                    >
+                      <Plus className="size-4" />
+                      إضافة ضمان
+                    </button>
+                  </div>
+                </div>
+              )}
+            </SectionCard>
+          ) : null}
+        </>
+      ) : null}
+
+      {step === 3 ? (
+        <>
+          <SectionCard
+            title="صور العقار"
+            subtitle="ارفع الصور من جهازك أو أضِف روابط جاهزة، وحدّد الصورة الرئيسية."
+            icon={ImageIcon}
+          >
+            {!id ? (
+              <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
+                احفظ بيانات العقار أولًا لتفعيل رفع الصور والفيديوهات.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <label className="grid cursor-pointer place-items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-10 text-center">
+                  {uploading ? (
+                    <Loader2 className="size-6 animate-spin text-primary" />
+                  ) : (
+                    <UploadCloud className="size-6 text-muted-foreground" />
+                  )}
+                  <span className="text-[13px] text-muted-foreground">
+                    اسحب الصور هنا أو اضغط للاختيار
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => uploadFiles(e.target.files)}
+                  />
+                </label>
+
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    className={inputClass + " max-w-md flex-1"}
+                    dir="ltr"
+                    placeholder="أو ألصق رابط صورة https://"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    disabled={!imageUrl.trim() || addImage.isPending}
+                    onClick={() => addImage.mutate(imageUrl.trim())}
+                    className="inline-flex h-10 items-center gap-1 rounded-lg border border-border px-4 text-[12.5px] font-semibold text-primary disabled:opacity-50"
+                  >
+                    <Plus className="size-4" />
+                    إضافة
+                  </button>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {(images.data ?? []).map((img, imageIndex) => (
+                    <figure
+                      key={img.id}
+                      draggable
+                      onDragStart={() => setDragImageId(img.id)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => {
+                        if (dragImageId)
+                          reorderImages.mutate({ sourceId: dragImageId, targetId: img.id });
+                        setDragImageId(null);
+                      }}
+                      className="overflow-hidden rounded-xl border border-border bg-card"
+                    >
                       <button
                         type="button"
-                        aria-label="حذف الضمان"
-                        onClick={() => removeGuarantee.mutate(g.id)}
-                        className="grid size-8 place-items-center rounded-md text-destructive transition hover:bg-destructive/10"
+                        onClick={() => setLightboxIndex(imageIndex)}
+                        className="group relative block w-full cursor-zoom-in"
+                      >
+                        <img
+                          src={img.url}
+                          alt="صورة العقار"
+                          className="h-32 w-full object-cover"
+                          style={{ objectPosition: `${img.focal_x ?? 50}% ${img.focal_y ?? 50}%` }}
+                        />
+                        <span className="absolute end-2 top-2 grid size-8 place-items-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                          <Maximize2 className="size-4" />
+                        </span>
+                      </button>
+                      <div className="space-y-1 border-t border-border px-3 py-2">
+                        <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">
+                          موضع أفقي
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            defaultValue={img.focal_x ?? 50}
+                            className="min-w-0 flex-1 accent-primary"
+                            onPointerUp={(event) =>
+                              updateFocalPoint.mutate({
+                                rowId: img.id,
+                                focalX: Number(event.currentTarget.value),
+                                focalY: img.focal_y ?? 50,
+                              })
+                            }
+                          />
+                        </label>
+                        <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">
+                          موضع رأسي
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            defaultValue={img.focal_y ?? 50}
+                            className="min-w-0 flex-1 accent-primary"
+                            onPointerUp={(event) =>
+                              updateFocalPoint.mutate({
+                                rowId: img.id,
+                                focalX: img.focal_x ?? 50,
+                                focalY: Number(event.currentTarget.value),
+                              })
+                            }
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setEditingImage({ id: img.id, url: img.url })}
+                          className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-border py-1 text-[11px] font-semibold text-primary"
+                        >
+                          <Crop className="size-3.5" /> قص وتكبير
+                        </button>
+                      </div>
+                      <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-[12px]">
+                        <GripVertical
+                          className="size-4 cursor-grab text-muted-foreground"
+                          aria-label="اسحب لترتيب الصورة"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setCover.mutate(img.id)}
+                          className={
+                            img.is_cover
+                              ? "font-bold text-primary"
+                              : "font-semibold text-muted-foreground"
+                          }
+                        >
+                          {img.is_cover ? "الصورة الرئيسية" : "تعيين كرئيسية"}
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="حذف الصورة"
+                          onClick={() =>
+                            removeMedia.mutate({ table: "property_images", rowId: img.id })
+                          }
+                          className="text-destructive"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </div>
+            )}
+          </SectionCard>
+          {editingImage ? (
+            <ImageEditorDialog
+              open
+              url={editingImage.url}
+              onClose={() => setEditingImage(null)}
+              onSave={async (file) => {
+                await replaceImage.mutateAsync({ rowId: editingImage.id, file });
+              }}
+            />
+          ) : null}
+          {lightboxIndex != null ? (
+            <Lightbox
+              images={(images.data ?? []).map((row) => row.url)}
+              index={lightboxIndex}
+              onIndexChange={setLightboxIndex}
+              onClose={() => setLightboxIndex(null)}
+            />
+          ) : null}
+
+          <SectionCard
+            title="فيديوهات العقار"
+            subtitle="روابط فيديو من YouTube أو TikTok أو أي مصدر آخر."
+            icon={Film}
+          >
+            {!id ? (
+              <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
+                احفظ بيانات العقار أولًا.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                  <input
+                    className={inputClass}
+                    dir="ltr"
+                    placeholder="رابط الفيديو"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                  />
+                  <input
+                    className={inputClass}
+                    placeholder="عنوان الفيديو (اختياري)"
+                    value={videoTitle}
+                    onChange={(e) => setVideoTitle(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addVideo.mutate()}
+                    disabled={addVideo.isPending}
+                    className="inline-flex h-10 items-center gap-1 rounded-lg border border-border px-4 text-[12.5px] font-semibold text-primary disabled:opacity-50"
+                  >
+                    <Plus className="size-4" />
+                    إضافة
+                  </button>
+                </div>
+                <ul className="divide-y divide-border rounded-xl border border-border">
+                  {(videos.data ?? []).map((video) => (
+                    <li
+                      key={video.id}
+                      className="flex items-center justify-between gap-3 px-4 py-2.5"
+                    >
+                      <span className="truncate text-[12.5px]" dir="ltr">
+                        {video.title ? `${video.title} — ` : ""}
+                        {video.url}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="حذف الفيديو"
+                        onClick={() =>
+                          removeMedia.mutate({ table: "property_videos", rowId: video.id })
+                        }
+                        className="text-destructive"
                       >
                         <Trash2 className="size-4" />
                       </button>
-                    </div>
-                    <div className="grid gap-3 p-4 sm:grid-cols-2">
-                      <Field label="الضمان">
-                        <input
-                          className={inputClass}
-                          defaultValue={g.name}
-                          onBlur={(e) => {
-                            const name = e.target.value.trim();
-                            if (name && name !== g.name) updateGuarantee.mutate({ rowId: g.id, name });
-                          }}
-                        />
-                      </Field>
-                      <Field label="السنوات">
-                        <input
-                          type="number"
-                          min={0}
-                          defaultValue={g.years}
-                          onBlur={(e) =>
-                            updateGuarantee.mutate({ rowId: g.id, years: Number(e.target.value) || 0 })
-                          }
-                          className={inputClass}
-                        />
-                      </Field>
-                    </div>
-                  </li>
-                ))}
-                {!guarantees.data?.length ? (
-                  <li className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-                    لا توجد ضمانات مضافة
-                  </li>
-                ) : null}
-              </ul>
-
-              <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-4">
-                <p className="mb-3 text-[12.5px] font-bold text-foreground">الضمانات الأساسية</p>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {[...DEFAULT_SALE_GUARANTEES, ...(presets.data ?? []).map((p) => ({ name: p.name, years: p.default_years ?? 0 }))]
-                    .filter((preset, index, list) => list.findIndex((item) => item.name === preset.name) === index)
-                    .map((preset) => {
-                      const selected = (guarantees.data ?? []).some((g) => g.name === preset.name);
-                      return (
-                        <label
-                          key={preset.name}
-                          className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-3 transition ${selected ? "border-primary bg-accent" : "border-border bg-card hover:border-primary/50"}`}
-                        >
-                          <span className="flex items-center gap-2 text-[12.5px] font-semibold text-foreground">
-                            <input
-                              type="checkbox"
-                              checked={selected}
-                              disabled={addGuarantee.isPending || removeGuarantee.isPending}
-                              onChange={() => {
-                                const row = (guarantees.data ?? []).find((g) => g.name === preset.name);
-                                if (row) removeGuarantee.mutate(row.id);
-                                else addGuarantee.mutate(preset);
-                              }}
-                              className="size-4 accent-primary"
-                            />
-                            {preset.name}
-                          </span>
-                          <span className="text-[11px] font-bold text-primary">{preset.years} سنوات</span>
-                        </label>
-                      );
-                    })}
-                </div>
+                    </li>
+                  ))}
+                  {!videos.data?.length ? (
+                    <li className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">
+                      لا توجد فيديوهات
+                    </li>
+                  ) : null}
+                </ul>
               </div>
+            )}
+          </SectionCard>
 
-              <div className="grid items-end gap-3 border-t border-border pt-5 sm:grid-cols-[1fr_180px_auto]">
-                <Field label="الضمان">
-                  <input
-                    className={inputClass}
-                    value={guaranteeName}
-                    onChange={(e) => setGuaranteeName(e.target.value)}
-                    placeholder="مثال: ضمان السباكة"
-                  />
-                </Field>
-                <Field label="السنوات">
-                  <input
-                    className={inputClass}
-                    type="number"
-                    min={0}
-                    value={guaranteeYears}
-                    onChange={(e) => setGuaranteeYears(e.target.value)}
-                    placeholder="عدد السنوات"
-                  />
-                </Field>
-                <button
-                  type="button"
-                  onClick={() =>
-                    addGuarantee.mutate({
-                      name: guaranteeName.trim(),
-                      years: Number(guaranteeYears) || 0,
-                    })
-                  }
-                  disabled={addGuarantee.isPending}
-                  className="inline-flex h-10 items-center justify-center gap-1 rounded-lg bg-primary px-5 text-[12.5px] font-bold text-primary-foreground disabled:opacity-50"
-                >
-                  <Plus className="size-4" />
-                  إضافة ضمان
-                </button>
-              </div>
-            </div>
-          )}
-        </SectionCard>
+          <SectionCard
+            title="ملاحظات داخلية"
+            subtitle="لا تظهر على الموقع العام — للفريق فقط."
+            icon={NotebookPen}
+          >
+            <textarea
+              className={textareaClass}
+              value={form.internal_notes}
+              onChange={(e) => set({ internal_notes: e.target.value })}
+              placeholder="ملاحظات عن المالك، التفاوض، أو تفاصيل تشغيلية."
+            />
+          </SectionCard>
+        </>
       ) : null}
-      </> : null}
-
-
-
-      {step === 3 ? <>
-      <SectionCard
-        title="صور العقار"
-        subtitle="ارفع الصور من جهازك أو أضِف روابط جاهزة، وحدّد الصورة الرئيسية."
-        icon={ImageIcon}
-      >
-        {!id ? (
-          <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-            احفظ بيانات العقار أولًا لتفعيل رفع الصور والفيديوهات.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            <label className="grid cursor-pointer place-items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-10 text-center">
-              {uploading ? (
-                <Loader2 className="size-6 animate-spin text-primary" />
-              ) : (
-                <UploadCloud className="size-6 text-muted-foreground" />
-              )}
-              <span className="text-[13px] text-muted-foreground">
-                اسحب الصور هنا أو اضغط للاختيار
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => uploadFiles(e.target.files)}
-              />
-            </label>
-
-            <div className="flex flex-wrap gap-2">
-              <input
-                className={inputClass + " max-w-md flex-1"}
-                dir="ltr"
-                placeholder="أو ألصق رابط صورة https://"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-              />
-              <button
-                type="button"
-                disabled={!imageUrl.trim() || addImage.isPending}
-                onClick={() => addImage.mutate(imageUrl.trim())}
-                className="inline-flex h-10 items-center gap-1 rounded-lg border border-border px-4 text-[12.5px] font-semibold text-primary disabled:opacity-50"
-              >
-                <Plus className="size-4" />
-                إضافة
-              </button>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {(images.data ?? []).map((img, imageIndex) => (
-                <figure
-                  key={img.id}
-                  draggable
-                  onDragStart={() => setDragImageId(img.id)}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={() => {
-                    if (dragImageId) reorderImages.mutate({ sourceId: dragImageId, targetId: img.id });
-                    setDragImageId(null);
-                  }}
-                  className="overflow-hidden rounded-xl border border-border bg-card"
-                >
-                  <button type="button" onClick={() => setLightboxIndex(imageIndex)} className="group relative block w-full cursor-zoom-in">
-                    <img src={img.url} alt="صورة العقار" className="h-32 w-full object-cover" style={{ objectPosition: `${img.focal_x ?? 50}% ${img.focal_y ?? 50}%` }} />
-                    <span className="absolute end-2 top-2 grid size-8 place-items-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover:opacity-100"><Maximize2 className="size-4" /></span>
-                  </button>
-                  <div className="space-y-1 border-t border-border px-3 py-2">
-                    <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">موضع أفقي<input type="range" min="0" max="100" defaultValue={img.focal_x ?? 50} className="min-w-0 flex-1 accent-primary" onPointerUp={(event) => updateFocalPoint.mutate({ rowId: img.id, focalX: Number(event.currentTarget.value), focalY: img.focal_y ?? 50 })} /></label>
-                    <label className="flex items-center gap-2 text-[10.5px] text-muted-foreground">موضع رأسي<input type="range" min="0" max="100" defaultValue={img.focal_y ?? 50} className="min-w-0 flex-1 accent-primary" onPointerUp={(event) => updateFocalPoint.mutate({ rowId: img.id, focalX: img.focal_x ?? 50, focalY: Number(event.currentTarget.value) })} /></label>
-                    <button
-                      type="button"
-                      onClick={() => setEditingImage({ id: img.id, url: img.url })}
-                      className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-border py-1 text-[11px] font-semibold text-primary"
-                    >
-                      <Crop className="size-3.5" /> قص وتكبير
-                    </button>
-                  </div>
-                  <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-[12px]">
-                    <GripVertical className="size-4 cursor-grab text-muted-foreground" aria-label="اسحب لترتيب الصورة" />
-                    <button
-                      type="button"
-                      onClick={() => setCover.mutate(img.id)}
-                      className={
-                        img.is_cover ? "font-bold text-primary" : "font-semibold text-muted-foreground"
-                      }
-                    >
-                      {img.is_cover ? "الصورة الرئيسية" : "تعيين كرئيسية"}
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="حذف الصورة"
-                      onClick={() =>
-                        removeMedia.mutate({ table: "property_images", rowId: img.id })
-                      }
-                      className="text-destructive"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-          </div>
-        )}
-      </SectionCard>
-      {editingImage ? (
-        <ImageEditorDialog
-          open
-          url={editingImage.url}
-          onClose={() => setEditingImage(null)}
-          onSave={async (file) => {
-            await replaceImage.mutateAsync({ rowId: editingImage.id, file });
-          }}
-        />
-      ) : null}
-      {lightboxIndex != null ? <Lightbox images={(images.data ?? []).map((row) => row.url)} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} /> : null}
-
-      <SectionCard
-        title="فيديوهات العقار"
-        subtitle="روابط فيديو من YouTube أو TikTok أو أي مصدر آخر."
-        icon={Film}
-      >
-        {!id ? (
-          <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-            احفظ بيانات العقار أولًا.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-              <input
-                className={inputClass}
-                dir="ltr"
-                placeholder="رابط الفيديو"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-              />
-              <input
-                className={inputClass}
-                placeholder="عنوان الفيديو (اختياري)"
-                value={videoTitle}
-                onChange={(e) => setVideoTitle(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => addVideo.mutate()}
-                disabled={addVideo.isPending}
-                className="inline-flex h-10 items-center gap-1 rounded-lg border border-border px-4 text-[12.5px] font-semibold text-primary disabled:opacity-50"
-              >
-                <Plus className="size-4" />
-                إضافة
-              </button>
-            </div>
-            <ul className="divide-y divide-border rounded-xl border border-border">
-              {(videos.data ?? []).map((video) => (
-                <li key={video.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                  <span className="truncate text-[12.5px]" dir="ltr">
-                    {video.title ? `${video.title} — ` : ""}
-                    {video.url}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="حذف الفيديو"
-                    onClick={() => removeMedia.mutate({ table: "property_videos", rowId: video.id })}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </li>
-              ))}
-              {!videos.data?.length ? (
-                <li className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-                  لا توجد فيديوهات
-                </li>
-              ) : null}
-            </ul>
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard
-        title="ملاحظات داخلية"
-        subtitle="لا تظهر على الموقع العام — للفريق فقط."
-        icon={NotebookPen}
-      >
-        <textarea
-          className={textareaClass}
-          value={form.internal_notes}
-          onChange={(e) => set({ internal_notes: e.target.value })}
-          placeholder="ملاحظات عن المالك، التفاوض، أو تفاصيل تشغيلية."
-        />
-      </SectionCard>
-      </> : null}
 
       <div className="flex flex-wrap items-center justify-center gap-3 pb-4">
-        {step > 0 ? <button type="button" onClick={() => setStep((current) => current - 1)} className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-[13px] font-semibold"><ChevronRight className="size-4" />السابق</button> : null}
-        {step < steps.length - 1 ? <button type="button" onClick={() => setStep((current) => current + 1)} className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-[13px] font-bold text-primary-foreground">التالي<ChevronLeft className="size-4" /></button> : null}
+        {step > 0 ? (
+          <button
+            type="button"
+            onClick={() => setStep((current) => current - 1)}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-[13px] font-semibold"
+          >
+            <ChevronRight className="size-4" />
+            السابق
+          </button>
+        ) : null}
+        {step < steps.length - 1 ? (
+          <button
+            type="button"
+            onClick={() => setStep((current) => current + 1)}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-[13px] font-bold text-primary-foreground"
+          >
+            التالي
+            <ChevronLeft className="size-4" />
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => save.mutate()}
           disabled={save.isPending}
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-[13.5px] font-bold text-primary-foreground disabled:opacity-60"
         >
-          {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+          {save.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Check className="size-4" />
+          )}
           {id ? "حفظ التعديلات" : "حفظ العقار"}
         </button>
         {requestId && step === steps.length - 1 ? (
-          <button type="button" onClick={() => approve.mutate()} disabled={approve.isPending || save.isPending} className="inline-flex items-center gap-2 rounded-lg bg-success px-6 py-3 text-[13.5px] font-bold text-success-foreground disabled:opacity-60">
-            {approve.isPending ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+          <button
+            type="button"
+            onClick={() => approve.mutate()}
+            disabled={approve.isPending || save.isPending}
+            className="inline-flex items-center gap-2 rounded-lg bg-success px-6 py-3 text-[13.5px] font-bold text-success-foreground disabled:opacity-60"
+          >
+            {approve.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <ShieldCheck className="size-4" />
+            )}
             اعتماد ونشر العقار
           </button>
         ) : null}
         <Link
-          to="/properties"
+          to={form.building_id ? "/buildings" : "/properties"}
           className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-3 text-[13.5px] font-semibold"
         >
           <ArrowRight className="size-4" />
-          رجوع
+          {form.building_id ? "رجوع للعمارات" : "رجوع"}
         </Link>
       </div>
     </>

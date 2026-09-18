@@ -6,8 +6,9 @@ import heroImage from "@/assets/hero-sale.jpg";
 import heroVideo from "@/assets/video-sale.mp4.asset.json";
 import { InstallmentCalculator } from "@/components/site/InstallmentCalculator";
 import { PageHero } from "@/components/site/PageHero";
-import { BuildingGrid } from "@/components/site/BuildingCard";
+import { BuildingCard } from "@/components/site/BuildingCard";
 import { PropertyGrid } from "@/components/site/PropertyCard";
+import { PropertyCard } from "@/components/site/PropertyCard";
 import { PropertyMapSection } from "@/components/site/PropertyMapSection";
 import { Reveal } from "@/components/site/Reveal";
 import { SiteLayout } from "@/components/site/SiteLayout";
@@ -92,7 +93,12 @@ function SalePage() {
             placeholder="ابحث بالاسم أو رقم العقار"
             className={selectClass}
           />
-          <select value={type} onChange={(e) => setType(e.target.value)} aria-label="نوع العقار" className={selectClass}>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            aria-label="نوع العقار"
+            className={selectClass}
+          >
             <option value="">كل أنواع العقارات</option>
             {types.map((t) => (
               <option key={t} value={t}>
@@ -100,7 +106,12 @@ function SalePage() {
               </option>
             ))}
           </select>
-          <select value={district} onChange={(e) => setDistrict(e.target.value)} aria-label="الحي" className={selectClass}>
+          <select
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            aria-label="الحي"
+            className={selectClass}
+          >
             <option value="">كل الأحياء</option>
             {districts.map((d) => (
               <option key={d} value={d}>
@@ -115,30 +126,35 @@ function SalePage() {
             placeholder="أعلى سعر (ريال)"
             className={selectClass}
           />
-          <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="الترتيب" className={selectClass}>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            aria-label="الترتيب"
+            className={selectClass}
+          >
             <option value="featured">المميزة أولاً</option>
             <option value="price-asc">الأقل سعراً</option>
             <option value="price-desc">الأعلى سعراً</option>
           </select>
         </Reveal>
 
-        {(buildings.data ?? []).length ? (
-          <div className="mb-10 space-y-4">
-            <h2 className="text-[20px] font-bold text-foreground">العمارات</h2>
-            <BuildingGrid buildings={buildings.data ?? []} />
-          </div>
-        ) : null}
-
         <p className="mb-4 text-[13px] text-muted-foreground">
-          النتائج: {filtered.length.toLocaleString("ar-SA")} عقار
+          النتائج: {(filtered.length + (buildings.data?.length ?? 0)).toLocaleString("ar-SA")} عقار
         </p>
-
-        <PropertyGrid
-          properties={filtered}
-          loading={isLoading}
-          error={error}
-          emptyText="لا توجد عقارات بيع مطابقة حالياً."
-        />
+        {isLoading || buildings.isLoading ? (
+          <PropertyGrid properties={undefined} loading />
+        ) : error || buildings.error ? (
+          <PropertyGrid properties={undefined} error={error ?? buildings.error} />
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {(buildings.data ?? []).map((building) => (
+              <BuildingCard key={`building-${building.id}`} building={building} />
+            ))}
+            {filtered.map((property) => (
+              <PropertyCard key={`property-${property.id}`} property={property} />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-14">

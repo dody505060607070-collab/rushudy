@@ -1,12 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Building2, DoorOpen, Eye, EyeOff, Layers, Loader2, MapPin, Pencil, Plus, Printer, Sparkles, Trash2, Wallet } from "lucide-react";
+import {
+  Building2,
+  DoorOpen,
+  Eye,
+  EyeOff,
+  FileText,
+  Layers,
+  Loader2,
+  MapPin,
+  Pencil,
+  Plus,
+  Printer,
+  Sparkles,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/kit/Chip";
 import { EmptyState } from "@/components/kit/EmptyState";
-import { Field, GhostButton, Modal, PrimaryButton, inputClass, textareaClass } from "@/components/kit/Modal";
+import {
+  Field,
+  GhostButton,
+  Modal,
+  PrimaryButton,
+  inputClass,
+  textareaClass,
+} from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +76,15 @@ type UnitProperty = {
   building_id: string | null;
   purpose: string;
   rent_period: string | null;
+  unit_id: string | null;
+};
+
+type UnitContract = {
+  id: string;
+  contract_number: string;
+  property_id: string | null;
+  status: string;
+  tenant: { full_name: string; phone: string | null } | null;
 };
 
 type FormState = {
@@ -64,7 +95,6 @@ type FormState = {
   district: string;
   address: string;
   description: string;
-  cover_url: string;
   floors_count: string;
   sort_order: string;
   owner_id: string;
@@ -81,7 +111,6 @@ const emptyForm: FormState = {
   district: "",
   address: "",
   description: "",
-  cover_url: "",
   floors_count: "4",
   sort_order: "0",
   owner_id: "",
@@ -102,7 +131,9 @@ function BuildingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("buildings")
-        .select("id, code, name, city, district, address, description, purpose, floors_count, cover_url, is_visible, sort_order, owner_id, latitude, longitude")
+        .select(
+          "id, code, name, city, district, address, description, purpose, floors_count, cover_url, is_visible, sort_order, owner_id, latitude, longitude",
+        )
         .order("sort_order")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -115,7 +146,9 @@ function BuildingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("id, code, name, floor, status, is_visible, price_value, building_id, purpose, rent_period")
+        .select(
+          "id, code, name, floor, status, is_visible, price_value, building_id, purpose, rent_period, unit_id",
+        )
         .not("building_id", "is", null)
         .order("floor")
         .order("name");
@@ -123,6 +156,29 @@ function BuildingsPage() {
       return (data ?? []) as UnitProperty[];
     },
   });
+
+  const contracts = useQuery({
+    queryKey: ["building-unit-contracts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contracts")
+        .select("id, contract_number, property_id, status, tenant:tenant_id(full_name, phone)")
+        .not("property_id", "is", null)
+        .in("status", ["active", "draft"])
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as UnitContract[];
+    },
+  });
+
+  const contractByProperty = useMemo(() => {
+    const map = new Map<string, UnitContract>();
+    for (const contract of contracts.data ?? []) {
+      if (contract.property_id && !map.has(contract.property_id))
+        map.set(contract.property_id, contract);
+    }
+    return map;
+  }, [contracts.data]);
 
   const owners = useQuery({
     queryKey: ["contacts", "owners", "buildings"],
@@ -211,7 +267,6 @@ function BuildingsPage() {
       district: row.district ?? "",
       address: row.address ?? "",
       description: row.description ?? "",
-      cover_url: row.cover_url ?? "",
       floors_count: row.floors_count != null ? String(row.floors_count) : "",
       sort_order: String(row.sort_order ?? 0),
       owner_id: row.owner_id ?? "",
@@ -233,7 +288,6 @@ function BuildingsPage() {
         district: form.district.trim() || null,
         address: form.address.trim() || null,
         description: form.description.trim() || null,
-        cover_url: form.cover_url.trim() || null,
         floors_count: form.floors_count ? Number(form.floors_count) : null,
         sort_order: Number(form.sort_order) || 0,
         owner_id: form.owner_id || null,
@@ -256,10 +310,43 @@ function BuildingsPage() {
 
   const toggleVisible = useMutation({
     mutationFn: async (row: BuildingRow) => {
-      const { error } = await supabase.from("buildings").update({ is_visible: !row.is_visible }).eq("id", row.id);
+      const { error } = await supabase
+        .from("buildings")
+        .update({ is_visible: !row.is_visible })
+        .eq("id", row.id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["buildings", "admin"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cycleUnitStatus = useMutation({
+    mutationFn: async (unit: UnitProperty) => {
+      const next =
+        unit.status === "available" ? (unit.purpose === "sale" ? "sold" : "rented") : "available";
+      const propertyUpdate = await supabase
+        .from("properties")
+        .update({ status: next })
+        .eq("id", unit.id);
+      if (propertyUpdate.error) throw propertyUpdate.error;
+      if (unit.unit_id) {
+        const unitUpdate = await supabase
+          .from("units")
+          .update({ status: next })
+          .eq("id", unit.unit_id);
+        if (unitUpdate.error) throw unitUpdate.error;
+      }
+      return next;
+    },
+    onSuccess: (next) => {
+      toast.success(
+        next === "available"
+          ? "تمت إعادة الوحدة إلى متاحة"
+          : "تم تعليم الوحدة بالأحمر كمؤجرة أو مبيعة",
+      );
+      void qc.invalidateQueries({ queryKey: ["building-units"] });
+      void qc.invalidateQueries({ queryKey: ["public-buildings"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -302,11 +389,18 @@ function BuildingsPage() {
       {buildings.isLoading ? (
         <div className="grid gap-4">
           {[0, 1].map((i) => (
-            <div key={i} className="h-40 animate-pulse rounded-2xl border border-border bg-muted/50" />
+            <div
+              key={i}
+              className="h-40 animate-pulse rounded-2xl border border-border bg-muted/50"
+            />
           ))}
         </div>
       ) : !rows.length ? (
-        <EmptyState icon={Building2} title="لا توجد عمارات بعد" description="ابدأ بإضافة عمارة ثم وزّع شققها على الأدوار." />
+        <EmptyState
+          icon={Building2}
+          title="لا توجد عمارات بعد"
+          description="ابدأ بإضافة عمارة ثم وزّع شققها على الأدوار."
+        />
       ) : (
         <div className="grid w-full gap-4">
           {rows.map((b) => {
@@ -316,7 +410,9 @@ function BuildingsPage() {
               const key = (u.floor ?? "").trim() || "بدون دور";
               floors.set(key, [...(floors.get(key) ?? []), u]);
             }
-            const busy = list.filter((u) => u.status === "rented" || u.status === "sold" || u.status === "reserved").length;
+            const busy = list.filter(
+              (u) => u.status === "rented" || u.status === "sold" || u.status === "reserved",
+            ).length;
             const rate = list.length ? Math.round((busy / list.length) * 100) : 0;
             const expected = list.reduce((sum, u) => sum + monthlyValue(u), 0);
             const income = incomeByBuilding.get(b.id) ?? { due: 0, collected: 0 };
@@ -331,13 +427,15 @@ function BuildingsPage() {
                       </span>
                     </h2>
                     <p className="mt-1 text-[12.5px] text-muted-foreground">
-                      {[b.district, b.city, b.address].filter(Boolean).join(" — ") || "بدون عنوان"} •{" "}
-                      {(b.floors_count ?? floors.size).toLocaleString("ar-SA")} أدوار •{" "}
+                      {[b.district, b.city, b.address].filter(Boolean).join(" — ") || "بدون عنوان"}{" "}
+                      • {(b.floors_count ?? floors.size).toLocaleString("ar-SA")} أدوار •{" "}
                       {list.length.toLocaleString("ar-SA")} شقة
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Chip tone={b.is_visible ? "success" : "neutral"}>{b.is_visible ? "معروضة" : "مخفية"}</Chip>
+                    <Chip tone={b.is_visible ? "success" : "neutral"}>
+                      {b.is_visible ? "معروضة" : "مخفية"}
+                    </Chip>
                     <button
                       type="button"
                       onClick={() => toggleVisible.mutate(b)}
@@ -346,6 +444,13 @@ function BuildingsPage() {
                     >
                       {b.is_visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
+                    <Link
+                      to="/property-form"
+                      search={{ id: "", buildingId: b.id }}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-[12.5px] font-semibold text-primary-foreground"
+                    >
+                      <Plus className="size-4" /> إضافة شقة
+                    </Link>
                     {b.latitude != null && b.longitude != null ? (
                       <a
                         href={`https://www.google.com/maps?q=${b.latitude},${b.longitude}`}
@@ -383,7 +488,12 @@ function BuildingsPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (window.confirm(`حذف العمارة «${b.name}»؟ الشقق لن تُحذف لكنها ستفقد ارتباطها.`)) remove.mutate(b);
+                        if (
+                          window.confirm(
+                            `حذف العمارة «${b.name}»؟ الشقق لن تُحذف لكنها ستفقد ارتباطها.`,
+                          )
+                        )
+                          remove.mutate(b);
                       }}
                       className="grid size-9 place-items-center rounded-lg border border-border text-destructive hover:bg-destructive/10"
                       title="حذف"
@@ -394,10 +504,31 @@ function BuildingsPage() {
                 </header>
 
                 <div className="grid gap-3 border-b border-border p-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <Metric label="نسبة الإشغال" value={`${rate}%`} hint={`${busy.toLocaleString("ar-SA")} مشغولة من ${list.length.toLocaleString("ar-SA")}`} bar={rate} />
-                  <Metric label="الدخل الشهري المتوقع" value={money(expected)} hint="من أسعار الشقق المعروضة" />
-                  <Metric label="مستحق هذا الشهر" value={money(income.due)} hint="دفعات العقود المرتبطة" />
-                  <Metric label="المحصّل هذا الشهر" value={money(income.collected)} hint={income.due ? `نسبة التحصيل ${Math.round((income.collected / income.due) * 100)}%` : "لا توجد دفعات"} />
+                  <Metric
+                    label="نسبة الإشغال"
+                    value={`${rate}%`}
+                    hint={`${busy.toLocaleString("ar-SA")} مشغولة من ${list.length.toLocaleString("ar-SA")}`}
+                    bar={rate}
+                  />
+                  <Metric
+                    label="الدخل الشهري المتوقع"
+                    value={money(expected)}
+                    hint="من أسعار الشقق المعروضة"
+                  />
+                  <Metric
+                    label="مستحق هذا الشهر"
+                    value={money(income.due)}
+                    hint="دفعات العقود المرتبطة"
+                  />
+                  <Metric
+                    label="المحصّل هذا الشهر"
+                    value={money(income.collected)}
+                    hint={
+                      income.due
+                        ? `نسبة التحصيل ${Math.round((income.collected / income.due) * 100)}%`
+                        : "لا توجد دفعات"
+                    }
+                  />
                 </div>
 
                 {list.length ? (
@@ -409,31 +540,41 @@ function BuildingsPage() {
                       .sort((a, b2) => a[0].localeCompare(b2[0], "ar", { numeric: true }))
                       .map(([floor, items]) => (
                         <div key={floor} className="flex flex-wrap items-center gap-2">
-                          <span className="w-24 shrink-0 text-[12px] text-muted-foreground">{floor}</span>
+                          <span className="w-24 shrink-0 text-[12px] text-muted-foreground">
+                            {floor}
+                          </span>
                           {items.map((u) => (
-                            <Link
+                            <button
                               key={u.id}
-                              to="/property-form"
-                              search={{ id: u.id }}
+                              type="button"
+                              onClick={() => cycleUnitStatus.mutate(u)}
                               title={`${u.name} — ${unitStatusLabels[u.status] ?? u.status}`}
                               className={`grid h-9 min-w-14 place-items-center rounded-lg border px-2 text-[11.5px] font-bold ${statusClass(u.status)}`}
                             >
                               {u.name.replace(/[^\d]/g, "") || u.code || "—"}
-                            </Link>
+                            </button>
                           ))}
                         </div>
                       ))}
                     <p className="flex flex-wrap gap-4 pt-1 text-[11.5px] text-muted-foreground">
-                      <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-success/60" /> متاحة</span>
-                      <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-warning/60" /> محجوزة</span>
-                      <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-destructive/60" /> مؤجرة/مبيعة</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-3 rounded bg-success/60" /> متاحة
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-3 rounded bg-warning/60" /> محجوزة
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-3 rounded bg-destructive/60" /> مؤجرة/مبيعة
+                      </span>
                     </p>
                   </div>
                 ) : null}
 
                 <div className="space-y-4 p-4">
                   {!list.length ? (
-                    <p className="text-[13px] text-muted-foreground">لا توجد شقق بعد — استخدم «توليد الشقق».</p>
+                    <p className="text-[13px] text-muted-foreground">
+                      لا توجد شقق بعد — استخدم «توليد الشقق».
+                    </p>
                   ) : (
                     [...floors.entries()]
                       .sort((a, b2) => a[0].localeCompare(b2[0], "ar", { numeric: true }))
@@ -446,22 +587,59 @@ function BuildingsPage() {
                             </span>
                           </p>
                           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                            {items.map((u) => (
-                              <Link
-                                key={u.id}
-                                to="/property-form"
-                                search={{ id: u.id }}
-                                className="flex items-center justify-between gap-2 rounded-lg border border-border p-3 text-[12.5px] transition-colors hover:bg-muted"
-                              >
-                                <span className="flex min-w-0 items-center gap-2">
-                                  <DoorOpen className="size-4 shrink-0 text-primary/70" />
-                                  <span className="truncate font-semibold text-foreground">{u.name}</span>
-                                </span>
-                                <Chip tone={u.is_visible ? "success" : "neutral"}>
-                                  {u.is_visible ? "معروضة" : "مخفية"}
-                                </Chip>
-                              </Link>
-                            ))}
+                            {items.map((u) => {
+                              const contract = contractByProperty.get(u.id);
+                              return (
+                                <div key={u.id} className="rounded-lg border border-border p-3">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <Link
+                                      to="/property-form"
+                                      search={{ id: u.id }}
+                                      className="flex min-w-0 items-center gap-2"
+                                    >
+                                      <DoorOpen className="size-4 shrink-0 text-primary/70" />
+                                      <span className="truncate text-[12.5px] font-semibold text-foreground">
+                                        {u.name}
+                                      </span>
+                                    </Link>
+                                    <Chip
+                                      tone={
+                                        u.status === "available"
+                                          ? "success"
+                                          : u.status === "reserved"
+                                            ? "warning"
+                                            : "danger"
+                                      }
+                                    >
+                                      {unitStatusLabels[u.status] ?? u.status}
+                                    </Chip>
+                                  </div>
+                                  {contract ? (
+                                    <div className="mt-2 space-y-1 border-t border-border pt-2 text-[11.5px] text-muted-foreground">
+                                      <p className="flex items-center gap-1.5">
+                                        <UserRound className="size-3.5 text-primary" />
+                                        {contract.tenant?.full_name ?? "بدون مستأجر محدد"}
+                                      </p>
+                                      <Link
+                                        to="/contracts/$contractId"
+                                        params={{ contractId: contract.id }}
+                                        className="flex items-center gap-1.5 font-semibold text-primary hover:underline"
+                                      >
+                                        <FileText className="size-3.5" /> العقد{" "}
+                                        {contract.contract_number}
+                                      </Link>
+                                    </div>
+                                  ) : (
+                                    <Link
+                                      to="/contracts"
+                                      className="mt-2 block border-t border-border pt-2 text-[11.5px] font-semibold text-primary hover:underline"
+                                    >
+                                      إضافة عقد ومستأجر لهذه الوحدة
+                                    </Link>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       ))
@@ -490,19 +668,36 @@ function BuildingsPage() {
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="اسم العمارة" required>
-            <input className={inputClass} value={form.name} onChange={(e) => set({ name: e.target.value })} />
+            <input
+              className={inputClass}
+              value={form.name}
+              onChange={(e) => set({ name: e.target.value })}
+            />
           </Field>
           <Field label="كود العمارة" hint="يُستخدم في رابط العمارة على الموقع">
-            <input className={inputClass} dir="ltr" value={form.code} onChange={(e) => set({ code: e.target.value })} />
+            <input
+              className={inputClass}
+              dir="ltr"
+              value={form.code}
+              onChange={(e) => set({ code: e.target.value })}
+            />
           </Field>
           <Field label="الغرض">
-            <select className={inputClass} value={form.purpose} onChange={(e) => set({ purpose: e.target.value })}>
+            <select
+              className={inputClass}
+              value={form.purpose}
+              onChange={(e) => set({ purpose: e.target.value })}
+            >
               <option value="rent">إيجار</option>
               <option value="sale">بيع</option>
             </select>
           </Field>
           <Field label="المالك">
-            <select className={inputClass} value={form.owner_id} onChange={(e) => set({ owner_id: e.target.value })}>
+            <select
+              className={inputClass}
+              value={form.owner_id}
+              onChange={(e) => set({ owner_id: e.target.value })}
+            >
               <option value="">بدون مالك</option>
               {(owners.data ?? []).map((o) => (
                 <option key={o.id} value={o.id}>
@@ -512,13 +707,25 @@ function BuildingsPage() {
             </select>
           </Field>
           <Field label="المدينة">
-            <input className={inputClass} value={form.city} onChange={(e) => set({ city: e.target.value })} />
+            <input
+              className={inputClass}
+              value={form.city}
+              onChange={(e) => set({ city: e.target.value })}
+            />
           </Field>
           <Field label="الحي">
-            <input className={inputClass} value={form.district} onChange={(e) => set({ district: e.target.value })} />
+            <input
+              className={inputClass}
+              value={form.district}
+              onChange={(e) => set({ district: e.target.value })}
+            />
           </Field>
           <Field label="العنوان التفصيلي" className="sm:col-span-2">
-            <input className={inputClass} value={form.address} onChange={(e) => set({ address: e.target.value })} />
+            <input
+              className={inputClass}
+              value={form.address}
+              onChange={(e) => set({ address: e.target.value })}
+            />
           </Field>
           <Field label="عدد الأدوار">
             <input
@@ -537,13 +744,20 @@ function BuildingsPage() {
             />
           </Field>
           <Field label="خط العرض (Latitude)" hint="من رابط خرائط جوجل">
-            <input className={inputClass} dir="ltr" value={form.latitude} onChange={(e) => set({ latitude: e.target.value })} />
+            <input
+              className={inputClass}
+              dir="ltr"
+              value={form.latitude}
+              onChange={(e) => set({ latitude: e.target.value })}
+            />
           </Field>
           <Field label="خط الطول (Longitude)">
-            <input className={inputClass} dir="ltr" value={form.longitude} onChange={(e) => set({ longitude: e.target.value })} />
-          </Field>
-          <Field label="رابط صورة الغلاف" className="sm:col-span-2" hint="اتركه فارغًا لاستخدام صورة أول شقة">
-            <input className={inputClass} dir="ltr" value={form.cover_url} onChange={(e) => set({ cover_url: e.target.value })} />
+            <input
+              className={inputClass}
+              dir="ltr"
+              value={form.longitude}
+              onChange={(e) => set({ longitude: e.target.value })}
+            />
           </Field>
           <Field label="وصف العمارة" className="sm:col-span-2">
             <textarea
@@ -600,14 +814,27 @@ function monthlyValue(unit: UnitProperty) {
 }
 
 /** بطاقة مؤشر صغيرة. */
-function Metric({ label, value, hint, bar }: { label: string; value: string; hint?: string; bar?: number }) {
+function Metric({
+  label,
+  value,
+  hint,
+  bar,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  bar?: number;
+}) {
   return (
     <div className="rounded-lg border border-border bg-muted/20 p-3">
       <p className="text-[11.5px] text-muted-foreground">{label}</p>
       <p className="mt-1 text-[14px] font-bold text-foreground">{value}</p>
       {typeof bar === "number" ? (
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(bar, 100)}%` }} />
+          <div
+            className="h-full rounded-full bg-primary"
+            style={{ width: `${Math.min(bar, 100)}%` }}
+          />
         </div>
       ) : null}
       {hint ? <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p> : null}
@@ -669,7 +896,15 @@ function GeneratorModal({
       const start = Number(startFloor) || 1;
       const priceValue = price ? Number(price) : null;
 
-      const unitsPayload: { building_id: string; owner_id: string | null; unit_number: string; unit_type: string; floor: string; status: string; is_rentable: boolean }[] = [];
+      const unitsPayload: {
+        building_id: string;
+        owner_id: string | null;
+        unit_number: string;
+        unit_type: string;
+        floor: string;
+        status: string;
+        is_rentable: boolean;
+      }[] = [];
       const meta: { floorLabel: string; unitNumber: string }[] = [];
       for (let f = 0; f < floorsCount; f += 1) {
         const floorNo = start + f;
@@ -689,7 +924,10 @@ function GeneratorModal({
         }
       }
 
-      const insertedUnits = await supabase.from("units").insert(unitsPayload).select("id, unit_number");
+      const insertedUnits = await supabase
+        .from("units")
+        .insert(unitsPayload)
+        .select("id, unit_number");
       if (insertedUnits.error) throw insertedUnits.error;
       const unitIdByNumber = new Map((insertedUnits.data ?? []).map((u) => [u.unit_number, u.id]));
 
@@ -737,16 +975,36 @@ function GeneratorModal({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="عدد الأدوار" required>
-          <input type="number" className={inputClass} value={floors} onChange={(e) => setFloors(e.target.value)} />
+          <input
+            type="number"
+            className={inputClass}
+            value={floors}
+            onChange={(e) => setFloors(e.target.value)}
+          />
         </Field>
         <Field label="عدد الشقق في الدور" required>
-          <input type="number" className={inputClass} value={perFloor} onChange={(e) => setPerFloor(e.target.value)} />
+          <input
+            type="number"
+            className={inputClass}
+            value={perFloor}
+            onChange={(e) => setPerFloor(e.target.value)}
+          />
         </Field>
         <Field label="أول دور" hint="مثلاً 1 للدور الأول">
-          <input type="number" className={inputClass} value={startFloor} onChange={(e) => setStartFloor(e.target.value)} />
+          <input
+            type="number"
+            className={inputClass}
+            value={startFloor}
+            onChange={(e) => setStartFloor(e.target.value)}
+          />
         </Field>
         <Field label="سعر مبدئي لكل شقة (ريال)">
-          <input type="number" className={inputClass} value={price} onChange={(e) => setPrice(e.target.value)} />
+          <input
+            type="number"
+            className={inputClass}
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
         </Field>
         <Toggle label="عرض الشقق على الموقع فورًا" checked={visible} onChange={setVisible} />
       </div>

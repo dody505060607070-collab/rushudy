@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Building2, DoorOpen, Layers, MapPin, Printer, Video } from "lucide-react";
 
 import { SiteLayout } from "@/components/site/SiteLayout";
+import fixedBuildingCover from "@/assets/hero-rent.jpg";
 import {
   buildingCover,
   buildingOccupancy,
@@ -25,10 +26,18 @@ export const Route = createFileRoute("/buildings/$code")({
       { property: "og:title", content: `عمارة ${params.code} | الرشودي للعقارات` },
       { property: "og:description", content: "استعرض شقق العمارة حسب الدور مع الصور والأسعار." },
       { property: "og:type", content: "article" },
-      { property: "og:url", content: `https://alrashudi.sa/buildings/${encodeURIComponent(params.code)}` },
+      {
+        property: "og:url",
+        content: `https://alrashudi.sa/buildings/${encodeURIComponent(params.code)}`,
+      },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: `https://alrashudi.sa/buildings/${encodeURIComponent(params.code)}` }],
+    links: [
+      {
+        rel: "canonical",
+        href: `https://alrashudi.sa/buildings/${encodeURIComponent(params.code)}`,
+      },
+    ],
   }),
   component: BuildingPage,
 });
@@ -75,13 +84,13 @@ function BuildingPage() {
     );
   }
 
-  const cover = buildingCover(building);
+  const cover = buildingCover(building) ?? fixedBuildingCover;
   const floors = groupUnitsByFloor(building.units ?? []);
   const occ = buildingOccupancy(building.units ?? []);
   const hasGeo = typeof building.latitude === "number" && typeof building.longitude === "number";
   const mapsHref = hasGeo
     ? `https://www.google.com/maps?q=${building.latitude},${building.longitude}`
-    : building.map_url ?? null;
+    : (building.map_url ?? null);
 
   return (
     <SiteLayout>
@@ -102,7 +111,8 @@ function BuildingPage() {
           <p className="mt-2 flex flex-wrap items-center gap-4 text-[13.5px] text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <MapPin className="size-4 text-primary/70" />
-              {[building.district, building.city, building.address].filter(Boolean).join(" — ") || "بريدة"}
+              {[building.district, building.city, building.address].filter(Boolean).join(" — ") ||
+                "بريدة"}
             </span>
             <span className="flex items-center gap-1.5">
               <Layers className="size-4 text-primary/70" />
@@ -120,7 +130,8 @@ function BuildingPage() {
         <div className="grid gap-4 rounded-2xl border border-border bg-card p-6 sm:grid-cols-[1fr_auto] sm:items-center print:hidden">
           <div className="space-y-2">
             <p className="text-[13px] font-bold text-foreground">
-              متاح الآن {occ.free.toLocaleString("ar-SA")} شقة من {occ.total.toLocaleString("ar-SA")} — نسبة الإشغال {occ.rate}%
+              متاح الآن {occ.free.toLocaleString("ar-SA")} شقة من{" "}
+              {occ.total.toLocaleString("ar-SA")} — نسبة الإشغال {occ.rate}%
             </p>
             <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
               <div className="h-full rounded-full bg-primary" style={{ width: `${occ.rate}%` }} />
@@ -139,7 +150,12 @@ function BuildingPage() {
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
             <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
               <h2 className="text-[14px] font-bold text-foreground">موقع العمارة</h2>
-              <a href={mapsHref} target="_blank" rel="noreferrer" className="text-[12.5px] font-semibold text-primary hover:underline">
+              <a
+                href={mapsHref}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[12.5px] font-semibold text-primary hover:underline"
+              >
                 افتح في خرائط جوجل
               </a>
             </div>
@@ -159,7 +175,9 @@ function BuildingPage() {
           <div className="space-y-3">
             {floors.map(([floor, units]) => (
               <div key={floor} className="flex flex-wrap items-center gap-2">
-                <span className="w-24 shrink-0 text-[12.5px] font-semibold text-muted-foreground">{floor}</span>
+                <span className="w-24 shrink-0 text-[12.5px] font-semibold text-muted-foreground">
+                  {floor}
+                </span>
                 {units.map((u) => (
                   <Link
                     key={u.id}
@@ -181,9 +199,15 @@ function BuildingPage() {
             ))}
           </div>
           <p className="mt-4 flex flex-wrap gap-4 text-[11.5px] text-muted-foreground">
-            <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-success/60" /> متاحة</span>
-            <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-warning/60" /> محجوزة</span>
-            <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-destructive/60" /> مؤجرة/مبيعة</span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-3 rounded bg-success/60" /> متاحة
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-3 rounded bg-warning/60" /> محجوزة
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-3 rounded bg-destructive/60" /> مؤجرة/مبيعة
+            </span>
           </p>
         </div>
 
@@ -217,7 +241,9 @@ function BuildingPage() {
                 const img = unitCover(unit);
                 const price =
                   unit.price_text ??
-                  (unit.price_value ? `${unit.price_value.toLocaleString("ar-SA")} ريال` : "السعر عند الطلب");
+                  (unit.price_value
+                    ? `${unit.price_value.toLocaleString("ar-SA")} ريال`
+                    : "السعر عند الطلب");
                 return (
                   <article
                     key={unit.id}
@@ -243,7 +269,9 @@ function BuildingPage() {
                       </div>
                     </Link>
                     <div className="space-y-2 p-4">
-                      <h3 className="line-clamp-1 text-[15px] font-bold text-foreground">{unit.name}</h3>
+                      <h3 className="line-clamp-1 text-[15px] font-bold text-foreground">
+                        {unit.name}
+                      </h3>
                       <p className="text-[12.5px] text-muted-foreground">
                         {[unit.property_type, unit.floor].filter(Boolean).join(" • ") || "شقة"}
                       </p>
