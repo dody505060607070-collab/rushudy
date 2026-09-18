@@ -1371,9 +1371,90 @@ function OwnerDetailPage() {
                 )}
               </article>
             );
-          })}
-          {!groups.length ? <Empty text="لا توجد عقارات أو وحدات مرتبطة" /> : null}
-        </div>
+          };
+          const sections = sectionsQuery.data?.sections ?? [];
+          const sectionItems = sectionsQuery.data?.items ?? [];
+          const sectionOfBuilding = new Map(
+            sectionItems
+              .filter((i) => i.item_type === "building")
+              .map((i) => [i.item_id, i.section_id] as const),
+          );
+          const unassigned = groups.filter(
+            (g) => g.key === "__standalone" || !sectionOfBuilding.has(g.key),
+          );
+          return (
+            <div className="grid w-full grid-cols-1 gap-5">
+              {sections.map((section) => {
+                const inSection = groups.filter(
+                  (g) => sectionOfBuilding.get(g.key) === section.id,
+                );
+                return (
+                  <section
+                    key={section.id}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => {
+                      if (!dragGroup) return;
+                      assignToSection.mutate({
+                        sectionId: section.id,
+                        itemType: dragGroup.type,
+                        itemId: dragGroup.id,
+                      });
+                    }}
+                    className="rounded-md border-2 border-dashed border-primary/40 bg-secondary/10 p-3"
+                  >
+                    <header className="flex flex-wrap items-center justify-between gap-2">
+                      <input
+                        defaultValue={section.name}
+                        onBlur={(event) => {
+                          if (event.target.value.trim() === section.name) return;
+                          renameSection.mutate({ id: section.id, name: event.target.value });
+                        }}
+                        className="h-9 rounded-md border border-transparent bg-transparent px-2 text-[14px] font-bold hover:border-border focus:border-border"
+                        aria-label="اسم القسم"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Chip tone="primary">{inSection.length} عنصر</Chip>
+                        <button
+                          type="button"
+                          onClick={() => deleteSection.mutate(section.id)}
+                          className="h-8 rounded-md border border-border px-3 text-[12px] font-semibold text-muted-foreground hover:text-destructive"
+                        >
+                          حذف القسم
+                        </button>
+                      </div>
+                    </header>
+                    <div className="mt-3 grid gap-4">
+                      {inSection.map(renderGroup)}
+                      {!inSection.length ? (
+                        <Empty text="اسحب عمارة أو عقارًا وأسقطه داخل هذا القسم" />
+                      ) : null}
+                    </div>
+                  </section>
+                );
+              })}
+
+              <section
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => {
+                  if (!dragGroup) return;
+                  assignToSection.mutate({
+                    sectionId: null,
+                    itemType: dragGroup.type,
+                    itemId: dragGroup.id,
+                  });
+                }}
+                className="rounded-md border border-border p-3"
+              >
+                <h3 className="text-[14px] font-bold">غير مصنّف</h3>
+                <div className="mt-3 grid gap-4">
+                  {unassigned.map(renderGroup)}
+                  {!groups.length ? <Empty text="لا توجد عقارات أو وحدات مرتبطة" /> : null}
+                </div>
+              </section>
+            </div>
+          );
+        })()}
+
       </RecordSection>
 
       <RecordSection
