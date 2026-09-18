@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { KillSwitchGate } from "@/components/KillSwitchGate";
 import { AuthProvider } from "@/hooks/useAuth";
+import { useSiteAnalytics } from "@/hooks/useSiteAnalytics";
 import { LanguageProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
 
@@ -141,6 +142,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useSiteAnalytics();
 
   // تسجيل عامل الخدمة لتفعيل العمل دون اتصال والتثبيت كأيقونة على الجهاز.
   useEffect(() => {

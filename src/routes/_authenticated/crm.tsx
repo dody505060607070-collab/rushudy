@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Contact, PhoneCall, Target, TrendingUp, Users } from "lucide-react";
 
+import { CrmIntelligence } from "@/components/crm/CrmIntelligence";
 import { Chip } from "@/components/kit/Chip";
 import { DataTable } from "@/components/kit/DataTable";
 import { EmptyState, formatCurrency, formatDate } from "@/components/kit/LiveTable";
@@ -95,7 +96,7 @@ function CrmPage() {
     <>
       <PageHero
         title="نظام CRM"
-        subtitle="مركز إدارة العلاقات: العملاء، الفرص، المتابعات ومؤشرات الأداء."
+        subtitle="مركز موحّد لمتابعة العملاء والموقع والفريق والفرص والأرباح والخسائر."
         icon={Users}
         stats={[
           { value: String(totals.data?.contacts ?? 0), label: "عميل مسجّل" },
@@ -103,6 +104,8 @@ function CrmPage() {
           { value: `${winRate}%`, label: "نسبة النجاح" },
         ]}
       />
+
+      <CrmIntelligence />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CrmCard
