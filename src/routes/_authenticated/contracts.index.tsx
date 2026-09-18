@@ -42,6 +42,9 @@ type Row = {
   source: string | null;
   owner_id: string | null;
   tenant_id: string | null;
+  building_id: string | null;
+  property_id: string | null;
+  unit_id: string | null;
   owner: { full_name: string } | null;
   tenant: { full_name: string } | null;
   created_at: string;
@@ -76,13 +79,14 @@ export const Route = createFileRoute("/_authenticated/contracts/")({
 });
 
 const SELECT =
-  "id, contract_number, contract_type, start_date, end_date, annual_rent, total_value, deposit, payment_cycle, payments_count, notes, status, source, owner_id, tenant_id, created_at, owner:owner_id(full_name), tenant:tenant_id(full_name)";
+  "id, contract_number, contract_type, start_date, end_date, annual_rent, total_value, deposit, payment_cycle, payments_count, notes, status, source, owner_id, tenant_id, building_id, property_id, unit_id, created_at, owner:owner_id(full_name), tenant:tenant_id(full_name)";
 
 type FormState = {
   contract_number: string;
   contract_type: string;
   owner_id: string;
   tenant_id: string;
+  property_id: string;
   start_date: string;
   end_date: string;
   annual_rent: string;
@@ -99,6 +103,7 @@ const emptyForm: FormState = {
   contract_type: "rent",
   owner_id: "",
   tenant_id: "",
+  property_id: "",
   start_date: "",
   end_date: "",
   annual_rent: "",
@@ -153,6 +158,27 @@ function ContractsPage() {
     },
   });
 
+  const unitProperties = useQuery({
+    queryKey: ["contract-unit-properties"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("id, name, code, building_id, unit_id, building:building_id(name)")
+        .not("building_id", "is", null)
+        .order("name")
+        .limit(1000);
+      if (error) throw error;
+      return (data ?? []) as unknown as {
+        id: string;
+        name: string;
+        code: string;
+        building_id: string | null;
+        unit_id: string | null;
+        building: { name: string } | null;
+      }[];
+    },
+  });
+
   const rows = data ?? [];
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
@@ -169,6 +195,7 @@ function ContractsPage() {
       contract_type: row.contract_type ?? "rent",
       owner_id: row.owner_id ?? "",
       tenant_id: row.tenant_id ?? "",
+      property_id: row.property_id ?? "",
       start_date: row.start_date ?? "",
       end_date: row.end_date ?? "",
       annual_rent: row.annual_rent != null ? String(row.annual_rent) : "",
@@ -189,6 +216,10 @@ function ContractsPage() {
         contract_type: form.contract_type,
         owner_id: form.owner_id || null,
         tenant_id: form.tenant_id || null,
+        property_id: form.property_id || null,
+        unit_id: unitProperties.data?.find((property) => property.id === form.property_id)?.unit_id ?? null,
+        building_id:
+          unitProperties.data?.find((property) => property.id === form.property_id)?.building_id ?? null,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
         annual_rent: form.annual_rent ? Number(form.annual_rent) : null,
@@ -228,6 +259,7 @@ function ContractsPage() {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
       queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["building-unit-contracts"] });
       toast.success(editing ? "تم تحديث العقد" : "تم إنشاء العقد");
       if (account && "username" in account && account.username) {
         toast.success(`تم تفعيل بوابة العميل — المستخدم ${account.username} وكلمة المرور ${account.password}`, {
@@ -545,6 +577,20 @@ function ContractsPage() {
               {(contacts.data ?? []).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.full_name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="العمارة والوحدة">
+            <select
+              className={inputClass}
+              value={form.property_id}
+              onChange={(e) => set({ property_id: e.target.value })}
+            >
+              <option value="">— اختر الوحدة —</option>
+              {(unitProperties.data ?? []).map((property) => (
+                <option key={property.id} value={property.id}>
+                  {[property.building?.name, property.name || property.code].filter(Boolean).join(" — ")}
                 </option>
               ))}
             </select>
