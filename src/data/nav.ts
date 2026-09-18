@@ -58,7 +58,10 @@ export const navGroups: NavGroup[] = [
   {
     label: "المهام",
     icon: CircleCheck,
-    items: [{ label: "كل المهام", to: "/tasks", countKey: "tasks", module: "tasks" }],
+    items: [
+      { label: "كل المهام", to: "/tasks", countKey: "tasks", module: "tasks" },
+      { label: "أهداف الموظفين", to: "/goals", module: "employees" },
+    ],
   },
   {
     label: "CRM",
