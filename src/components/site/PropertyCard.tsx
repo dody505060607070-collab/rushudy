@@ -24,6 +24,8 @@ export function PropertyCard({ property, comparing = false, onCompare }: { prope
             src={cover}
             alt={property.name}
             loading="lazy"
+            decoding="async"
+            fetchPriority="low"
             className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

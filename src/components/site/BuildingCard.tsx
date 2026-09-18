@@ -19,6 +19,8 @@ export function BuildingCard({ building }: { building: PublicBuilding }) {
             src={cover}
             alt={building.name}
             loading="lazy"
+            decoding="async"
+            fetchPriority="low"
             className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

@@ -1,8 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
 
-import { OwnerDashboard } from "@/components/portal/OwnerDashboard";
 import { getPortalOverview } from "@/lib/portal.functions";
+
+const OwnerDashboard = lazy(() =>
+  import("@/components/portal/OwnerDashboard").then((module) => ({ default: module.OwnerDashboard })),
+);
 
 export const Route = createFileRoute("/portal/")({
   head: () => ({
@@ -136,7 +140,11 @@ function PortalHome() {
         )}
       </section>
 
-      {data.isOwner ? <OwnerDashboard /> : null}
+      {data.isOwner ? (
+        <Suspense fallback={<p className="text-sm text-muted-foreground">جاري تحميل لوحة المالك…</p>}>
+          <OwnerDashboard />
+        </Suspense>
+      ) : null}
 
       {data.isOwner ? (
         <section className="space-y-3">

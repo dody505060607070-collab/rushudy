@@ -1,12 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Clock, Heart, Mail, MapPin, Menu, Phone, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import footerImage from "@/assets/bg-footer.jpg";
 import logoWhiteAsset from "@/assets/rashudi-logo-navbar.png.asset.json";
 import { FloatingActions, ScrollProgress } from "@/components/site/Chrome";
-import { AiWidget } from "@/components/site/AiWidget";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/hooks/useAuth";
 import { COMPANY_EMAIL, COMPANY_PHONE, publicSettingsQuery } from "@/lib/site-data";
@@ -20,6 +19,26 @@ const navLinks = [
   { to: "/about", label: "من نحن" },
   { to: "/contact", label: "تواصل معنا" },
 ] as const;
+
+const AiWidget = lazy(() =>
+  import("@/components/site/AiWidget").then((module) => ({ default: module.AiWidget })),
+);
+
+function DeferredAiWidget() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setReady(true), 1_500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (!ready) return null;
+  return (
+    <Suspense fallback={null}>
+      <AiWidget />
+    </Suspense>
+  );
+}
 
 function SiteHeader() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -258,7 +277,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
       <main className="flex-1">{children}</main>
       <SiteFooter />
       <FloatingActions />
-      <AiWidget />
+      <DeferredAiWidget />
       <CookieBanner />
     </div>
   );

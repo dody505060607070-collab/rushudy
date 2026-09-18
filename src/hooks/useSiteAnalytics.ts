@@ -19,7 +19,9 @@ export function useSiteAnalytics() {
   useEffect(() => {
     if (pathname.startsWith("/api/")) return;
     const timer = window.setTimeout(async () => {
-      const { data } = await supabase.auth.getUser();
+      // getSession reads the already-verified local session and avoids an extra
+      // auth network request on every public page navigation.
+      const { data } = await supabase.auth.getSession();
       const referrerHost = document.referrer
         ? (() => {
             try {
@@ -33,9 +35,9 @@ export function useSiteAnalytics() {
         visitor_id: getVisitorId(),
         path: pathname,
         referrer_host: referrerHost,
-        user_id: data.user?.id ?? null,
+        user_id: data.session?.user.id ?? null,
       });
-    }, 700);
+    }, 1_500);
     return () => window.clearTimeout(timer);
   }, [pathname]);
 }

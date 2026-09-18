@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Contact, PhoneCall, Target, TrendingUp, Users } from "lucide-react";
+import { lazy, Suspense } from "react";
 
-import { CrmIntelligence } from "@/components/crm/CrmIntelligence";
 import { Chip } from "@/components/kit/Chip";
 import { DataTable } from "@/components/kit/DataTable";
 import { EmptyState, formatCurrency, formatDate } from "@/components/kit/LiveTable";
@@ -10,6 +10,12 @@ import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import { stageLabels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
+
+const CrmIntelligence = lazy(() =>
+  import("@/components/crm/CrmIntelligence").then((module) => ({
+    default: module.CrmIntelligence,
+  })),
+);
 
 export const Route = createFileRoute("/_authenticated/crm")({
   head: () => ({
@@ -105,7 +111,9 @@ function CrmPage() {
         ]}
       />
 
-      <CrmIntelligence />
+      <Suspense fallback={<div className="surface-card p-10 text-center text-sm text-muted-foreground">جاري تحميل مركز التحليلات…</div>}>
+        <CrmIntelligence />
+      </Suspense>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CrmCard
