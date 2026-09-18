@@ -17,6 +17,7 @@ import { Route as CompanyProfileRouteImport } from './routes/company-profile'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as ListPropertyRouteImport } from './routes/list-property'
+import { Route as MaintenanceRequestRouteImport } from './routes/maintenance-request'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RentRouteImport } from './routes/rent'
@@ -121,6 +122,11 @@ const FavoritesRoute = FavoritesRouteImport.update({
 const ListPropertyRoute = ListPropertyRouteImport.update({
   id: '/list-property',
   path: '/list-property',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaintenanceRequestRoute = MaintenanceRequestRouteImport.update({
+  id: '/maintenance-request',
+  path: '/maintenance-request',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortalRoute = PortalRouteImport.update({
@@ -486,6 +492,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
+  '/maintenance-request': typeof MaintenanceRequestRoute
   '/portal': typeof PortalRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/rent': typeof RentRoute
@@ -561,6 +568,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
+  '/maintenance-request': typeof MaintenanceRequestRoute
   '/privacy': typeof PrivacyRoute
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
@@ -637,6 +645,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
+  '/maintenance-request': typeof MaintenanceRequestRoute
   '/portal': typeof PortalRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/rent': typeof RentRoute
@@ -714,6 +723,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/favorites'
     | '/list-property'
+    | '/maintenance-request'
     | '/portal'
     | '/privacy'
     | '/rent'
@@ -789,6 +799,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/favorites'
     | '/list-property'
+    | '/maintenance-request'
     | '/privacy'
     | '/rent'
     | '/sale'
@@ -864,6 +875,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/favorites'
     | '/list-property'
+    | '/maintenance-request'
     | '/portal'
     | '/privacy'
     | '/rent'
@@ -941,6 +953,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   FavoritesRoute: typeof FavoritesRoute
   ListPropertyRoute: typeof ListPropertyRoute
+  MaintenanceRequestRoute: typeof MaintenanceRequestRoute
   PortalRoute: typeof PortalRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RentRoute: typeof RentRoute
@@ -1012,6 +1025,13 @@ declare module '@tanstack/react-router' {
       path: '/list-property'
       fullPath: '/list-property'
       preLoaderRoute: typeof ListPropertyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/maintenance-request': {
+      id: '/maintenance-request'
+      path: '/maintenance-request'
+      fullPath: '/maintenance-request'
+      preLoaderRoute: typeof MaintenanceRequestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portal': {
@@ -1629,6 +1649,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   FavoritesRoute: FavoritesRoute,
   ListPropertyRoute: ListPropertyRoute,
+  MaintenanceRequestRoute: MaintenanceRequestRoute,
   PortalRoute: PortalRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RentRoute: RentRoute,

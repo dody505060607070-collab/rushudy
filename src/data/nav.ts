@@ -53,6 +53,7 @@ export const navGroups: NavGroup[] = [
       { label: "تنبيهات التجديد", to: "/renewals", module: "contracts" },
       { label: "الفواتير", to: "/invoices", countKey: "invoices", module: "invoices" },
       { label: "إدارة التذكيرات", to: "/reminders", countKey: "followups", module: "reminders" },
+      { label: "الصيانة", to: "/maintenance", module: "maintenance" },
     ],
   },
   {
