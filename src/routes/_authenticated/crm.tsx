@@ -66,9 +66,8 @@ function CrmPage() {
   const totals = useQuery({
     queryKey: ["crm", "totals"],
     queryFn: async () => {
-      const [contacts, leads, activities, openDeals] = await Promise.all([
+      const [contacts, activities, openDeals] = await Promise.all([
         supabase.from("contacts").select("*", { count: "exact", head: true }),
-        supabase.from("contacts").select("*", { count: "exact", head: true }).contains("roles", ["lead"]),
         supabase.from("crm_activities").select("*", { count: "exact", head: true }),
         supabase
           .from("opportunities")
@@ -77,7 +76,6 @@ function CrmPage() {
       ]);
       return {
         contacts: contacts.count ?? 0,
-        leads: leads.count ?? 0,
         activities: activities.count ?? 0,
         openDeals: openDeals.count ?? 0,
       };
