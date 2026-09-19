@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 
-import logoAsset from "@/assets/rashudi-logo.webp.asset.json";
+import logoAsset from "@/assets/rashudi-logo-white.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { getOwnerWorkspace, recordOwnerLogin } from "@/lib/owner-portal.functions";
 
@@ -78,7 +78,7 @@ function PortalLayout() {
       <header className="bg-primary text-primary-foreground shadow-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary-foreground/15 p-1">
+            <span className="grid h-14 w-14 place-items-center rounded-xl bg-primary-foreground/15 p-1.5">
               <img
                 src={logoAsset.url}
                 alt="الرشودي للعقارات"
