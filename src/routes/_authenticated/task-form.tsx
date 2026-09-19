@@ -166,18 +166,6 @@ function TaskFormPage() {
     },
   });
 
-  const properties = useQuery({
-    queryKey: ["properties", "select"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("id, name, code")
-        .order("created_at", { ascending: false })
-        .limit(300);
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
 
   const contacts = useQuery({
     queryKey: ["contacts", "select"],
