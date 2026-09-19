@@ -545,7 +545,15 @@ function ContractViewPage() {
                 <Row label="رقم الهوية" value={c.tenant?.national_id} />
                 <Row label="الجوال" value={c.tenant?.phone} />
                 <Row label="البريد" value={c.tenant?.email} />
+                <Row label="اسم المستخدم في بوابة المستأجر" value={c.contract_number} />
+                <Row label="كلمة المرور" value={c.tenant?.phone ?? "جوال المستأجر"} />
+                <div className="pt-2">
+                  <GhostButton onClick={() => tenantAccess.mutate()} disabled={tenantAccess.isPending}>
+                    تفعيل حساب المستأجر
+                  </GhostButton>
+                </div>
               </div>
+
             </Section>
           </div>
 
