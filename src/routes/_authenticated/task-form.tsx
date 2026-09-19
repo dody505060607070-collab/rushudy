@@ -508,22 +508,7 @@ function TaskFormPage() {
               onChange={(e) => set({ due_time: e.target.value })}
             />
           </Field>
-          <Field label="العقار المرتبط">
-            <select
-              className={inputClass}
-              value={form.property_id}
-              onChange={(e) => set({ property_id: e.target.value })}
-            >
-              <option value="">— بدون —</option>
-              {(properties.data ?? []).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code ? `${p.code} — ` : ""}
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="العميل المرتبط">
+          <Field label="العميل المرتبط (اختياري)">
             <select
               className={inputClass}
               value={form.contact_id}
