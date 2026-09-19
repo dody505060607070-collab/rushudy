@@ -178,7 +178,7 @@ function OwnerSectionPage() {
                   </article>
                 );
               })}
-              {!list.length ? <EmptyState text="لا توجد وحدات في هذه العمارة" /> : null}
+              {!list.length ? <EmptyState icon={Building2} title="لا توجد وحدات في هذه العمارة" /> : null}
             </div>
           </section>
         );
@@ -219,7 +219,7 @@ function OwnerSectionPage() {
       ) : null}
 
       {!sectionBuildings.length && !sectionProperties.length && !sectionUnits.length ? (
-        <EmptyState text="القسم فارغ" hint="ارجع لصفحة المالك واسحب العناصر داخل هذا القسم." />
+        <EmptyState icon={Building2} title="القسم فارغ" description="ارجع لصفحة المالك واسحب العناصر داخل هذا القسم." />
       ) : null}
     </>
   );
