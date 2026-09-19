@@ -96,7 +96,7 @@ const emptyForm: FormState = {
   email: "",
   national_id: "",
   address: "",
-  roles: ["buyer"],
+  roles: [],
   source: "",
   budget_min: "",
   budget_max: "",
@@ -178,7 +178,7 @@ function ClientsPage() {
         email: form.email.trim() || null,
         national_id: form.national_id.trim() || null,
         address: form.address.trim() || null,
-        roles: form.roles.length ? form.roles : ["buyer"],
+        roles: form.roles,
         source: form.source.trim() || null,
         budget_min: form.budget_min ? Number(form.budget_min) : null,
         budget_max: form.budget_max ? Number(form.budget_max) : null,
@@ -333,11 +333,15 @@ function ClientsPage() {
               header: "الأدوار",
               cell: (r) => (
                 <span className="flex flex-wrap gap-1">
-                  {(r.roles ?? []).filter((role) => role !== "lead").map((role) => (
-                    <Chip key={role} tone="primary">
-                      {contactRoleLabels[role] ?? role}
-                    </Chip>
-                  ))}
+                  {(r.roles ?? []).filter((role) => role !== "lead").length ? (
+                    (r.roles ?? []).filter((role) => role !== "lead").map((role) => (
+                      <Chip key={role} tone="primary">
+                        {contactRoleLabels[role] ?? role}
+                      </Chip>
+                    ))
+                  ) : (
+                    <Chip tone="neutral">عميل</Chip>
+                  )}
                 </span>
               ),
             },
