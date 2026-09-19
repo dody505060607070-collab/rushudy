@@ -249,14 +249,18 @@ function EmployeeGoalsPage() {
               ? Math.min(100, Math.round((achieved / Number(goal.target_value)) * 100))
               : 0;
             return (
-              <article key={goal.id} className="rounded-2xl border border-border bg-card p-5 shadow-card">
+              <article
+                key={goal.id}
+                className="rounded-2xl border border-border bg-card p-5 shadow-card"
+              >
                 <header className="mb-3 flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-[14px] font-bold text-foreground">
                       {goalTypes.find((g) => g.key === goal.goal_type)?.label ?? goal.goal_type}
                     </h3>
                     <p className="text-[12px] text-muted-foreground">
-                      {achieved.toLocaleString("ar-EG")} / {Number(goal.target_value).toLocaleString("ar-EG")}
+                      {achieved.toLocaleString("ar-EG")} /{" "}
+                      {Number(goal.target_value).toLocaleString("ar-EG")}
                       {" — "}
                       {goalPoints(goal, auto)} نقطة
                     </p>

@@ -70,6 +70,8 @@ import { Route as PortalUnitsRouteImport } from './routes/portal.units'
 import { Route as PropertiesCodeRouteImport } from './routes/properties.$code'
 import { Route as AuthenticatedContractsIndexRouteImport } from './routes/_authenticated/contracts.index'
 import { Route as AuthenticatedContractsContractIdRouteImport } from './routes/_authenticated/contracts.$contractId'
+import { Route as AuthenticatedGoalsIndexRouteImport } from './routes/_authenticated/goals.index'
+import { Route as AuthenticatedGoalsEmployeeIdRouteImport } from './routes/_authenticated/goals.$employeeId'
 import { Route as AuthenticatedInvoicesIndexRouteImport } from './routes/_authenticated/invoices.index'
 import { Route as AuthenticatedInvoicesInvoiceIdRouteImport } from './routes/_authenticated/invoices.$invoiceId'
 import { Route as AuthenticatedListingRequestsIndexRouteImport } from './routes/_authenticated/listing-requests.index'
@@ -401,6 +403,17 @@ const AuthenticatedContractsContractIdRoute =
     path: '/contracts/$contractId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedGoalsIndexRoute = AuthenticatedGoalsIndexRouteImport.update({
+  id: '/goals/',
+  path: '/goals/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedGoalsEmployeeIdRoute =
+  AuthenticatedGoalsEmployeeIdRouteImport.update({
+    id: '/goals/$employeeId',
+    path: '/goals/$employeeId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedInvoicesIndexRoute =
   AuthenticatedInvoicesIndexRouteImport.update({
     id: '/invoices/',
@@ -553,6 +566,7 @@ export interface FileRoutesByFullPath {
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal/': typeof PortalIndexRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
+  '/goals/$employeeId': typeof AuthenticatedGoalsEmployeeIdRoute
   '/invoices/$invoiceId': typeof AuthenticatedInvoicesInvoiceIdRoute
   '/listing-requests/$requestId': typeof AuthenticatedListingRequestsRequestIdRoute
   '/marketing/$marketerId': typeof AuthenticatedMarketingMarketerIdRoute
@@ -563,6 +577,7 @@ export interface FileRoutesByFullPath {
   '/portal/contracts/$contractId': typeof PortalContractsContractIdRoute
   '/portal/invoices/$invoiceId': typeof PortalInvoicesInvoiceIdRoute
   '/contracts/': typeof AuthenticatedContractsIndexRoute
+  '/goals/': typeof AuthenticatedGoalsIndexRoute
   '/invoices/': typeof AuthenticatedInvoicesIndexRoute
   '/listing-requests/': typeof AuthenticatedListingRequestsIndexRoute
   '/owners/': typeof AuthenticatedOwnersIndexRoute
@@ -630,6 +645,7 @@ export interface FileRoutesByTo {
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal': typeof PortalIndexRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
+  '/goals/$employeeId': typeof AuthenticatedGoalsEmployeeIdRoute
   '/invoices/$invoiceId': typeof AuthenticatedInvoicesInvoiceIdRoute
   '/listing-requests/$requestId': typeof AuthenticatedListingRequestsRequestIdRoute
   '/marketing/$marketerId': typeof AuthenticatedMarketingMarketerIdRoute
@@ -640,6 +656,7 @@ export interface FileRoutesByTo {
   '/portal/contracts/$contractId': typeof PortalContractsContractIdRoute
   '/portal/invoices/$invoiceId': typeof PortalInvoicesInvoiceIdRoute
   '/contracts': typeof AuthenticatedContractsIndexRoute
+  '/goals': typeof AuthenticatedGoalsIndexRoute
   '/invoices': typeof AuthenticatedInvoicesIndexRoute
   '/listing-requests': typeof AuthenticatedListingRequestsIndexRoute
   '/owners': typeof AuthenticatedOwnersIndexRoute
@@ -710,6 +727,7 @@ export interface FileRoutesById {
   '/properties/$code': typeof PropertiesCodeRoute
   '/portal/': typeof PortalIndexRoute
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
+  '/_authenticated/goals/$employeeId': typeof AuthenticatedGoalsEmployeeIdRoute
   '/_authenticated/invoices/$invoiceId': typeof AuthenticatedInvoicesInvoiceIdRoute
   '/_authenticated/listing-requests/$requestId': typeof AuthenticatedListingRequestsRequestIdRoute
   '/_authenticated/marketing/$marketerId': typeof AuthenticatedMarketingMarketerIdRoute
@@ -720,6 +738,7 @@ export interface FileRoutesById {
   '/portal/contracts/$contractId': typeof PortalContractsContractIdRoute
   '/portal/invoices/$invoiceId': typeof PortalInvoicesInvoiceIdRoute
   '/_authenticated/contracts/': typeof AuthenticatedContractsIndexRoute
+  '/_authenticated/goals/': typeof AuthenticatedGoalsIndexRoute
   '/_authenticated/invoices/': typeof AuthenticatedInvoicesIndexRoute
   '/_authenticated/listing-requests/': typeof AuthenticatedListingRequestsIndexRoute
   '/_authenticated/owners/': typeof AuthenticatedOwnersIndexRoute
@@ -790,6 +809,7 @@ export interface FileRouteTypes {
     | '/properties/$code'
     | '/portal/'
     | '/contracts/$contractId'
+    | '/goals/$employeeId'
     | '/invoices/$invoiceId'
     | '/listing-requests/$requestId'
     | '/marketing/$marketerId'
@@ -800,6 +820,7 @@ export interface FileRouteTypes {
     | '/portal/contracts/$contractId'
     | '/portal/invoices/$invoiceId'
     | '/contracts/'
+    | '/goals/'
     | '/invoices/'
     | '/listing-requests/'
     | '/owners/'
@@ -867,6 +888,7 @@ export interface FileRouteTypes {
     | '/properties/$code'
     | '/portal'
     | '/contracts/$contractId'
+    | '/goals/$employeeId'
     | '/invoices/$invoiceId'
     | '/listing-requests/$requestId'
     | '/marketing/$marketerId'
@@ -877,6 +899,7 @@ export interface FileRouteTypes {
     | '/portal/contracts/$contractId'
     | '/portal/invoices/$invoiceId'
     | '/contracts'
+    | '/goals'
     | '/invoices'
     | '/listing-requests'
     | '/owners'
@@ -946,6 +969,7 @@ export interface FileRouteTypes {
     | '/properties/$code'
     | '/portal/'
     | '/_authenticated/contracts/$contractId'
+    | '/_authenticated/goals/$employeeId'
     | '/_authenticated/invoices/$invoiceId'
     | '/_authenticated/listing-requests/$requestId'
     | '/_authenticated/marketing/$marketerId'
@@ -956,6 +980,7 @@ export interface FileRouteTypes {
     | '/portal/contracts/$contractId'
     | '/portal/invoices/$invoiceId'
     | '/_authenticated/contracts/'
+    | '/_authenticated/goals/'
     | '/_authenticated/invoices/'
     | '/_authenticated/listing-requests/'
     | '/_authenticated/owners/'
@@ -1420,6 +1445,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContractsContractIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/goals/': {
+      id: '/_authenticated/goals/'
+      path: '/goals'
+      fullPath: '/goals/'
+      preLoaderRoute: typeof AuthenticatedGoalsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/goals/$employeeId': {
+      id: '/_authenticated/goals/$employeeId'
+      path: '/goals/$employeeId'
+      fullPath: '/goals/$employeeId'
+      preLoaderRoute: typeof AuthenticatedGoalsEmployeeIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/invoices/': {
       id: '/_authenticated/invoices/'
       path: '/invoices'
@@ -1582,12 +1621,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTeamChatRoute: typeof AuthenticatedTeamChatRoute
   AuthenticatedWhatsappLinkRoute: typeof AuthenticatedWhatsappLinkRoute
   AuthenticatedContractsContractIdRoute: typeof AuthenticatedContractsContractIdRoute
+  AuthenticatedGoalsEmployeeIdRoute: typeof AuthenticatedGoalsEmployeeIdRoute
   AuthenticatedInvoicesInvoiceIdRoute: typeof AuthenticatedInvoicesInvoiceIdRoute
   AuthenticatedListingRequestsRequestIdRoute: typeof AuthenticatedListingRequestsRequestIdRoute
   AuthenticatedOwnersOwnerIdRoute: typeof AuthenticatedOwnersOwnerIdRoute
   AuthenticatedPaymentReminderPaymentIdRoute: typeof AuthenticatedPaymentReminderPaymentIdRoute
   AuthenticatedSupplyRequestsRequestIdRoute: typeof AuthenticatedSupplyRequestsRequestIdRoute
   AuthenticatedContractsIndexRoute: typeof AuthenticatedContractsIndexRoute
+  AuthenticatedGoalsIndexRoute: typeof AuthenticatedGoalsIndexRoute
   AuthenticatedInvoicesIndexRoute: typeof AuthenticatedInvoicesIndexRoute
   AuthenticatedListingRequestsIndexRoute: typeof AuthenticatedListingRequestsIndexRoute
   AuthenticatedOwnersIndexRoute: typeof AuthenticatedOwnersIndexRoute
@@ -1626,6 +1667,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTeamChatRoute: AuthenticatedTeamChatRoute,
   AuthenticatedWhatsappLinkRoute: AuthenticatedWhatsappLinkRoute,
   AuthenticatedContractsContractIdRoute: AuthenticatedContractsContractIdRoute,
+  AuthenticatedGoalsEmployeeIdRoute: AuthenticatedGoalsEmployeeIdRoute,
   AuthenticatedInvoicesInvoiceIdRoute: AuthenticatedInvoicesInvoiceIdRoute,
   AuthenticatedListingRequestsRequestIdRoute:
     AuthenticatedListingRequestsRequestIdRoute,
@@ -1635,6 +1677,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSupplyRequestsRequestIdRoute:
     AuthenticatedSupplyRequestsRequestIdRoute,
   AuthenticatedContractsIndexRoute: AuthenticatedContractsIndexRoute,
+  AuthenticatedGoalsIndexRoute: AuthenticatedGoalsIndexRoute,
   AuthenticatedInvoicesIndexRoute: AuthenticatedInvoicesIndexRoute,
   AuthenticatedListingRequestsIndexRoute:
     AuthenticatedListingRequestsIndexRoute,

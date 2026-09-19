@@ -28,7 +28,10 @@ export function monthRange(month: string) {
 export type AutoProgress = Record<string, number>;
 
 /** يحسب الإنجاز التلقائي للموظف خلال شهر محدد من بيانات النظام. */
-export async function computeAutoProgress(employeeId: string, month: string): Promise<AutoProgress> {
+export async function computeAutoProgress(
+  employeeId: string,
+  month: string,
+): Promise<AutoProgress> {
   const { start, end } = monthRange(month);
   const result: AutoProgress = { rent: 0, sale: 0, collection: 0, tasks: 0, leads: 0, visits: 0 };
 
@@ -67,9 +70,10 @@ export async function computeAutoProgress(employeeId: string, month: string): Pr
   result.visits = (visitsRes.data ?? []).length;
 
   for (const row of assigneesRes.data ?? []) {
-    const task = (Array.isArray(row.task) ? row.task[0] : row.task) as
-      | { status: string; submitted_at: string | null }
-      | null;
+    const task = (Array.isArray(row.task) ? row.task[0] : row.task) as {
+      status: string;
+      submitted_at: string | null;
+    } | null;
     if (!task?.submitted_at) continue;
     if (!["done", "approved"].includes(task.status)) continue;
     if (task.submitted_at >= start && task.submitted_at < end) result.tasks += 1;

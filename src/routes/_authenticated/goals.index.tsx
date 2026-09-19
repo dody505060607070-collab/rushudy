@@ -85,7 +85,9 @@ function GoalsIndexPage() {
     },
   });
 
-  const rows = summary.length ? summary : employees.map((e) => ({ ...e, goals: 0, pct: 0, points: 0 }));
+  const rows = summary.length
+    ? summary
+    : employees.map((e) => ({ ...e, goals: 0, pct: 0, points: 0 }));
   const totalPoints = rows.reduce((s, r) => s + r.points, 0);
 
   return (
