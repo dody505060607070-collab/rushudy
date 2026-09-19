@@ -12,6 +12,7 @@ import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { mithraa } from "@/integrations/mithraa/client";
 import { signInToMithraa, signOutMithraa, useMithraaSession } from "@/integrations/mithraa/useMithraaSession";
+import { clearMithraaLink, getMithraaLink, saveMithraaLink } from "@/lib/mithraa-link.functions";
 import { sendPushToUsers } from "@/lib/push.functions";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,24 @@ function TeamChatPage() {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const bottom = useRef<HTMLDivElement>(null);
+  const [autoDone, setAutoDone] = useState(false);
+  const autoTried = useRef(false);
+
+  // دخول تلقائي للشات المشترك ببيانات الربط المحفوظة (ربط مرة واحدة فقط)
+  useEffect(() => {
+    if (!ready || chatUserId || autoTried.current) return;
+    autoTried.current = true;
+    void (async () => {
+      try {
+        const link = await getMithraaLink();
+        if (link.linked) await signInToMithraa(link.email, link.password, profile?.full_name);
+      } catch {
+        /* لا شيء — تظهر بطاقة الربط */
+      } finally {
+        setAutoDone(true);
+      }
+    })();
+  }, [ready, chatUserId, profile?.full_name]);
 
   const messages = useQuery({
     queryKey: ["group-messages", activeChannel, chatUserId],
@@ -238,7 +257,7 @@ function TeamChatPage() {
         stats={[{ value: String(all.length), label: "رسالة" }]}
       />
 
-      {ready && !chatUserId ? <MithraaSignIn fullName={profile?.full_name} /> : null}
+      {ready && autoDone && !chatUserId ? <MithraaSignIn fullName={profile?.full_name} /> : null}
 
       <div className="surface-card flex h-[calc(100dvh-15rem)] min-h-[560px] flex-col overflow-hidden">
         <nav className="flex items-center gap-2 overflow-x-auto border-b border-border p-3">
@@ -251,7 +270,10 @@ function TeamChatPage() {
           {chatUserId ? (
             <button
               type="button"
-              onClick={() => void signOutMithraa()}
+              onClick={() => {
+                void clearMithraaLink().catch(() => undefined);
+                void signOutMithraa();
+              }}
               className="ms-auto shrink-0 rounded-full border border-border px-3 py-1.5 text-[11px] text-muted-foreground"
             >
               فصل حساب الشات
@@ -473,7 +495,8 @@ function MithraaSignIn({ fullName }: { fullName?: string | undefined }) {
     setBusy(true);
     try {
       await signInToMithraa(email.trim(), password, fullName);
-      toast.success("تم ربط حساب الشات المشترك");
+      await saveMithraaLink({ data: { email: email.trim(), password } });
+      toast.success("تم ربط حساب الشات المشترك — لن تحتاج الربط مرة أخرى");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -485,7 +508,7 @@ function MithraaSignIn({ fullName }: { fullName?: string | undefined }) {
     <div className="surface-card mb-4 space-y-3 p-4">
       <h2 className="text-sm font-bold">ربط حساب الشات المشترك — مرة واحدة فقط</h2>
       <p className="text-[12.5px] text-muted-foreground">
-        سجّل دخولك ببريدك وكلمة مرورك لدى منصة مثراء مرة واحدة، وسيبقى حسابك مرتبطًا على هذا الجهاز وتصلك قناتا «فريق الرشودي» و«الشات المشترك» تلقائيًا.
+        سجّل دخولك ببريدك وكلمة مرورك لدى منصة مثراء مرة واحدة فقط، ويُحفظ الربط بحسابك بشكل مشفّر، فتدخل بعدها مباشرة من أي جهاز وتعمل قناتا «فريق الرشودي» و«الشات المشترك» تلقائيًا.
       </p>
       <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
         <input className={inputClass} type="email" placeholder="البريد الإلكتروني" value={email} onChange={(e) => setEmail(e.target.value)} />
