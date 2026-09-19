@@ -399,7 +399,15 @@ function EmployeeGoalsPage() {
   );
 }
 
-function InfoRow({ label, value, ltr }: { label: string; value?: string | null; ltr?: boolean }) {
+function InfoRow({
+  label,
+  value,
+  ltr,
+}: {
+  label: string;
+  value?: string | null | undefined;
+  ltr?: boolean | undefined;
+}) {
   return (
     <div className="rounded-xl border border-border bg-muted/40 px-3 py-2">
       <p className="text-[11px] text-muted-foreground">{label}</p>
