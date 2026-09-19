@@ -157,15 +157,55 @@ export const issueClientAccess = createServerFn({ method: "POST" })
 export const resolveClientLogin = createServerFn({ method: "POST" })
   .inputValidator((input: { username: string; password?: string }) => input)
   .handler(async ({ data }) => {
+    const raw = String(data.username ?? "").trim();
     const username = clientUsername(data.username);
-    if (!username) return { email: null as string | null };
     const db = await admin();
-    const row = await db
-      .from("client_accounts")
-      .select("login_email")
-      .eq("username", username)
-      .maybeSingle();
-    if (row.data?.login_email) return { email: row.data.login_email };
+
+    // 1) رقم الهوية أو رقم العقد كما هو مسجَّل في الحسابات
+    for (const candidate of [username, raw].filter(Boolean)) {
+      const row = await db
+        .from("client_accounts")
+        .select("login_email")
+        .eq("username", candidate)
+        .maybeSingle();
+      if (row.data?.login_email) return { email: row.data.login_email };
+    }
+
+    // 2) دخول المستأجر برقم العقد + جوّاله
+    if (raw) {
+      const contract = await db
+        .from("contracts")
+        .select("id, tenant_id")
+        .eq("contract_number", raw)
+        .maybeSingle();
+      if (contract.data?.tenant_id) {
+        const tenant = await db
+          .from("contacts")
+          .select("id, phone, whatsapp")
+          .eq("id", contract.data.tenant_id)
+          .maybeSingle();
+        const expected = localPhone(tenant.data?.phone ?? tenant.data?.whatsapp);
+        if (expected && expected === localPhone(data.password)) {
+          const existing = await db
+            .from("client_accounts")
+            .select("login_email")
+            .eq("contact_id", contract.data.tenant_id)
+            .maybeSingle();
+          if (existing.data?.login_email) return { email: existing.data.login_email };
+          const { ensureTenantAccountForContract } = await import("./client-account.server");
+          const result = await ensureTenantAccountForContract(contract.data.id);
+          if (result.ok) {
+            const created = await db
+              .from("client_accounts")
+              .select("login_email")
+              .eq("contact_id", contract.data.tenant_id)
+              .maybeSingle();
+            return { email: created.data?.login_email ?? null };
+          }
+        }
+      }
+    }
+    if (!username) return { email: null as string | null };
 
     // إصلاح آمن للحسابات القديمة: لا ننشئ الحساب إلا إذا طابقت كلمة المرور جوال
     // مالك موجود بالفعل وله عقد مسجل في النظام.
@@ -801,4 +841,70 @@ export const removeOwnerDelegate = createServerFn({ method: "POST" })
     const del = await db.from("owner_delegates").delete().eq("id", data.id).eq("owner_id", contactId);
     if (del.error) throw new Error(del.error.message);
     return { ok: true as const };
+  });
+
+
+/** تفعيل حساب بوابة المستأجر لعقد محدد (اسم المستخدم = رقم العقد). */
+export const ensureTenantContractAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { contractId: string }) => input)
+  .handler(async ({ data }) => {
+    const { ensureTenantAccountForContract } = await import("./client-account.server");
+    return ensureTenantAccountForContract(data.contractId);
+  });
+
+/** بلاغات الصيانة الخاصة بالمستأجر الحالي. */
+export const getTenantMaintenance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db, contactId } = await currentClient(context.userId);
+    const contracts = await db
+      .from("contracts")
+      .select("id, contract_number, unit_id, property_id")
+      .eq("tenant_id", contactId);
+    const ids = (contracts.data ?? []).map((c) => c.id);
+    if (!ids.length) return { contracts: [], requests: [] };
+    const requests = await db
+      .from("maintenance_requests")
+      .select("id, category, description, status, priority, scheduled_at, created_at, contract_id")
+      .in("contract_id", ids)
+      .order("created_at", { ascending: false });
+    return { contracts: contracts.data ?? [], requests: requests.data ?? [] };
+  });
+
+/** إرسال بلاغ صيانة من بوابة المستأجر إلى المكتب. */
+export const createTenantMaintenance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: { contractId: string; category: string; description: string; priority?: string }) => input,
+  )
+  .handler(async ({ data, context }) => {
+    const { db, contactId } = await currentClient(context.userId);
+    if (!data.description.trim()) throw new Error("اكتب وصف المشكلة.");
+    const contract = await db
+      .from("contracts")
+      .select("id, unit_id, property_id")
+      .eq("id", data.contractId)
+      .eq("tenant_id", contactId)
+      .maybeSingle();
+    if (!contract.data) throw new Error("العقد غير متاح.");
+    const contact = await db
+      .from("contacts")
+      .select("full_name, phone, whatsapp")
+      .eq("id", contactId)
+      .single();
+
+    const insert = await db.from("maintenance_requests").insert({
+      contract_id: contract.data.id,
+      unit_id: contract.data.unit_id,
+      property_id: contract.data.property_id,
+      category: data.category || "general",
+      description: data.description.trim(),
+      priority: data.priority || "normal",
+      status: "new",
+      reporter_name: contact.data?.full_name ?? "مستأجر",
+      reporter_phone: contact.data?.phone ?? contact.data?.whatsapp ?? "",
+    });
+    if (insert.error) throw new Error(insert.error.message);
+    return { ok: true };
   });
