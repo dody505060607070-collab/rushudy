@@ -29,6 +29,7 @@ import { PaymentRecorder, type RecorderPayment } from "@/components/payments/Pay
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteContractWithOwner } from "@/lib/delete-helpers";
+import { ensureTenantContractAccount } from "@/lib/portal.functions";
 
 export const Route = createFileRoute("/_authenticated/contracts/$contractId")({
   head: () => ({
@@ -292,6 +293,17 @@ function ContractViewPage() {
   const totalRemaining = Math.max(totalDue - totalPaid, 0);
   const collectionRate = totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0;
   const overdueCount = paymentRows.filter((payment) => payment.status === "overdue").length;
+
+  const tenantAccess = useMutation({
+    mutationFn: () => ensureTenantContractAccount({ data: { contractId } }),
+    onSuccess: (result) =>
+      result.ok
+        ? toast.success(`تم التفعيل — المستخدم: ${result.username} · كلمة المرور: ${result.password}`, {
+            duration: 15000,
+          })
+        : toast.error(result.reason ?? "تعذّر التفعيل"),
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر التفعيل"),
+  });
 
   const remove = useMutation({
     mutationFn: async (alsoOwner: boolean) =>
