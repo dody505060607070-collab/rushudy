@@ -119,7 +119,11 @@ function PortalLayout() {
                   <Settings2 className="h-4 w-4" /> الإعدادات
                 </Link>
               </>
-            ) : null}
+            ) : (
+              <Link to="/portal/maintenance" className={link} activeProps={{ className: `${link} ${active}` }}>
+                <Wrench className="h-4 w-4" /> الصيانة
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
