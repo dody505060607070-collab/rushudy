@@ -1,11 +1,18 @@
-import { CLIENT_EMAIL_DOMAIN, clientUsername, credentialDigits, localPhone } from "./client-credentials";
+import {
+  CLIENT_EMAIL_DOMAIN,
+  clientUsername,
+  credentialDigits,
+  localPhone,
+} from "./client-credentials";
 
 export type ClientAccountResult =
   | { ok: true; username: string; password: string; created: boolean }
   | { ok: false; reason: string };
 
 /** Server-only account provisioning shared by contract creation and staff account controls. */
-export async function ensureClientAccountForContact(contactId: string): Promise<ClientAccountResult> {
+export async function ensureClientAccountForContact(
+  contactId: string,
+): Promise<ClientAccountResult> {
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const { data: contact, error } = await db
     .from("contacts")
@@ -66,16 +73,21 @@ export async function ensureClientAccountForContact(contactId: string): Promise<
     const users = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
     userId = users.data.users.find((user) => user.email === loginEmail)?.id;
     if (userId) {
-      const updated = await db.auth.admin.updateUserById(userId, { password, user_metadata: metadata });
+      const updated = await db.auth.admin.updateUserById(userId, {
+        password,
+        user_metadata: metadata,
+      });
       if (updated.error) throw new Error(updated.error.message);
     }
   }
   if (!userId) throw new Error(created.error?.message ?? "تعذّر إنشاء حساب العميل.");
 
-  const account = await db.from("client_accounts").upsert(
-    { contact_id: contact.id, user_id: userId, username, login_email: loginEmail },
-    { onConflict: "contact_id" },
-  );
+  const account = await db
+    .from("client_accounts")
+    .upsert(
+      { contact_id: contact.id, user_id: userId, username, login_email: loginEmail },
+      { onConflict: "contact_id" },
+    );
   if (account.error) throw new Error(account.error.message);
   if ((contact.roles ?? []).includes("owner")) {
     const role = await db

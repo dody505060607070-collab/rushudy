@@ -46,7 +46,10 @@ function OwnerSectionPage() {
           .from("owner_asset_section_items")
           .select("item_type, item_id")
           .eq("section_id", sectionId),
-        supabase.from("buildings").select("id, name, city, district, address").eq("owner_id", ownerId),
+        supabase
+          .from("buildings")
+          .select("id, name, city, district, address")
+          .eq("owner_id", ownerId),
         supabase
           .from("units")
           .select("id, unit_number, unit_type, floor, area, status, building_id")
@@ -131,7 +134,9 @@ function OwnerSectionPage() {
               <div>
                 <h2 className="text-[15px] font-bold">{building.name}</h2>
                 <p className="text-[12px] text-muted-foreground">
-                  {[building.district, building.city, building.address].filter(Boolean).join(" ، ") || "—"}
+                  {[building.district, building.city, building.address]
+                    .filter(Boolean)
+                    .join(" ، ") || "—"}
                 </p>
               </div>
               <Chip tone="primary">{list.length} وحدة</Chip>
@@ -148,13 +153,18 @@ function OwnerSectionPage() {
                       </Chip>
                     </div>
                     <p className="mt-1 text-[12px] text-muted-foreground">
-                      {[unit.unit_type, unit.floor ? `الدور ${unit.floor}` : null, unit.area ? `${unit.area} م²` : null]
+                      {[
+                        unit.unit_type,
+                        unit.floor ? `الدور ${unit.floor}` : null,
+                        unit.area ? `${unit.area} م²` : null,
+                      ]
                         .filter(Boolean)
                         .join(" · ") || "—"}
                     </p>
                     {contract ? (
                       <p className="mt-2 text-[12px]">
-                        {contract.tenant?.full_name ?? "مستأجر غير مسجل"} · ينتهي {date(contract.end_date)} ·{" "}
+                        {contract.tenant?.full_name ?? "مستأجر غير مسجل"} · ينتهي{" "}
+                        {date(contract.end_date)} ·{" "}
                         {money(contract.annual_rent ?? contract.total_value)}{" "}
                         <Link
                           to="/contracts/$contractId"
@@ -184,10 +194,14 @@ function OwnerSectionPage() {
                 <article key={property.id} className="rounded-md border border-border p-3">
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="text-[13.5px] font-bold">{property.name}</h3>
-                    <Chip tone={contract ? "success" : "neutral"}>{contract ? "مؤجر" : "متاح"}</Chip>
+                    <Chip tone={contract ? "success" : "neutral"}>
+                      {contract ? "مؤجر" : "متاح"}
+                    </Chip>
                   </div>
                   <p className="mt-1 text-[12px] text-muted-foreground">
-                    {[property.code, property.city, property.district].filter(Boolean).join(" · ") || "—"}
+                    {[property.code, property.city, property.district]
+                      .filter(Boolean)
+                      .join(" · ") || "—"}
                   </p>
                 </article>
               );

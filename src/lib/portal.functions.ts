@@ -81,7 +81,10 @@ export const issueClientAccess = createServerFn({ method: "POST" })
       .maybeSingle();
 
     // اسم المستخدم: المُدخل يدويًا → الحساب الحالي → رقم الهوية → رقم تلقائي فريد
-    let username = clientUsername(data.username) || existing.data?.username || clientUsername(contact.national_id);
+    let username =
+      clientUsername(data.username) ||
+      existing.data?.username ||
+      clientUsername(contact.national_id);
     if (!username) {
       for (let i = 0; i < 12; i += 1) {
         const candidate = `9${randomDigits(9)}`;
@@ -111,14 +114,24 @@ export const issueClientAccess = createServerFn({ method: "POST" })
     if (existing.data) {
       const upd = await db.auth.admin.updateUserById(existing.data.user_id, {
         password,
-        user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true, portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client" },
+        user_metadata: {
+          full_name: contact.full_name,
+          client_contact_id: contact.id,
+          portal: true,
+          portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client",
+        },
       });
       if (upd.error) throw new Error(upd.error.message);
       if (existing.data.username !== username) {
         await db.from("client_accounts").update({ username }).eq("id", existing.data.id);
       }
       if ((contact.roles ?? []).includes("owner")) {
-        await db.from("user_roles").upsert({ user_id: existing.data.user_id, role: "owner" }, { onConflict: "user_id,role" });
+        await db
+          .from("user_roles")
+          .upsert(
+            { user_id: existing.data.user_id, role: "owner" },
+            { onConflict: "user_id,role" },
+          );
       }
       return { username, password, loginEmail, created: false, generated };
     }
@@ -127,7 +140,12 @@ export const issueClientAccess = createServerFn({ method: "POST" })
       email: loginEmail,
       password,
       email_confirm: true,
-      user_metadata: { full_name: contact.full_name, client_contact_id: contact.id, portal: true, portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client" },
+      user_metadata: {
+        full_name: contact.full_name,
+        client_contact_id: contact.id,
+        portal: true,
+        portal_role: (contact.roles ?? []).includes("owner") ? "owner" : "client",
+      },
     });
 
     let userId = created.data.user?.id;
@@ -147,7 +165,9 @@ export const issueClientAccess = createServerFn({ method: "POST" })
     if (up.error) throw new Error(up.error.message);
 
     if ((contact.roles ?? []).includes("owner")) {
-      await db.from("user_roles").upsert({ user_id: userId, role: "owner" }, { onConflict: "user_id,role" });
+      await db
+        .from("user_roles")
+        .upsert({ user_id: userId, role: "owner" }, { onConflict: "user_id,role" });
     }
 
     return { username, password, loginEmail, created: true, generated };
@@ -221,7 +241,11 @@ export const resolveClientLogin = createServerFn({ method: "POST" })
     if (!contact.data || !isOwner || suppliedPassword !== expectedPassword) {
       return { email: null as string | null };
     }
-    const contract = await db.from("contracts").select("id").eq("owner_id", contact.data.id).limit(1);
+    const contract = await db
+      .from("contracts")
+      .select("id")
+      .eq("owner_id", contact.data.id)
+      .limit(1);
     if (!contract.data?.length) return { email: null as string | null };
     const { ensureClientAccountForContact } = await import("./client-account.server");
     const repaired = await ensureClientAccountForContact(contact.data.id);
@@ -247,7 +271,11 @@ export const getPortalOverview = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { db, contactId } = await currentClient(context.userId);
     const [contact, contracts, buildings, units, properties] = await Promise.all([
-      db.from("contacts").select("id, full_name, national_id, phone, email, roles").eq("id", contactId).single(),
+      db
+        .from("contacts")
+        .select("id, full_name, national_id, phone, email, roles")
+        .eq("id", contactId)
+        .single(),
       db
         .from("contracts")
         .select(
@@ -255,9 +283,21 @@ export const getPortalOverview = createServerFn({ method: "GET" })
         )
         .or(partyFilter(contactId))
         .order("start_date", { ascending: false }),
-      db.from("buildings").select("id, name, city, district, address").eq("owner_id", contactId).order("name"),
-      db.from("units").select("id, building_id, unit_number, unit_type, status, floor, area").eq("owner_id", contactId).order("unit_number"),
-      db.from("properties").select("id, building_id, code, name, purpose, status, city, district").eq("owner_id", contactId).order("name"),
+      db
+        .from("buildings")
+        .select("id, name, city, district, address")
+        .eq("owner_id", contactId)
+        .order("name"),
+      db
+        .from("units")
+        .select("id, building_id, unit_number, unit_type, status, floor, area")
+        .eq("owner_id", contactId)
+        .order("unit_number"),
+      db
+        .from("properties")
+        .select("id, building_id, code, name, purpose, status, city, district")
+        .eq("owner_id", contactId)
+        .order("name"),
     ]);
 
     const contractIds = (contracts.data ?? []).map((c) => c.id);
@@ -270,7 +310,9 @@ export const getPortalOverview = createServerFn({ method: "GET" })
     const [invoices, payments] = await Promise.all([
       db
         .from("invoices")
-        .select("id, invoice_number, issue_date, due_date, total, status, items:invoice_items(count)")
+        .select(
+          "id, invoice_number, issue_date, due_date, total, status, items:invoice_items(count)",
+        )
         .or(invoiceFilter)
         .order("issue_date", { ascending: false }),
       contractIds.length
@@ -326,7 +368,6 @@ export const getPortalContract = createServerFn({ method: "POST" })
     return { contract: contract.data, payments: payments.data ?? [] };
   });
 
-
 export const getPortalInvoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { invoiceId: string }) => input)
@@ -339,7 +380,9 @@ export const getPortalInvoice = createServerFn({ method: "POST" })
       : `contact_id.eq.${contactId}`;
     const invoice = await db
       .from("invoices")
-      .select("id, invoice_number, issue_date, due_date, status, subtotal, vat_amount, total, notes, contact:contact_id(full_name, national_id, phone)")
+      .select(
+        "id, invoice_number, issue_date, due_date, status, subtotal, vat_amount, total, notes, contact:contact_id(full_name, national_id, phone)",
+      )
       .eq("id", data.invoiceId)
       .or(filter)
       .maybeSingle();
@@ -363,16 +406,24 @@ export const getOwnerDashboard = createServerFn({ method: "GET" })
       .select("id, full_name, national_id, phone, roles")
       .eq("id", contactId)
       .single();
-    if (!(contact.data?.roles ?? []).includes("owner")) throw new Error("هذه اللوحة متاحة للملاك فقط.");
+    if (!(contact.data?.roles ?? []).includes("owner"))
+      throw new Error("هذه اللوحة متاحة للملاك فقط.");
 
     const [buildings, units, properties, contracts] = await Promise.all([
-      db.from("buildings").select("id, name, city, district, address").eq("owner_id", contactId).order("name"),
+      db
+        .from("buildings")
+        .select("id, name, city, district, address")
+        .eq("owner_id", contactId)
+        .order("name"),
       db
         .from("units")
         .select("id, building_id, unit_number, unit_type, status, floor, area")
         .eq("owner_id", contactId)
         .order("unit_number"),
-      db.from("properties").select("id, code, name, purpose, status, city, district").eq("owner_id", contactId),
+      db
+        .from("properties")
+        .select("id, code, name, purpose, status, city, district")
+        .eq("owner_id", contactId),
       db
         .from("contracts")
         .select(
@@ -386,7 +437,9 @@ export const getOwnerDashboard = createServerFn({ method: "GET" })
     const payments = contractIds.length
       ? await db
           .from("contract_payments")
-          .select("id, contract_id, payment_number, due_date, amount_due, amount_paid, status, updated_at")
+          .select(
+            "id, contract_id, payment_number, due_date, amount_due, amount_paid, status, updated_at",
+          )
           .in("contract_id", contractIds)
           .order("due_date", { ascending: true })
       : { data: [] as never[] };
@@ -440,7 +493,8 @@ export const markOwnerPaymentPaid = createServerFn({ method: "POST" })
       .select("id, owner_id")
       .eq("id", payment.data.contract_id)
       .maybeSingle();
-    if (!contract.data || contract.data.owner_id !== contactId) throw new Error("غير مصرّح بتعديل هذه الدفعة.");
+    if (!contract.data || contract.data.owner_id !== contactId)
+      throw new Error("غير مصرّح بتعديل هذه الدفعة.");
 
     const due = Number(payment.data.amount_due ?? 0);
     const amount = data.amount != null ? Math.max(0, Number(data.amount)) : due;
@@ -452,7 +506,9 @@ export const markOwnerPaymentPaid = createServerFn({ method: "POST" })
       .update({
         amount_paid: amount,
         status,
-        notes: note ? `${payment.data.notes ? `${payment.data.notes}\n` : ""}${note}` : payment.data.notes,
+        notes: note
+          ? `${payment.data.notes ? `${payment.data.notes}\n` : ""}${note}`
+          : payment.data.notes,
         updated_at: new Date().toISOString(),
       })
       .eq("id", data.paymentId);
@@ -468,8 +524,13 @@ export const markOwnerPaymentPaid = createServerFn({ method: "POST" })
 /** يتحقق أن المستخدم الحالي مالك ويعيد اتصال قاعدة البيانات ومعرّفه. */
 async function ownerContext(userId: string) {
   const { db, contactId } = await currentClient(userId);
-  const contact = await db.from("contacts").select("id, full_name, roles").eq("id", contactId).single();
-  if (!(contact.data?.roles ?? []).includes("owner")) throw new Error("هذه الخدمة متاحة للملاك فقط.");
+  const contact = await db
+    .from("contacts")
+    .select("id, full_name, roles")
+    .eq("id", contactId)
+    .single();
+  if (!(contact.data?.roles ?? []).includes("owner"))
+    throw new Error("هذه الخدمة متاحة للملاك فقط.");
   return { db, contactId, contact: contact.data };
 }
 
@@ -480,15 +541,30 @@ async function assertOwned(
   ref: { unitId?: string | null; propertyId?: string | null; contractId?: string | null },
 ) {
   if (ref.unitId) {
-    const r = await db.from("units").select("id").eq("id", ref.unitId).eq("owner_id", contactId).maybeSingle();
+    const r = await db
+      .from("units")
+      .select("id")
+      .eq("id", ref.unitId)
+      .eq("owner_id", contactId)
+      .maybeSingle();
     if (!r.data) throw new Error("الوحدة غير تابعة لك.");
   }
   if (ref.propertyId) {
-    const r = await db.from("properties").select("id").eq("id", ref.propertyId).eq("owner_id", contactId).maybeSingle();
+    const r = await db
+      .from("properties")
+      .select("id")
+      .eq("id", ref.propertyId)
+      .eq("owner_id", contactId)
+      .maybeSingle();
     if (!r.data) throw new Error("العقار غير تابع لك.");
   }
   if (ref.contractId) {
-    const r = await db.from("contracts").select("id").eq("id", ref.contractId).eq("owner_id", contactId).maybeSingle();
+    const r = await db
+      .from("contracts")
+      .select("id")
+      .eq("id", ref.contractId)
+      .eq("owner_id", contactId)
+      .maybeSingle();
     if (!r.data) throw new Error("العقد غير تابع لك.");
   }
 }
@@ -499,19 +575,38 @@ export const getOwnerTools = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { db, contactId } = await ownerContext(context.userId);
     const [requests, expenses, documents, delegates] = await Promise.all([
-      db.from("owner_requests").select("*").eq("owner_id", contactId).order("created_at", { ascending: false }).limit(100),
-      db.from("unit_expenses").select("*").eq("owner_id", contactId).order("spent_on", { ascending: false }).limit(300),
-      db.from("unit_documents").select("*").eq("owner_id", contactId).order("created_at", { ascending: false }).limit(200),
+      db
+        .from("owner_requests")
+        .select("*")
+        .eq("owner_id", contactId)
+        .order("created_at", { ascending: false })
+        .limit(100),
+      db
+        .from("unit_expenses")
+        .select("*")
+        .eq("owner_id", contactId)
+        .order("spent_on", { ascending: false })
+        .limit(300),
+      db
+        .from("unit_documents")
+        .select("*")
+        .eq("owner_id", contactId)
+        .order("created_at", { ascending: false })
+        .limit(200),
       db
         .from("owner_delegates")
-        .select("id, access_level, is_active, created_at, delegate:delegate_contact_id(id, full_name, phone, national_id)")
+        .select(
+          "id, access_level, is_active, created_at, delegate:delegate_contact_id(id, full_name, phone, national_id)",
+        )
         .eq("owner_id", contactId)
         .order("created_at", { ascending: false }),
     ]);
 
     const docs = await Promise.all(
       (documents.data ?? []).map(async (d) => {
-        const signed = await db.storage.from("owner-documents").createSignedUrl(d.storage_path, 3600);
+        const signed = await db.storage
+          .from("owner-documents")
+          .createSignedUrl(d.storage_path, 3600);
         return { ...d, url: signed.data?.signedUrl ?? null };
       }),
     );
@@ -525,7 +620,12 @@ export const getOwnerTools = createServerFn({ method: "GET" })
         access_level: string;
         is_active: boolean;
         created_at: string;
-        delegate: { id: string; full_name: string; phone: string | null; national_id: string | null } | null;
+        delegate: {
+          id: string;
+          full_name: string;
+          phone: string | null;
+          national_id: string | null;
+        } | null;
       }[],
     };
   });
@@ -565,7 +665,10 @@ export const createOwnerRequest = createServerFn({ method: "POST" })
       .single();
     if (ins.error) throw new Error(ins.error.message);
 
-    const staffRoles = await db.from("user_roles").select("user_id").in("role", ["super_admin", "employee"]);
+    const staffRoles = await db
+      .from("user_roles")
+      .select("user_id")
+      .in("role", ["super_admin", "employee"]);
     const targets = [...new Set((staffRoles.data ?? []).map((r) => r.user_id))];
     if (targets.length) {
       await db.from("notifications").insert(
@@ -589,7 +692,9 @@ export const getOwnerStatement = createServerFn({ method: "POST" })
     const { db, contactId, contact } = await ownerContext(context.userId);
     const contracts = await db
       .from("contracts")
-      .select("id, contract_number, tenant:tenant_id(full_name), unit:unit_id(unit_number), property:property_id(name)")
+      .select(
+        "id, contract_number, tenant:tenant_id(full_name), unit:unit_id(unit_number), property:property_id(name)",
+      )
       .eq("owner_id", contactId);
     const ids = (contracts.data ?? []).map((c) => c.id);
 
@@ -612,17 +717,24 @@ export const getOwnerStatement = createServerFn({ method: "POST" })
       .order("spent_on");
 
     const map = new Map((contracts.data ?? []).map((c) => [c.id, c] as const));
-    const rows = ((payments.data ?? []) as {
-      id: string;
-      contract_id: string;
-      payment_number: number;
-      due_date: string;
-      amount_due: number;
-      amount_paid: number;
-      status: string;
-    }[]).map((p) => {
+    const rows = (
+      (payments.data ?? []) as {
+        id: string;
+        contract_id: string;
+        payment_number: number;
+        due_date: string;
+        amount_due: number;
+        amount_paid: number;
+        status: string;
+      }[]
+    ).map((p) => {
       const c = map.get(p.contract_id) as unknown as
-        | { contract_number: string; tenant: { full_name: string } | null; unit: { unit_number: string | null } | null; property: { name: string } | null }
+        | {
+            contract_number: string;
+            tenant: { full_name: string } | null;
+            unit: { unit_number: string | null } | null;
+            property: { name: string } | null;
+          }
         | undefined;
       return {
         contractNumber: c?.contract_number ?? "—",
@@ -661,18 +773,27 @@ export const remindTenantWhatsApp = createServerFn({ method: "POST" })
 
     const contract = await db
       .from("contracts")
-      .select("id, contract_number, owner_id, tenant:tenant_id(full_name, phone, whatsapp), unit:unit_id(unit_number)")
+      .select(
+        "id, contract_number, owner_id, tenant:tenant_id(full_name, phone, whatsapp), unit:unit_id(unit_number)",
+      )
       .eq("id", payment.data.contract_id)
       .maybeSingle();
-    const row = contract.data as unknown as
-      | { id: string; contract_number: string; owner_id: string; tenant: { full_name: string; phone: string | null; whatsapp: string | null } | null; unit: { unit_number: string | null } | null }
-      | null;
+    const row = contract.data as unknown as {
+      id: string;
+      contract_number: string;
+      owner_id: string;
+      tenant: { full_name: string; phone: string | null; whatsapp: string | null } | null;
+      unit: { unit_number: string | null } | null;
+    } | null;
     if (!row || row.owner_id !== contactId) throw new Error("غير مصرّح بهذا الإجراء.");
 
     const to = row.tenant?.whatsapp ?? row.tenant?.phone ?? "";
     if (!to) throw new Error("لا يوجد رقم جوال للمستأجر.");
 
-    const remaining = Math.max(0, Number(payment.data.amount_due ?? 0) - Number(payment.data.amount_paid ?? 0));
+    const remaining = Math.max(
+      0,
+      Number(payment.data.amount_due ?? 0) - Number(payment.data.amount_paid ?? 0),
+    );
     const body =
       String(data.message ?? "").trim() ||
       `مرحبًا ${row.tenant?.full_name ?? ""}، تذكير بدفعة رقم ${payment.data.payment_number} بمبلغ ${remaining.toLocaleString("en-US")} ر.س المستحقة بتاريخ ${payment.data.due_date}${row.unit?.unit_number ? ` للوحدة ${row.unit.unit_number}` : ""}. شكرًا لتعاونكم — ${contact?.full_name ?? "المالك"}.`;
@@ -702,7 +823,14 @@ export const remindTenantWhatsApp = createServerFn({ method: "POST" })
 export const addOwnerExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (input: { category: string; amount: number; description?: string; spentOn?: string; unitId?: string | null; propertyId?: string | null }) => input,
+    (input: {
+      category: string;
+      amount: number;
+      description?: string;
+      spentOn?: string;
+      unitId?: string | null;
+      propertyId?: string | null;
+    }) => input,
   )
   .handler(async ({ data, context }) => {
     const { db, contactId } = await ownerContext(context.userId);
@@ -743,7 +871,14 @@ const DOC_EXT = /\.(pdf|jpg|jpeg|png|webp|docx?|xlsx)$/i;
 export const addOwnerDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (input: { title: string; docType: string; fileName: string; dataBase64: string; unitId?: string | null; propertyId?: string | null }) => input,
+    (input: {
+      title: string;
+      docType: string;
+      fileName: string;
+      dataBase64: string;
+      unitId?: string | null;
+      propertyId?: string | null;
+    }) => input,
   )
   .handler(async ({ data, context }) => {
     const { db, contactId } = await ownerContext(context.userId);
@@ -752,14 +887,18 @@ export const addOwnerDocument = createServerFn({ method: "POST" })
     if (!DOC_EXT.test(data.fileName)) throw new Error("نوع الملف غير مسموح.");
     await assertOwned(db, contactId, data);
 
-    const base64 = data.dataBase64.includes(",") ? data.dataBase64.slice(data.dataBase64.indexOf(",") + 1) : data.dataBase64;
+    const base64 = data.dataBase64.includes(",")
+      ? data.dataBase64.slice(data.dataBase64.indexOf(",") + 1)
+      : data.dataBase64;
     const bytes = Uint8Array.from(Buffer.from(base64, "base64"));
     if (bytes.byteLength > 25 * 1024 * 1024) throw new Error("حجم الملف يتجاوز 25 ميجابايت.");
 
     const ext = (data.fileName.split(".").pop() ?? "bin").toLowerCase();
     const path = `${contactId}/${crypto.randomUUID()}.${ext}`;
     const { mimeFor } = await import("./storage.server");
-    const up = await db.storage.from("owner-documents").upload(path, bytes, { contentType: mimeFor(data.fileName) });
+    const up = await db.storage
+      .from("owner-documents")
+      .upload(path, bytes, { contentType: mimeFor(data.fileName) });
     if (up.error) throw new Error(up.error.message);
 
     const ins = await db
@@ -785,7 +924,12 @@ export const deleteOwnerDocument = createServerFn({ method: "POST" })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data, context }) => {
     const { db, contactId } = await ownerContext(context.userId);
-    const doc = await db.from("unit_documents").select("id, storage_path").eq("id", data.id).eq("owner_id", contactId).maybeSingle();
+    const doc = await db
+      .from("unit_documents")
+      .select("id, storage_path")
+      .eq("id", data.id)
+      .eq("owner_id", contactId)
+      .maybeSingle();
     if (!doc.data) throw new Error("المرفق غير موجود.");
     await db.storage.from("owner-documents").remove([doc.data.storage_path]);
     await db.from("unit_documents").delete().eq("id", doc.data.id);
@@ -795,7 +939,14 @@ export const deleteOwnerDocument = createServerFn({ method: "POST" })
 /** تفويض شخص بصلاحية عرض أو تسجيل سداد. */
 export const addOwnerDelegate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { fullName: string; phone: string; nationalId?: string; accessLevel: "view" | "collect" }) => input)
+  .inputValidator(
+    (input: {
+      fullName: string;
+      phone: string;
+      nationalId?: string;
+      accessLevel: "view" | "collect";
+    }) => input,
+  )
   .handler(async ({ data, context }) => {
     const { db, contactId } = await ownerContext(context.userId);
     const fullName = String(data.fullName ?? "").trim();
@@ -806,7 +957,11 @@ export const addOwnerDelegate = createServerFn({ method: "POST" })
 
     let delegateId: string | null = null;
     if (nationalId) {
-      const found = await db.from("contacts").select("id").eq("national_id", nationalId).maybeSingle();
+      const found = await db
+        .from("contacts")
+        .select("id")
+        .eq("national_id", nationalId)
+        .maybeSingle();
       delegateId = found.data?.id ?? null;
     }
     if (!delegateId) {
@@ -816,7 +971,13 @@ export const addOwnerDelegate = createServerFn({ method: "POST" })
     if (!delegateId) {
       const created = await db
         .from("contacts")
-        .insert({ full_name: fullName, phone, national_id: nationalId || null, kind: "individual", roles: ["delegate"] })
+        .insert({
+          full_name: fullName,
+          phone,
+          national_id: nationalId || null,
+          kind: "individual",
+          roles: ["delegate"],
+        })
         .select("id")
         .single();
       if (created.error) throw new Error(created.error.message);
@@ -826,7 +987,12 @@ export const addOwnerDelegate = createServerFn({ method: "POST" })
     const up = await db
       .from("owner_delegates")
       .upsert(
-        { owner_id: contactId, delegate_contact_id: delegateId, access_level: data.accessLevel, is_active: true },
+        {
+          owner_id: contactId,
+          delegate_contact_id: delegateId,
+          access_level: data.accessLevel,
+          is_active: true,
+        },
         { onConflict: "owner_id,delegate_contact_id" },
       );
     if (up.error) throw new Error(up.error.message);
@@ -838,11 +1004,14 @@ export const removeOwnerDelegate = createServerFn({ method: "POST" })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data, context }) => {
     const { db, contactId } = await ownerContext(context.userId);
-    const del = await db.from("owner_delegates").delete().eq("id", data.id).eq("owner_id", contactId);
+    const del = await db
+      .from("owner_delegates")
+      .delete()
+      .eq("id", data.id)
+      .eq("owner_id", contactId);
     if (del.error) throw new Error(del.error.message);
     return { ok: true as const };
   });
-
 
 /** تفعيل حساب بوابة المستأجر لعقد محدد (اسم المستخدم = رقم العقد). */
 export const ensureTenantContractAccount = createServerFn({ method: "POST" })
@@ -876,7 +1045,8 @@ export const getTenantMaintenance = createServerFn({ method: "GET" })
 export const createTenantMaintenance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (input: { contractId: string; category: string; description: string; priority?: string }) => input,
+    (input: { contractId: string; category: string; description: string; priority?: string }) =>
+      input,
   )
   .handler(async ({ data, context }) => {
     const { db, contactId } = await currentClient(context.userId);

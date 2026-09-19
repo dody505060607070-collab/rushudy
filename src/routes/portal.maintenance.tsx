@@ -11,7 +11,10 @@ export const Route = createFileRoute("/portal/maintenance")({
   head: () => ({
     meta: [
       { title: "طلبات الصيانة | بوابة المستأجر" },
-      { name: "description", content: "إرسال بلاغات الصيانة للمكتب ومتابعة حالتها من بوابة المستأجر." },
+      {
+        name: "description",
+        content: "إرسال بلاغات الصيانة للمكتب ومتابعة حالتها من بوابة المستأجر.",
+      },
       { property: "og:title", content: "طلبات الصيانة | بوابة المستأجر" },
       { property: "og:description", content: "بلاغات الصيانة ومتابعتها من بوابة المستأجر." },
       { property: "og:type", content: "website" },
@@ -49,7 +52,10 @@ function TenantMaintenancePage() {
   const [priority, setPriority] = useState("normal");
   const [description, setDescription] = useState("");
 
-  const data = useQuery({ queryKey: ["tenant-maintenance"], queryFn: () => getTenantMaintenance() });
+  const data = useQuery({
+    queryKey: ["tenant-maintenance"],
+    queryFn: () => getTenantMaintenance(),
+  });
   const contracts = data.data?.contracts ?? [];
   const requests = data.data?.requests ?? [];
 
