@@ -304,7 +304,9 @@ function EmployeeGoalsPage() {
                   ) : null}
                   <button
                     type="button"
-                    onClick={() => remove.mutate(goal.id)}
+                    onClick={() => {
+                      if (window.confirm("هل أنت متأكد من الحذف؟")) remove.mutate(goal.id);
+                    }}
                     className="ms-auto text-muted-foreground transition-colors hover:text-destructive"
                     aria-label="حذف الهدف"
                   >
