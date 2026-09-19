@@ -77,6 +77,7 @@ import { Route as AuthenticatedInvoicesInvoiceIdRouteImport } from './routes/_au
 import { Route as AuthenticatedListingRequestsIndexRouteImport } from './routes/_authenticated/listing-requests.index'
 import { Route as AuthenticatedListingRequestsRequestIdRouteImport } from './routes/_authenticated/listing-requests.$requestId'
 import { Route as AuthenticatedMarketingMarketerIdRouteImport } from './routes/_authenticated/marketing.$marketerId'
+import { Route as AuthenticatedOwnerSectionSectionIdRouteImport } from './routes/_authenticated/owner-section.$sectionId'
 import { Route as AuthenticatedOwnersIndexRouteImport } from './routes/_authenticated/owners.index'
 import { Route as AuthenticatedOwnersOwnerIdRouteImport } from './routes/_authenticated/owners.$ownerId'
 import { Route as AuthenticatedPaymentReminderPaymentIdRouteImport } from './routes/_authenticated/payment-reminder.$paymentId'
@@ -444,6 +445,12 @@ const AuthenticatedMarketingMarketerIdRoute =
     path: '/$marketerId',
     getParentRoute: () => AuthenticatedMarketingRoute,
   } as any)
+const AuthenticatedOwnerSectionSectionIdRoute =
+  AuthenticatedOwnerSectionSectionIdRouteImport.update({
+    id: '/owner-section/$sectionId',
+    path: '/owner-section/$sectionId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOwnersIndexRoute =
   AuthenticatedOwnersIndexRouteImport.update({
     id: '/owners/',
@@ -570,6 +577,7 @@ export interface FileRoutesByFullPath {
   '/invoices/$invoiceId': typeof AuthenticatedInvoicesInvoiceIdRoute
   '/listing-requests/$requestId': typeof AuthenticatedListingRequestsRequestIdRoute
   '/marketing/$marketerId': typeof AuthenticatedMarketingMarketerIdRoute
+  '/owner-section/$sectionId': typeof AuthenticatedOwnerSectionSectionIdRoute
   '/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRoute
   '/payment-reminder/$paymentId': typeof AuthenticatedPaymentReminderPaymentIdRoute
   '/supply-requests/$requestId': typeof AuthenticatedSupplyRequestsRequestIdRoute
@@ -649,6 +657,7 @@ export interface FileRoutesByTo {
   '/invoices/$invoiceId': typeof AuthenticatedInvoicesInvoiceIdRoute
   '/listing-requests/$requestId': typeof AuthenticatedListingRequestsRequestIdRoute
   '/marketing/$marketerId': typeof AuthenticatedMarketingMarketerIdRoute
+  '/owner-section/$sectionId': typeof AuthenticatedOwnerSectionSectionIdRoute
   '/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRoute
   '/payment-reminder/$paymentId': typeof AuthenticatedPaymentReminderPaymentIdRoute
   '/supply-requests/$requestId': typeof AuthenticatedSupplyRequestsRequestIdRoute
@@ -731,6 +740,7 @@ export interface FileRoutesById {
   '/_authenticated/invoices/$invoiceId': typeof AuthenticatedInvoicesInvoiceIdRoute
   '/_authenticated/listing-requests/$requestId': typeof AuthenticatedListingRequestsRequestIdRoute
   '/_authenticated/marketing/$marketerId': typeof AuthenticatedMarketingMarketerIdRoute
+  '/_authenticated/owner-section/$sectionId': typeof AuthenticatedOwnerSectionSectionIdRoute
   '/_authenticated/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRoute
   '/_authenticated/payment-reminder/$paymentId': typeof AuthenticatedPaymentReminderPaymentIdRoute
   '/_authenticated/supply-requests/$requestId': typeof AuthenticatedSupplyRequestsRequestIdRoute
@@ -813,6 +823,7 @@ export interface FileRouteTypes {
     | '/invoices/$invoiceId'
     | '/listing-requests/$requestId'
     | '/marketing/$marketerId'
+    | '/owner-section/$sectionId'
     | '/owners/$ownerId'
     | '/payment-reminder/$paymentId'
     | '/supply-requests/$requestId'
@@ -892,6 +903,7 @@ export interface FileRouteTypes {
     | '/invoices/$invoiceId'
     | '/listing-requests/$requestId'
     | '/marketing/$marketerId'
+    | '/owner-section/$sectionId'
     | '/owners/$ownerId'
     | '/payment-reminder/$paymentId'
     | '/supply-requests/$requestId'
@@ -973,6 +985,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invoices/$invoiceId'
     | '/_authenticated/listing-requests/$requestId'
     | '/_authenticated/marketing/$marketerId'
+    | '/_authenticated/owner-section/$sectionId'
     | '/_authenticated/owners/$ownerId'
     | '/_authenticated/payment-reminder/$paymentId'
     | '/_authenticated/supply-requests/$requestId'
@@ -1494,6 +1507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMarketingMarketerIdRouteImport
       parentRoute: typeof AuthenticatedMarketingRoute
     }
+    '/_authenticated/owner-section/$sectionId': {
+      id: '/_authenticated/owner-section/$sectionId'
+      path: '/owner-section/$sectionId'
+      fullPath: '/owner-section/$sectionId'
+      preLoaderRoute: typeof AuthenticatedOwnerSectionSectionIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/owners/': {
       id: '/_authenticated/owners/'
       path: '/owners'
@@ -1624,6 +1644,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGoalsEmployeeIdRoute: typeof AuthenticatedGoalsEmployeeIdRoute
   AuthenticatedInvoicesInvoiceIdRoute: typeof AuthenticatedInvoicesInvoiceIdRoute
   AuthenticatedListingRequestsRequestIdRoute: typeof AuthenticatedListingRequestsRequestIdRoute
+  AuthenticatedOwnerSectionSectionIdRoute: typeof AuthenticatedOwnerSectionSectionIdRoute
   AuthenticatedOwnersOwnerIdRoute: typeof AuthenticatedOwnersOwnerIdRoute
   AuthenticatedPaymentReminderPaymentIdRoute: typeof AuthenticatedPaymentReminderPaymentIdRoute
   AuthenticatedSupplyRequestsRequestIdRoute: typeof AuthenticatedSupplyRequestsRequestIdRoute
@@ -1671,6 +1692,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInvoicesInvoiceIdRoute: AuthenticatedInvoicesInvoiceIdRoute,
   AuthenticatedListingRequestsRequestIdRoute:
     AuthenticatedListingRequestsRequestIdRoute,
+  AuthenticatedOwnerSectionSectionIdRoute:
+    AuthenticatedOwnerSectionSectionIdRoute,
   AuthenticatedOwnersOwnerIdRoute: AuthenticatedOwnersOwnerIdRoute,
   AuthenticatedPaymentReminderPaymentIdRoute:
     AuthenticatedPaymentReminderPaymentIdRoute,
