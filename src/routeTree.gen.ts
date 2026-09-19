@@ -64,6 +64,7 @@ import { Route as PortalCareRouteImport } from './routes/portal.care'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
 import { Route as PortalFinanceRouteImport } from './routes/portal.finance'
 import { Route as PortalInsightsRouteImport } from './routes/portal.insights'
+import { Route as PortalMaintenanceRouteImport } from './routes/portal.maintenance'
 import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as PortalUnitsRouteImport } from './routes/portal.units'
@@ -77,6 +78,7 @@ import { Route as AuthenticatedInvoicesInvoiceIdRouteImport } from './routes/_au
 import { Route as AuthenticatedListingRequestsIndexRouteImport } from './routes/_authenticated/listing-requests.index'
 import { Route as AuthenticatedListingRequestsRequestIdRouteImport } from './routes/_authenticated/listing-requests.$requestId'
 import { Route as AuthenticatedMarketingMarketerIdRouteImport } from './routes/_authenticated/marketing.$marketerId'
+import { Route as AuthenticatedOwnerSectionSectionIdRouteImport } from './routes/_authenticated/owner-section.$sectionId'
 import { Route as AuthenticatedOwnersIndexRouteImport } from './routes/_authenticated/owners.index'
 import { Route as AuthenticatedOwnersOwnerIdRouteImport } from './routes/_authenticated/owners.$ownerId'
 import { Route as AuthenticatedPaymentReminderPaymentIdRouteImport } from './routes/_authenticated/payment-reminder.$paymentId'
@@ -371,6 +373,11 @@ const PortalInsightsRoute = PortalInsightsRouteImport.update({
   path: '/insights',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalMaintenanceRoute = PortalMaintenanceRouteImport.update({
+  id: '/maintenance',
+  path: '/maintenance',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalMessagesRoute = PortalMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
@@ -443,6 +450,12 @@ const AuthenticatedMarketingMarketerIdRoute =
     id: '/$marketerId',
     path: '/$marketerId',
     getParentRoute: () => AuthenticatedMarketingRoute,
+  } as any)
+const AuthenticatedOwnerSectionSectionIdRoute =
+  AuthenticatedOwnerSectionSectionIdRouteImport.update({
+    id: '/owner-section/$sectionId',
+    path: '/owner-section/$sectionId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedOwnersIndexRoute =
   AuthenticatedOwnersIndexRouteImport.update({
@@ -560,6 +573,7 @@ export interface FileRoutesByFullPath {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
+  '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
@@ -570,6 +584,7 @@ export interface FileRoutesByFullPath {
   '/invoices/$invoiceId': typeof AuthenticatedInvoicesInvoiceIdRoute
   '/listing-requests/$requestId': typeof AuthenticatedListingRequestsRequestIdRoute
   '/marketing/$marketerId': typeof AuthenticatedMarketingMarketerIdRoute
+  '/owner-section/$sectionId': typeof AuthenticatedOwnerSectionSectionIdRoute
   '/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRoute
   '/payment-reminder/$paymentId': typeof AuthenticatedPaymentReminderPaymentIdRoute
   '/supply-requests/$requestId': typeof AuthenticatedSupplyRequestsRequestIdRoute
@@ -639,6 +654,7 @@ export interface FileRoutesByTo {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
+  '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
@@ -649,6 +665,7 @@ export interface FileRoutesByTo {
   '/invoices/$invoiceId': typeof AuthenticatedInvoicesInvoiceIdRoute
   '/listing-requests/$requestId': typeof AuthenticatedListingRequestsRequestIdRoute
   '/marketing/$marketerId': typeof AuthenticatedMarketingMarketerIdRoute
+  '/owner-section/$sectionId': typeof AuthenticatedOwnerSectionSectionIdRoute
   '/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRoute
   '/payment-reminder/$paymentId': typeof AuthenticatedPaymentReminderPaymentIdRoute
   '/supply-requests/$requestId': typeof AuthenticatedSupplyRequestsRequestIdRoute
@@ -721,6 +738,7 @@ export interface FileRoutesById {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
+  '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
@@ -731,6 +749,7 @@ export interface FileRoutesById {
   '/_authenticated/invoices/$invoiceId': typeof AuthenticatedInvoicesInvoiceIdRoute
   '/_authenticated/listing-requests/$requestId': typeof AuthenticatedListingRequestsRequestIdRoute
   '/_authenticated/marketing/$marketerId': typeof AuthenticatedMarketingMarketerIdRoute
+  '/_authenticated/owner-section/$sectionId': typeof AuthenticatedOwnerSectionSectionIdRoute
   '/_authenticated/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRoute
   '/_authenticated/payment-reminder/$paymentId': typeof AuthenticatedPaymentReminderPaymentIdRoute
   '/_authenticated/supply-requests/$requestId': typeof AuthenticatedSupplyRequestsRequestIdRoute
@@ -803,6 +822,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
+    | '/portal/maintenance'
     | '/portal/messages'
     | '/portal/settings'
     | '/portal/units'
@@ -813,6 +833,7 @@ export interface FileRouteTypes {
     | '/invoices/$invoiceId'
     | '/listing-requests/$requestId'
     | '/marketing/$marketerId'
+    | '/owner-section/$sectionId'
     | '/owners/$ownerId'
     | '/payment-reminder/$paymentId'
     | '/supply-requests/$requestId'
@@ -882,6 +903,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
+    | '/portal/maintenance'
     | '/portal/messages'
     | '/portal/settings'
     | '/portal/units'
@@ -892,6 +914,7 @@ export interface FileRouteTypes {
     | '/invoices/$invoiceId'
     | '/listing-requests/$requestId'
     | '/marketing/$marketerId'
+    | '/owner-section/$sectionId'
     | '/owners/$ownerId'
     | '/payment-reminder/$paymentId'
     | '/supply-requests/$requestId'
@@ -963,6 +986,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
+    | '/portal/maintenance'
     | '/portal/messages'
     | '/portal/settings'
     | '/portal/units'
@@ -973,6 +997,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invoices/$invoiceId'
     | '/_authenticated/listing-requests/$requestId'
     | '/_authenticated/marketing/$marketerId'
+    | '/_authenticated/owner-section/$sectionId'
     | '/_authenticated/owners/$ownerId'
     | '/_authenticated/payment-reminder/$paymentId'
     | '/_authenticated/supply-requests/$requestId'
@@ -1403,6 +1428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalInsightsRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/maintenance': {
+      id: '/portal/maintenance'
+      path: '/maintenance'
+      fullPath: '/portal/maintenance'
+      preLoaderRoute: typeof PortalMaintenanceRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/messages': {
       id: '/portal/messages'
       path: '/messages'
@@ -1493,6 +1525,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/marketing/$marketerId'
       preLoaderRoute: typeof AuthenticatedMarketingMarketerIdRouteImport
       parentRoute: typeof AuthenticatedMarketingRoute
+    }
+    '/_authenticated/owner-section/$sectionId': {
+      id: '/_authenticated/owner-section/$sectionId'
+      path: '/owner-section/$sectionId'
+      fullPath: '/owner-section/$sectionId'
+      preLoaderRoute: typeof AuthenticatedOwnerSectionSectionIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/owners/': {
       id: '/_authenticated/owners/'
@@ -1624,6 +1663,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGoalsEmployeeIdRoute: typeof AuthenticatedGoalsEmployeeIdRoute
   AuthenticatedInvoicesInvoiceIdRoute: typeof AuthenticatedInvoicesInvoiceIdRoute
   AuthenticatedListingRequestsRequestIdRoute: typeof AuthenticatedListingRequestsRequestIdRoute
+  AuthenticatedOwnerSectionSectionIdRoute: typeof AuthenticatedOwnerSectionSectionIdRoute
   AuthenticatedOwnersOwnerIdRoute: typeof AuthenticatedOwnersOwnerIdRoute
   AuthenticatedPaymentReminderPaymentIdRoute: typeof AuthenticatedPaymentReminderPaymentIdRoute
   AuthenticatedSupplyRequestsRequestIdRoute: typeof AuthenticatedSupplyRequestsRequestIdRoute
@@ -1671,6 +1711,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInvoicesInvoiceIdRoute: AuthenticatedInvoicesInvoiceIdRoute,
   AuthenticatedListingRequestsRequestIdRoute:
     AuthenticatedListingRequestsRequestIdRoute,
+  AuthenticatedOwnerSectionSectionIdRoute:
+    AuthenticatedOwnerSectionSectionIdRoute,
   AuthenticatedOwnersOwnerIdRoute: AuthenticatedOwnersOwnerIdRoute,
   AuthenticatedPaymentReminderPaymentIdRoute:
     AuthenticatedPaymentReminderPaymentIdRoute,
@@ -1693,6 +1735,7 @@ interface PortalRouteChildren {
   PortalDocumentsRoute: typeof PortalDocumentsRoute
   PortalFinanceRoute: typeof PortalFinanceRoute
   PortalInsightsRoute: typeof PortalInsightsRoute
+  PortalMaintenanceRoute: typeof PortalMaintenanceRoute
   PortalMessagesRoute: typeof PortalMessagesRoute
   PortalSettingsRoute: typeof PortalSettingsRoute
   PortalUnitsRoute: typeof PortalUnitsRoute
@@ -1708,6 +1751,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalDocumentsRoute: PortalDocumentsRoute,
   PortalFinanceRoute: PortalFinanceRoute,
   PortalInsightsRoute: PortalInsightsRoute,
+  PortalMaintenanceRoute: PortalMaintenanceRoute,
   PortalMessagesRoute: PortalMessagesRoute,
   PortalSettingsRoute: PortalSettingsRoute,
   PortalUnitsRoute: PortalUnitsRoute,

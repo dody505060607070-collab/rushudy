@@ -487,7 +487,9 @@ function MaintenancePage() {
                   </a>
                   <button
                     type="button"
-                    onClick={() => remove.mutate(row.id)}
+                    onClick={() => {
+                      if (window.confirm("هل أنت متأكد من الحذف؟")) remove.mutate(row.id);
+                    }}
                     className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[12.5px] font-semibold text-destructive transition-colors hover:bg-muted"
                   >
                     <Trash2 className="size-4" /> حذف

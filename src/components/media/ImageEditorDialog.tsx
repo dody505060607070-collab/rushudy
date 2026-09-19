@@ -9,7 +9,7 @@ type Props = {
 };
 
 const RATIOS: { label: string; value: number | null }[] = [
-  { label: "حر", value: null },
+  { label: "الصورة كاملة", value: null },
   { label: "4:3", value: 4 / 3 },
   { label: "16:9", value: 16 / 9 },
   { label: "1:1", value: 1 },
@@ -24,7 +24,8 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [ratio, setRatio] = useState<number | null>(4 / 3);
+  const [ratio, setRatio] = useState<number | null>(null);
+  const [naturalRatio, setNaturalRatio] = useState(4 / 3);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +41,9 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
 
   if (!open) return null;
 
-  const frameRatio = ratio ?? 4 / 3;
+  // عند اختيار «الصورة كاملة» نستخدم أبعاد الصورة الأصلية بلا أي قص.
+  const frameRatio = ratio ?? naturalRatio;
+  const fitMode = ratio === null ? "contain" : "cover";
 
   const onPointerDown = (event: React.PointerEvent) => {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -73,7 +76,10 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
       const scale = outW / rect.width;
 
       // الصورة معروضة بـ object-contain داخل الإطار قبل التكبير/التحريك
-      const baseScale = Math.max(rect.width / img.naturalWidth, rect.height / img.naturalHeight);
+      const baseScale =
+        fitMode === "contain"
+          ? Math.min(rect.width / img.naturalWidth, rect.height / img.naturalHeight)
+          : Math.max(rect.width / img.naturalWidth, rect.height / img.naturalHeight);
       const drawW = img.naturalWidth * baseScale * zoom * scale;
       const drawH = img.naturalHeight * baseScale * zoom * scale;
 
@@ -128,14 +134,20 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
               crossOrigin="anonymous"
               alt="معاينة التعديل"
               draggable={false}
-              onLoad={() => setLoaded(true)}
+              onLoad={(event) => {
+                const el = event.currentTarget;
+                if (el.naturalWidth && el.naturalHeight) {
+                  setNaturalRatio(el.naturalWidth / el.naturalHeight);
+                }
+                setLoaded(true);
+              }}
               onError={() => setError("تعذّر تحميل الصورة للتعديل")}
               className="absolute left-1/2 top-1/2 max-w-none select-none"
               style={{
                 transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) rotate(${rotation}deg) scale(${zoom})`,
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+                objectFit: fitMode,
               }}
             />
             {!loaded ? (

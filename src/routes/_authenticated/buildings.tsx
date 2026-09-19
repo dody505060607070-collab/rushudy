@@ -32,6 +32,7 @@ import {
 import { PageHero } from "@/components/kit/PageHero";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadMedia } from "@/lib/media";
 
 export const Route = createFileRoute("/_authenticated/buildings")({
   head: () => ({
@@ -102,6 +103,7 @@ type FormState = {
   is_visible: boolean;
   latitude: string;
   longitude: string;
+  cover_url: string;
 };
 
 const emptyForm: FormState = {
@@ -118,6 +120,7 @@ const emptyForm: FormState = {
   is_visible: true,
   latitude: "",
   longitude: "",
+  cover_url: "",
 };
 
 function BuildingsPage() {
@@ -126,6 +129,7 @@ function BuildingsPage() {
   const [editing, setEditing] = useState<BuildingRow | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [generatorFor, setGeneratorFor] = useState<BuildingRow | null>(null);
+  const [coverBusy, setCoverBusy] = useState(false);
 
   const buildings = useQuery({
     queryKey: ["buildings", "admin"],
@@ -270,6 +274,20 @@ function BuildingsPage() {
 
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
+  const uploadCover = async (file: File) => {
+    setCoverBusy(true);
+    try {
+      const path = `buildings/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+      const { url } = await uploadMedia("property-media", path, file);
+      set({ cover_url: url });
+      toast.success("تم رفع صورة العمارة");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "تعذّر رفع الصورة");
+    } finally {
+      setCoverBusy(false);
+    }
+  };
+
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
@@ -292,6 +310,7 @@ function BuildingsPage() {
       is_visible: row.is_visible,
       latitude: row.latitude != null ? String(row.latitude) : "",
       longitude: row.longitude != null ? String(row.longitude) : "",
+      cover_url: row.cover_url ?? "",
     });
     setOpen(true);
   };
@@ -313,6 +332,7 @@ function BuildingsPage() {
         is_visible: form.is_visible,
         latitude: form.latitude ? Number(form.latitude) : null,
         longitude: form.longitude ? Number(form.longitude) : null,
+        cover_url: form.cover_url.trim() || null,
       };
       const res = editing
         ? await supabase.from("buildings").update(values).eq("id", editing.id)
@@ -857,6 +877,46 @@ function BuildingsPage() {
               value={form.longitude}
               onChange={(e) => set({ longitude: e.target.value })}
             />
+          </Field>
+          <Field
+            label="صورة العمارة"
+            className="sm:col-span-2"
+            hint="ارفع صورة الواجهة من جهازك — تظهر على الموقع وفي بطاقة العمارة."
+          >
+            <div className="flex flex-wrap items-center gap-3">
+              {form.cover_url ? (
+                <img
+                  src={form.cover_url}
+                  alt="صورة العمارة"
+                  className="h-20 w-28 rounded-lg border border-border object-cover"
+                />
+              ) : (
+                <span className="grid h-20 w-28 place-items-center rounded-lg border border-dashed border-border text-[11.5px] text-muted-foreground">
+                  لا توجد صورة
+                </span>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={coverBusy}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void uploadCover(file);
+                  e.target.value = "";
+                }}
+                className="text-[12.5px]"
+              />
+              {coverBusy ? <Loader2 className="size-4 animate-spin text-primary" /> : null}
+              {form.cover_url ? (
+                <button
+                  type="button"
+                  onClick={() => set({ cover_url: "" })}
+                  className="text-[12px] font-semibold text-destructive"
+                >
+                  إزالة الصورة
+                </button>
+              ) : null}
+            </div>
           </Field>
           <Field label="وصف العمارة" className="sm:col-span-2">
             <textarea
