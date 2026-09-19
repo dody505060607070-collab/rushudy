@@ -66,7 +66,7 @@ export const Route = createFileRoute("/_authenticated/clients")({
 const SELECT =
   "id, full_name, kind, phone, phone_alt, whatsapp, email, national_id, address, roles, source, budget_min, budget_max, preferred_districts, interested_property_type, notes, is_active, created_at";
 
-const allRoles = ["owner", "tenant", "buyer", "broker", "lead"];
+const allRoles = ["owner", "tenant", "buyer", "broker"];
 
 type FormState = {
   full_name: string;
@@ -96,7 +96,7 @@ const emptyForm: FormState = {
   email: "",
   national_id: "",
   address: "",
-  roles: ["lead"],
+  roles: [],
   source: "",
   budget_min: "",
   budget_max: "",
@@ -178,7 +178,7 @@ function ClientsPage() {
         email: form.email.trim() || null,
         national_id: form.national_id.trim() || null,
         address: form.address.trim() || null,
-        roles: form.roles.length ? form.roles : ["lead"],
+        roles: form.roles,
         source: form.source.trim() || null,
         budget_min: form.budget_min ? Number(form.budget_min) : null,
         budget_max: form.budget_max ? Number(form.budget_max) : null,
@@ -242,7 +242,6 @@ function ClientsPage() {
   const counts = useMemo(
     () => ({
       all: rows.length,
-      lead: rows.filter((r) => (r.roles ?? []).includes("lead")).length,
       buyer: rows.filter((r) => (r.roles ?? []).includes("buyer")).length,
       tenant: rows.filter((r) => (r.roles ?? []).includes("tenant")).length,
       broker: rows.filter((r) => (r.roles ?? []).includes("broker")).length,
@@ -256,20 +255,19 @@ function ClientsPage() {
     <>
       <PageHero
         title="العملاء"
-        subtitle="كل جهات الاتصال في مكان واحد: ملاك، مستأجرون، مشترون، وسطاء وعملاء محتملون — مع ميزانياتهم وتفضيلاتهم."
+        subtitle="كل جهات الاتصال في مكان واحد: ملاك، مستأجرون، مشترون ووسطاء عقود — مع بيانات التواصل والارتباطات."
         icon={Contact}
         stats={[
           { value: String(counts.all), label: "إجمالي العملاء" },
-          { value: String(counts.lead), label: "عميل محتمل" },
+          { value: String(counts.tenant), label: "مستأجر" },
           { value: String(rows.filter((r) => r.is_active).length), label: "نشط" },
         ]}
       />
 
       <div className="surface-card px-5 py-4 text-[12.5px] leading-6 text-muted-foreground">
-        <strong className="text-foreground">كيف يعمل هذا القسم؟</strong> كل عميل تسجّله هنا يصبح
-        متاحًا في بقية النظام: تربطه بعقار أو عقد، تنشئ له فرصة في قسم «الفرص»، وتسجّل كل مكالمة أو
-        زيارة في «المتابعات والأنشطة». الميزانية والأحياء المفضّلة تساعد الفريق على ترشيح العقارات
-        المناسبة له بسرعة.
+        <strong className="text-foreground">كيف يعمل هذا القسم؟</strong> المالك والمستأجر يُضافان
+        تلقائيًا عند تسجيل العقد، ويمكن إضافة المشتري يدويًا. «وسيط العقد» هو الشخص المذكور في بيانات
+        عقد الإيجار، ويُضاف تلقائيًا فقط إذا كان اسمه موجودًا في العقد؛ ويمكن أيضًا إضافته يدويًا عند الحاجة.
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -289,10 +287,9 @@ function ClientsPage() {
         onChange={setTab}
         items={[
           { key: "all", label: "الكل", count: counts.all },
-          { key: "lead", label: "عملاء محتملون", count: counts.lead },
           { key: "buyer", label: "مشترون", count: counts.buyer },
           { key: "tenant", label: "مستأجرون", count: counts.tenant },
-          { key: "broker", label: "وسطاء", count: counts.broker },
+          { key: "broker", label: "وسطاء العقود", count: counts.broker },
         ]}
       />
 
@@ -336,11 +333,15 @@ function ClientsPage() {
               header: "الأدوار",
               cell: (r) => (
                 <span className="flex flex-wrap gap-1">
-                  {(r.roles ?? []).map((role) => (
-                    <Chip key={role} tone="primary">
-                      {contactRoleLabels[role] ?? role}
-                    </Chip>
-                  ))}
+                  {(r.roles ?? []).filter((role) => role !== "lead").length ? (
+                    (r.roles ?? []).filter((role) => role !== "lead").map((role) => (
+                      <Chip key={role} tone="primary">
+                        {contactRoleLabels[role] ?? role}
+                      </Chip>
+                    ))
+                  ) : (
+                    <Chip tone="neutral">عميل</Chip>
+                  )}
                 </span>
               ),
             },

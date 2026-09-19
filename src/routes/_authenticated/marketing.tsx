@@ -96,7 +96,7 @@ const leadStatusLabel: Record<string, string> = {
   qualified: "مؤهل",
   viewing: "معاينة",
   negotiation: "تفاوض",
-  won: "صفقة ناجحة",
+  won: "صفقة ناجحة — مؤكدة",
   lost: "غير مكتمل",
 };
 const leadStatusTone: Record<string, "neutral" | "info" | "warning" | "success" | "danger"> = {
@@ -867,7 +867,7 @@ function MarketingPage() {
       ) : null}
 
       {tab === "leads" ? (
-        <Panel icon={UserCheck} title="العملاء المنسوبون للمسوقين" subtitle="حدّث حالة كل عميل حتى إغلاق الصفقة." >
+        <Panel icon={UserCheck} title="العملاء المنسوبون للمسوقين" subtitle="الطلب يصل تلقائيًا من رابط المسوق، وتؤكد الإدارة نجاح الصفقة بعد توقيع العقد أو إتمام البيع." >
           <div className="mb-4 flex flex-wrap gap-2">
             <select className={`${inputClass} w-48`} value={marketerFilter} onChange={(event) => setMarketerFilter(event.target.value)}>
               <option value="all">كل المسوقين</option>
@@ -1102,6 +1102,8 @@ function MarketingPage() {
             <InfoCard title="تعارض المسوقين" text="إذا دخل العميل من أكثر من رابط، يُحتسب آخر رابط فعّال ضمن مدة الإسناد، ويظهر في سجل الزيارات لمراجعة الإدارة." />
             <InfoCard title="أنواع العمولة" text="مبلغ ثابت، أو نسبة من عمولة المكتب، أو نسبة من قيمة الصفقة — تُحدد لكل مسوق على حدة." />
             <InfoCard title="الخصوصية" text="لا يسجل النظام بيانات شخصية للزائر، فقط معرّف مجهول والصفحة والمصدر والوقت." />
+            <InfoCard title="كيف أعرف أنه باع؟" text="عند وصول طلب من رابط المسوق يظهر هنا باسمه ورقمه. يتابع الموظف حالته حتى توقيع العقد أو إتمام البيع، ثم يغيّرها إلى «صفقة ناجحة — مؤكدة». عندها تُسجّل العمولة للمراجعة؛ ولا يعتبر فتح الرابط أو إرسال الطلب بيعًا." />
+            <InfoCard title="ما الذي يتم تلقائيًا؟" text="تسجيل زيارة الرابط وربط الطلب بالمسوق يتمان تلقائيًا. تأكيد البيع، تسجيل مبلغ العمولة، اعتمادها، وتسجيل صرفها خطوات يدوية حتى لا تُحتسب صفقة أو عمولة بالخطأ." />
           </div>
           <div className="mt-5 rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm leading-7 text-foreground">
             <b>قاعدة واتساب:</b> لا يرسل النظام شيئًا عند إضافة مسوق أو إنشاء رابط. إرسال العقار يتم فقط عندما تختار مسوقًا وتضغط زر الإرسال بنفسك.
