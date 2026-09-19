@@ -70,7 +70,7 @@ function GoalsIndexPage() {
       return Promise.all(
         employees.map(async (emp) => {
           const rows = goals.filter((g) => g.employee_id === emp.id);
-          const auto = rows.length ? await computeAutoProgress(emp.id, month) : {};
+          const auto = await computeAutoProgress(emp.id, month);
           const target = rows.reduce((s, g) => s + Number(g.target_value || 0), 0);
           const achieved = rows.reduce((s, g) => s + effectiveAchieved(g, auto), 0);
           const points = rows.reduce((s, g) => s + goalPoints(g, auto), 0);

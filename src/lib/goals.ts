@@ -25,7 +25,14 @@ export function monthRange(month: string) {
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
-export type AutoProgress = Record<string, number>;
+export type AutoProgress = {
+  rent: number;
+  sale: number;
+  collection: number;
+  tasks: number;
+  leads: number;
+  visits: number;
+};
 
 /** يحسب الإنجاز التلقائي للموظف خلال شهر محدد من بيانات النظام. */
 export async function computeAutoProgress(
@@ -107,7 +114,8 @@ export type GoalRow = {
 
 /** القيمة المعتمدة للإنجاز: تلقائية أو يدوية. */
 export function effectiveAchieved(goal: GoalRow, auto: AutoProgress) {
-  if (goal.auto_track && goal.goal_type in auto) return Number(auto[goal.goal_type] ?? 0);
+  if (goal.auto_track && goal.goal_type in auto)
+    return Number((auto as Record<string, number>)[goal.goal_type] ?? 0);
   return Number(goal.achieved_value || 0);
 }
 

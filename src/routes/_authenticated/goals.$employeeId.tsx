@@ -47,6 +47,8 @@ function currentMonth() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+const emptyAuto = { rent: 0, sale: 0, collection: 0, tasks: 0, leads: 0, visits: 0 };
+
 const emptyForm = {
   goal_type: "rent",
   target_value: "",
@@ -93,7 +95,7 @@ function EmployeeGoalsPage() {
     },
   });
 
-  const { data: auto = {} } = useQuery({
+  const { data: auto = emptyAuto } = useQuery({
     queryKey: ["employee-auto-progress", employeeId, month],
     queryFn: () => computeAutoProgress(employeeId, month),
   });
@@ -225,7 +227,7 @@ function EmployeeGoalsPage() {
               <div key={g.key} className="rounded-xl border border-border bg-muted/40 p-3">
                 <p className="text-[11px] text-muted-foreground">{g.label}</p>
                 <p className="text-[16px] font-bold text-foreground">
-                  {Number(auto[g.key] ?? 0).toLocaleString("ar-EG")}
+                  {Number((auto as Record<string, number>)[g.key] ?? 0).toLocaleString("ar-EG")}
                 </p>
               </div>
             ))}
