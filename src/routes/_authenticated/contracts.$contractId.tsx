@@ -298,9 +298,12 @@ function ContractViewPage() {
     mutationFn: () => ensureTenantContractAccount({ data: { contractId } }),
     onSuccess: (result) =>
       result.ok
-        ? toast.success(`تم التفعيل — المستخدم: ${result.username} · كلمة المرور: ${result.password}`, {
-            duration: 15000,
-          })
+        ? toast.success(
+            `تم التفعيل — المستخدم: ${result.username} · كلمة المرور: ${result.password}`,
+            {
+              duration: 15000,
+            },
+          )
         : toast.error(result.reason ?? "تعذّر التفعيل"),
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر التفعيل"),
   });
@@ -560,12 +563,14 @@ function ContractViewPage() {
                 <Row label="اسم المستخدم في بوابة المستأجر" value={c.contract_number} />
                 <Row label="كلمة المرور" value={c.tenant?.phone ?? "جوال المستأجر"} />
                 <div className="pt-2">
-                  <GhostButton onClick={() => tenantAccess.mutate()} disabled={tenantAccess.isPending}>
+                  <GhostButton
+                    onClick={() => tenantAccess.mutate()}
+                    disabled={tenantAccess.isPending}
+                  >
                     تفعيل حساب المستأجر
                   </GhostButton>
                 </div>
               </div>
-
             </Section>
           </div>
 

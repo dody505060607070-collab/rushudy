@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { formatCurrency, formatDate } from "@/components/kit/LiveTable";
-import { Field, GhostButton, Modal, PrimaryButton, inputClass, textareaClass } from "@/components/kit/Modal";
+import {
+  Field,
+  GhostButton,
+  Modal,
+  PrimaryButton,
+  inputClass,
+  textareaClass,
+} from "@/components/kit/Modal";
 import { supabase } from "@/integrations/supabase/client";
 
 export type RecorderPayment = {
@@ -130,8 +137,15 @@ export function PaymentRecorder({
       }
       footer={
         <>
-          <PrimaryButton onClick={() => record.mutate()} disabled={record.isPending || remaining <= 0}>
-            {record.isPending ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
+          <PrimaryButton
+            onClick={() => record.mutate()}
+            disabled={record.isPending || remaining <= 0}
+          >
+            {record.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Wallet className="size-4" />
+            )}
             حفظ الدفعة
           </PrimaryButton>
           <GhostButton onClick={onClose}>إغلاق</GhostButton>
@@ -151,7 +165,10 @@ export function PaymentRecorder({
           </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="المبلغ المسدّد الآن" hint={`يمكن تسجيل سداد جزئي — المتبقي ${formatCurrency(remaining)}`}>
+            <Field
+              label="المبلغ المسدّد الآن"
+              hint={`يمكن تسجيل سداد جزئي — المتبقي ${formatCurrency(remaining)}`}
+            >
               <input
                 className={inputClass}
                 dir="ltr"
@@ -161,10 +178,19 @@ export function PaymentRecorder({
               />
             </Field>
             <Field label="تاريخ السداد">
-              <input type="date" className={inputClass} value={paidAt} onChange={(event) => setPaidAt(event.target.value)} />
+              <input
+                type="date"
+                className={inputClass}
+                value={paidAt}
+                onChange={(event) => setPaidAt(event.target.value)}
+              />
             </Field>
             <Field label="طريقة الدفع">
-              <select className={inputClass} value={method} onChange={(event) => setMethod(event.target.value)}>
+              <select
+                className={inputClass}
+                value={method}
+                onChange={(event) => setMethod(event.target.value)}
+              >
                 {methods.map((m) => (
                   <option key={m.key} value={m.key}>
                     {m.label}
@@ -173,10 +199,19 @@ export function PaymentRecorder({
               </select>
             </Field>
             <Field label="المرجع / رقم العملية">
-              <input className={inputClass} dir="ltr" value={reference} onChange={(event) => setReference(event.target.value)} />
+              <input
+                className={inputClass}
+                dir="ltr"
+                value={reference}
+                onChange={(event) => setReference(event.target.value)}
+              />
             </Field>
             <Field label="ملاحظات" className="sm:col-span-2">
-              <textarea className={textareaClass} value={notes} onChange={(event) => setNotes(event.target.value)} />
+              <textarea
+                className={textareaClass}
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+              />
             </Field>
             <div className="sm:col-span-2 flex flex-wrap gap-2">
               {[0.25, 0.5, 1].map((part) => (
@@ -209,17 +244,23 @@ export function PaymentRecorder({
               <tbody>
                 {(transactions.data ?? []).map((t) => (
                   <tr key={t.id} className="border-t border-border">
-                    <td className="p-2 font-semibold text-success">{formatCurrency(Number(t.amount))}</td>
+                    <td className="p-2 font-semibold text-success">
+                      {formatCurrency(Number(t.amount))}
+                    </td>
                     <td className="p-2" dir="ltr">
                       {formatDate(t.paid_at)}
                     </td>
-                    <td className="p-2">{methods.find((m) => m.key === t.method)?.label ?? t.method ?? "—"}</td>
+                    <td className="p-2">
+                      {methods.find((m) => m.key === t.method)?.label ?? t.method ?? "—"}
+                    </td>
                     <td className="p-2 text-muted-foreground">{t.notes ?? t.reference ?? "—"}</td>
                     <td className="p-2">
                       <button
                         type="button"
                         disabled={undo.isPending}
-                        onClick={() => undo.mutate(t.id)}
+                        onClick={() => {
+                          if (window.confirm("هل أنت متأكد من الحذف؟")) undo.mutate(t.id);
+                        }}
                         className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2.5 text-[12px] font-semibold text-muted-foreground hover:text-destructive disabled:opacity-50"
                       >
                         <RotateCcw className="size-3.5" />
@@ -244,13 +285,25 @@ export function PaymentRecorder({
   );
 }
 
-function Box({ label, value, tone }: { label: string; value: string; tone?: "success" | "primary" }) {
+function Box({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "success" | "primary";
+}) {
   return (
     <div className="rounded-xl border border-border bg-secondary/50 p-3">
       <p className="text-[11.5px] text-muted-foreground">{label}</p>
       <p
         className={`mt-1 text-[15px] font-bold ${
-          tone === "success" ? "text-success" : tone === "primary" ? "text-primary" : "text-foreground"
+          tone === "success"
+            ? "text-success"
+            : tone === "primary"
+              ? "text-primary"
+              : "text-foreground"
         }`}
       >
         {value}
