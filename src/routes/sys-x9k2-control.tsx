@@ -34,6 +34,12 @@ function ControlPage() {
 
   const load = async () => {
     try {
+      // لا نستدعي الخادم إطلاقًا بدون جلسة — الزائر يرى 404 فقط.
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        setAllowed(false);
+        return;
+      }
       const result = await checkAccess({ data: undefined as never });
       setState({ locked: result.locked, message: result.message });
       setAllowed(true);
