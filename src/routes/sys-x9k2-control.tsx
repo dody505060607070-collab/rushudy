@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 
+import { supabase } from "@/integrations/supabase/client";
 import { killSwitchAccess, setKillSwitch } from "@/lib/kill-switch.functions";
 
 export const Route = createFileRoute("/sys-x9k2-control")({
