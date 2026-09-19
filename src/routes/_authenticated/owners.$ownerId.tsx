@@ -1133,16 +1133,23 @@ function OwnerDetailPage() {
         </div>
 
         {(() => {
-          const renderGroup = (group: (typeof groups)[number]) => {
+          const renderGroup = (group: (typeof groups)[number], plain = false) => {
             const collapsed = collapsedGroups[group.key];
             return (
               <article
                 key={group.key}
-                draggable={group.key !== "__standalone"}
-                onDragStart={() => setDragGroup({ id: group.key, type: "building" })}
+                draggable={!plain && group.key !== "__standalone"}
+                onDragStart={(event) => {
+                  if (plain || group.key === "__standalone") return;
+                  event.stopPropagation();
+                  setDragGroup({ id: group.key, type: "building" });
+                }}
                 onDragEnd={() => setDragGroup(null)}
                 onDragOver={(event) => event.preventDefault()}
-                onDrop={() => moveAsset.mutate(group.key === "__standalone" ? null : group.key)}
+                onDrop={() => {
+                  if (plain || dragGroup) return;
+                  moveAsset.mutate(group.key === "__standalone" ? null : group.key);
+                }}
                 className="overflow-hidden rounded-md border border-border border-e-primary transition-colors hover:border-primary/50"
               >
                 <header className="flex flex-wrap items-center justify-between gap-3 bg-secondary/40 px-4 py-3">
@@ -1177,8 +1184,15 @@ function OwnerDetailPage() {
                         <div
                           key={item.key}
                           draggable
-                          onDragStart={() => setDragAsset({ id: item.key, type: item.assetType })}
-                          onDragEnd={() => setDragAsset(null)}
+                          onDragStart={(event) => {
+                            event.stopPropagation();
+                            setDragAsset({ id: item.key, type: item.assetType });
+                            setDragGroup({ id: item.key, type: item.assetType });
+                          }}
+                          onDragEnd={() => {
+                            setDragAsset(null);
+                            setDragGroup(null);
+                          }}
                           onDragOver={(event) => event.preventDefault()}
                           onDrop={(event) => {
                             if (!dragContractId || item.assetType !== "unit") return;
@@ -1376,13 +1390,24 @@ function OwnerDetailPage() {
               .filter((i) => i.item_type === "building")
               .map((i) => [i.item_id, i.section_id] as const),
           );
-          const unassigned = groups.filter(
-            (g) => g.key === "__standalone" || !sectionOfBuilding.has(g.key),
+          const sectionOfAsset = new Map(
+            sectionItems
+              .filter((i) => i.item_type !== "building")
+              .map((i) => [i.item_id, i.section_id] as const),
           );
+          const allItems = groups.flatMap((g) => g.items);
+          const assetsOfSection = (sectionId: string) =>
+            allItems.filter((item) => sectionOfAsset.get(item.key) === sectionId);
+          const unassigned = groups
+            .filter((g) => g.key === "__standalone" || !sectionOfBuilding.has(g.key))
+            .map((g) => ({ ...g, items: g.items.filter((item) => !sectionOfAsset.has(item.key)) }))
+            .filter((g) => g.key !== "__standalone" || g.items.length);
           return (
             <div className="grid w-full grid-cols-1 gap-5">
               {sections.map((section) => {
                 const inSection = groups.filter((g) => sectionOfBuilding.get(g.key) === section.id);
+                const looseInSection = assetsOfSection(section.id);
+                const sectionCount = inSection.length + looseInSection.length;
                 return (
                   <section
                     key={section.id}
@@ -1408,10 +1433,20 @@ function OwnerDetailPage() {
                         aria-label="اسم القسم"
                       />
                       <div className="flex items-center gap-2">
-                        <Chip tone="primary">{inSection.length} عنصر</Chip>
+                        <Chip tone="primary">{sectionCount} عنصر</Chip>
+                        <Link
+                          to="/owner-section/$sectionId"
+                          params={{ sectionId: section.id }}
+                          className="h-8 rounded-md border border-primary/40 px-3 text-[12px] font-semibold leading-8 text-primary"
+                        >
+                          فتح القسم
+                        </Link>
                         <button
                           type="button"
-                          onClick={() => deleteSection.mutate(section.id)}
+                          onClick={() => {
+                            if (window.confirm(`حذف القسم «${section.name}»؟`))
+                              deleteSection.mutate(section.id);
+                          }}
                           className="h-8 rounded-md border border-border px-3 text-[12px] font-semibold text-muted-foreground hover:text-destructive"
                         >
                           حذف القسم
@@ -1419,9 +1454,20 @@ function OwnerDetailPage() {
                       </div>
                     </header>
                     <div className="mt-3 grid gap-4">
-                      {inSection.map(renderGroup)}
-                      {!inSection.length ? (
-                        <Empty text="اسحب عمارة أو عقارًا وأسقطه داخل هذا القسم" />
+                      {inSection.map((group) => renderGroup(group))}
+                      {looseInSection.length
+                        ? renderGroup(
+                            {
+                              key: `section-${section.id}-assets`,
+                              title: "عقارات ووحدات داخل القسم",
+                              subtitle: `${looseInSection.length} عنصر`,
+                              items: looseInSection,
+                            },
+                            true,
+                          )
+                        : null}
+                      {!sectionCount ? (
+                        <Empty text="اسحب عمارة أو عقارًا أو وحدة وأسقطها داخل هذا القسم" />
                       ) : null}
                     </div>
                   </section>
@@ -1442,7 +1488,7 @@ function OwnerDetailPage() {
               >
                 <h3 className="text-[14px] font-bold">غير مصنّف</h3>
                 <div className="mt-3 grid gap-4">
-                  {unassigned.map(renderGroup)}
+                  {unassigned.map((group) => renderGroup(group))}
                   {!groups.length ? <Empty text="لا توجد عقارات أو وحدات مرتبطة" /> : null}
                 </div>
               </section>
