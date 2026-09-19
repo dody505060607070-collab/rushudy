@@ -64,6 +64,7 @@ import { Route as PortalCareRouteImport } from './routes/portal.care'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
 import { Route as PortalFinanceRouteImport } from './routes/portal.finance'
 import { Route as PortalInsightsRouteImport } from './routes/portal.insights'
+import { Route as PortalMaintenanceRouteImport } from './routes/portal.maintenance'
 import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as PortalUnitsRouteImport } from './routes/portal.units'
@@ -372,6 +373,11 @@ const PortalInsightsRoute = PortalInsightsRouteImport.update({
   path: '/insights',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalMaintenanceRoute = PortalMaintenanceRouteImport.update({
+  id: '/maintenance',
+  path: '/maintenance',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalMessagesRoute = PortalMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
@@ -567,6 +573,7 @@ export interface FileRoutesByFullPath {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
+  '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
@@ -647,6 +654,7 @@ export interface FileRoutesByTo {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
+  '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
@@ -730,6 +738,7 @@ export interface FileRoutesById {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
+  '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
@@ -813,6 +822,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
+    | '/portal/maintenance'
     | '/portal/messages'
     | '/portal/settings'
     | '/portal/units'
@@ -893,6 +903,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
+    | '/portal/maintenance'
     | '/portal/messages'
     | '/portal/settings'
     | '/portal/units'
@@ -975,6 +986,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
+    | '/portal/maintenance'
     | '/portal/messages'
     | '/portal/settings'
     | '/portal/units'
@@ -1416,6 +1428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalInsightsRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/maintenance': {
+      id: '/portal/maintenance'
+      path: '/maintenance'
+      fullPath: '/portal/maintenance'
+      preLoaderRoute: typeof PortalMaintenanceRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/messages': {
       id: '/portal/messages'
       path: '/messages'
@@ -1716,6 +1735,7 @@ interface PortalRouteChildren {
   PortalDocumentsRoute: typeof PortalDocumentsRoute
   PortalFinanceRoute: typeof PortalFinanceRoute
   PortalInsightsRoute: typeof PortalInsightsRoute
+  PortalMaintenanceRoute: typeof PortalMaintenanceRoute
   PortalMessagesRoute: typeof PortalMessagesRoute
   PortalSettingsRoute: typeof PortalSettingsRoute
   PortalUnitsRoute: typeof PortalUnitsRoute
@@ -1731,6 +1751,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalDocumentsRoute: PortalDocumentsRoute,
   PortalFinanceRoute: PortalFinanceRoute,
   PortalInsightsRoute: PortalInsightsRoute,
+  PortalMaintenanceRoute: PortalMaintenanceRoute,
   PortalMessagesRoute: PortalMessagesRoute,
   PortalSettingsRoute: PortalSettingsRoute,
   PortalUnitsRoute: PortalUnitsRoute,
