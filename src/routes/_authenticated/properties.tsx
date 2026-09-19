@@ -235,6 +235,22 @@ function PropertiesPage() {
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر التحديث"),
   });
 
+  const statusToggle = useMutation({
+    mutationFn: async (input: { id: string; status: string }) => {
+      const { error: err } = await supabase
+        .from("properties")
+        .update({ status: input.status })
+        .eq("id", input.id);
+      if (err) throw err;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+      queryClient.invalidateQueries({ queryKey: ["public-properties"] });
+      toast.success("تم تحديث حالة العقار");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر التحديث"),
+  });
+
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { error: err } = await supabase.from("properties").delete().eq("id", id);
@@ -397,11 +413,25 @@ function PropertiesPage() {
             },
             {
               header: "الحالة",
-              cell: (r) => (
-                <Chip tone={r.status === "available" ? "success" : "warning"}>
-                  {statusLabels[r.status] ?? r.status}
-                </Chip>
-              ),
+              cell: (r) => {
+                const next =
+                  r.status === "available" ? (r.purpose === "sale" ? "sold" : "rented") : "available";
+                return (
+                  <button
+                    type="button"
+                    title={`تحويل الحالة إلى «${statusLabels[next]}»`}
+                    disabled={statusToggle.isPending}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      statusToggle.mutate({ id: r.id, status: next });
+                    }}
+                  >
+                    <Chip tone={r.status === "available" ? "success" : "warning"}>
+                      {statusLabels[r.status] ?? r.status}
+                    </Chip>
+                  </button>
+                );
+              },
             },
             {
               header: "مرئي",
