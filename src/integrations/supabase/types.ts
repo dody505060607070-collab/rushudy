@@ -1161,6 +1161,7 @@ export type Database = {
       employee_goals: {
         Row: {
           achieved_value: number
+          auto_track: boolean
           created_at: string
           created_by: string | null
           employee_id: string
@@ -1168,11 +1169,13 @@ export type Database = {
           id: string
           notes: string | null
           period_month: string
+          points_per_unit: number
           target_value: number
           updated_at: string
         }
         Insert: {
           achieved_value?: number
+          auto_track?: boolean
           created_at?: string
           created_by?: string | null
           employee_id: string
@@ -1180,11 +1183,13 @@ export type Database = {
           id?: string
           notes?: string | null
           period_month: string
+          points_per_unit?: number
           target_value: number
           updated_at?: string
         }
         Update: {
           achieved_value?: number
+          auto_track?: boolean
           created_at?: string
           created_by?: string | null
           employee_id?: string
@@ -1192,6 +1197,7 @@ export type Database = {
           id?: string
           notes?: string | null
           period_month?: string
+          points_per_unit?: number
           target_value?: number
           updated_at?: string
         }
