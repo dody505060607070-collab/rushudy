@@ -12,6 +12,7 @@ import {
   User,
   Wallet,
   Wrench,
+  Handshake,
 } from "lucide-react";
 import { useEffect } from "react";
 
@@ -170,11 +171,11 @@ function PortalLayout() {
               </>
             ) : (
               <Link
-                to="/portal/maintenance"
+                to="/portal/services"
                 className={link}
                 activeProps={{ className: `${link} ${active}` }}
               >
-                <Wrench className="h-4 w-4" /> الصيانة
+                <Handshake className="h-4 w-4" /> شركاؤنا وخدماتنا
               </Link>
             )}
           </nav>

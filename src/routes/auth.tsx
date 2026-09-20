@@ -28,7 +28,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [audience, setAudience] = useState<"staff" | "client">("staff");
+  const [audience, setAudience] = useState<"staff" | "client" | "partner">("client");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -41,12 +41,12 @@ function AuthPage() {
     void (async () => {
       const { data } = await supabase.auth.getSession();
       if (!data.session) return;
-      const account = await supabase
+      const [account, partner] = await Promise.all([supabase
         .from("client_accounts")
         .select("id")
         .eq("user_id", data.session.user.id)
-        .maybeSingle();
-      navigate({ to: account.data ? "/portal" : "/dashboard" });
+        .maybeSingle(), supabase.from("service_partner_accounts").select("id").eq("user_id", data.session.user.id).maybeSingle()]);
+      navigate({ to: partner.data ? "/partner" : account.data ? "/portal" : "/dashboard" });
     })();
   }, [navigate]);
 
@@ -64,6 +64,12 @@ function AuthPage() {
         });
         if (error) throw new Error("اسم المستخدم أو كلمة المرور غير صحيحة.");
         navigate({ to: "/portal" });
+      } else if (audience === "partner") {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw new Error("البريد أو كلمة المرور غير صحيحة.");
+        const partner = await supabase.from("service_partner_accounts").select("id").eq("user_id", data.user.id).maybeSingle();
+        if (!partner.data) { await supabase.auth.signOut(); throw new Error("هذا الحساب غير مرتبط بشركة خدمات."); }
+        navigate({ to: "/partner" });
       } else if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -104,6 +110,7 @@ function AuthPage() {
   };
 
   const isClient = audience === "client";
+  const isPartner = audience === "partner";
 
   return (
     <main className="min-h-screen bg-muted/40 p-4 sm:grid sm:place-items-center sm:p-8" dir="rtl">
@@ -122,12 +129,12 @@ function AuthPage() {
 
             <div className="relative mt-12">
               <h2 className="text-2xl font-black sm:text-3xl">
-                {isClient ? "بوابة الرشودي للعملاء" : "بوابة الرشودي للموظفين"}
+                {isClient ? "بوابة الرشودي للعملاء" : isPartner ? "بوابة شركاء الخدمات" : "بوابة الرشودي للموظفين"}
               </h2>
               <p className="mt-4 text-sm leading-7 text-primary-foreground/75">
-                {isClient
+                 {isClient
                   ? "بوابة مخصصة لعملاء الرشودي للعقارات لمتابعة العقود والمدفوعات وفق الصلاحيات المعتمدة."
-                  : "بوابة مخصصة لموظفي وإدارة الرشودي للعقارات لمتابعة الأعمال اليومية وفق الصلاحيات المعتمدة."}
+                   : isPartner ? "بوابة مخصصة للشركات لمتابعة طلبات العملاء وإصدار الفواتير." : "بوابة مخصصة لموظفي وإدارة الرشودي للعقارات لمتابعة الأعمال اليومية وفق الصلاحيات المعتمدة."}
               </p>
               <ul className="mt-6 space-y-3 text-[13px] leading-6 text-primary-foreground/85">
                 {(isClient
@@ -159,13 +166,13 @@ function AuthPage() {
             <div className="flex-1 p-8 sm:p-10">
               <div className="flex items-center justify-end gap-3">
                 <span className="text-[13px] font-bold text-primary">
-                  {isClient ? "بوابة العملاء" : "بوابة الموظفين"}
+                  {isClient ? "بوابة العملاء" : isPartner ? "بوابة الشركات" : "بوابة الموظفين"}
                 </span>
                 <span className="h-px w-6 bg-secondary" />
               </div>
 
               <h1 className="mt-3 text-3xl font-black text-foreground">
-                {mode === "signup" && !isClient ? "إنشاء حساب موظف" : "تسجيل الدخول"}
+                {mode === "signup" && !isClient && !isPartner ? "إنشاء حساب موظف" : "تسجيل الدخول"}
               </h1>
               <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
                 {isClient
@@ -173,21 +180,21 @@ function AuthPage() {
                   : "استخدم حسابك المعتمد للوصول إلى لوحة إدارة الرشودي للعقارات."}
               </p>
 
-              <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 text-sm font-semibold">
-                {(["staff", "client"] as const).map((a) => (
+               <div className="mt-6 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1 text-sm font-semibold">
+                 {(["client", "partner", "staff"] as const).map((a) => (
                   <button
                     key={a}
                     type="button"
-                    onClick={() => setAudience(a)}
+                    onClick={() => { setAudience(a); if (a !== "staff") setMode("signin"); }}
                     className={`rounded-lg py-2 transition ${audience === a ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
                   >
-                    {a === "staff" ? "موظف" : "عميل"}
+                     {a === "staff" ? "موظف" : a === "partner" ? "شركة" : "عميل"}
                   </button>
                 ))}
               </div>
 
               <form onSubmit={submit} className="mt-6 space-y-5">
-                {!isClient && mode === "signup" ? (
+                {!isClient && !isPartner && mode === "signup" ? (
                   <Field id="name" label="الاسم الكامل" icon={<UserRound className="size-4" />}>
                     <Input
                       id="name"
@@ -266,11 +273,11 @@ function AuthPage() {
                 ) : null}
 
                 <Button type="submit" className="h-12 w-full rounded-full text-base font-bold" disabled={busy}>
-                  {mode === "signup" && !isClient ? "إنشاء الحساب" : "تسجيل الدخول"}
+                  {mode === "signup" && !isClient && !isPartner ? "إنشاء الحساب" : "تسجيل الدخول"}
                 </Button>
               </form>
 
-              {!isClient && mode === "signin" ? (
+              {!isClient && !isPartner && mode === "signin" ? (
                 <>
                   <div className="my-5 flex items-center gap-3 text-[12px] text-muted-foreground">
                     <span className="h-px flex-1 bg-border" />
@@ -283,7 +290,7 @@ function AuthPage() {
                 </>
               ) : null}
 
-              {!isClient ? (
+              {!isClient && !isPartner ? (
                 <button
                   type="button"
                   className="mt-6 w-full text-[13px] text-primary underline-offset-4 hover:underline"
@@ -295,7 +302,7 @@ function AuthPage() {
             </div>
 
             <p className="border-t border-border bg-muted/40 px-8 py-4 text-center text-[12px] text-muted-foreground">
-              {isClient ? "هذه البوابة مخصصة لعملاء الرشودي فقط." : "هذه البوابة مخصصة للموظفين والإدارة فقط."}
+              {isClient ? "هذه البوابة مخصصة لعملاء الرشودي فقط." : isPartner ? "هذه البوابة مخصصة لشركاء الخدمات المعتمدين فقط." : "هذه البوابة مخصصة للموظفين والإدارة فقط."}
             </p>
           </section>
         </div>

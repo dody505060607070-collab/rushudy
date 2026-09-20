@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { getPortalOverview } from "@/lib/portal.functions";
+import { getMyServiceRequests } from "@/lib/service-partners.functions";
 
 export const Route = createFileRoute("/portal/invoices/")({
   head: () => ({
@@ -40,6 +41,7 @@ function PortalInvoices() {
     queryKey: ["portal-overview"],
     queryFn: () => getPortalOverview(),
   });
+  const serviceData = useQuery({ queryKey: ["portal-service-requests"], queryFn: () => getMyServiceRequests() });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">جاري التحميل…</p>;
   if (error) return <p className="text-sm text-destructive">{(error as Error).message}</p>;
@@ -159,6 +161,11 @@ function PortalInvoices() {
           <p className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">لا توجد فواتير مطابقة.</p>
         ) : null}
       </div>
+      <section className="space-y-3">
+        <div><h2 className="text-base font-bold">فواتير شركاء الخدمات</h2><p className="text-xs text-muted-foreground">الفواتير الصادرة من الشركات التي طلبت خدماتها.</p></div>
+        {(serviceData.data?.invoices ?? []).map((invoice) => <article key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4"><div><p className="font-bold">{invoice.invoice_number}</p><p className="text-xs text-muted-foreground">{invoice.partner?.name ?? "شريك خدمة"}</p></div><p className="font-bold text-primary">{invoice.amount == null ? "المبلغ موضح بالمرفق" : money(Number(invoice.amount))}</p><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">صادرة</span></article>)}
+        {!serviceData.data?.invoices.length ? <p className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">لا توجد فواتير خدمات حتى الآن.</p> : null}
+      </section>
     </div>
   );
 }

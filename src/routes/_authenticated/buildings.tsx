@@ -33,6 +33,7 @@ import { PageHero } from "@/components/kit/PageHero";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadMedia } from "@/lib/media";
+import { PropertyStatusDialog, type StatusTarget } from "@/components/properties/PropertyStatusDialog";
 
 export const Route = createFileRoute("/_authenticated/buildings")({
   head: () => ({
@@ -130,6 +131,7 @@ function BuildingsPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [generatorFor, setGeneratorFor] = useState<BuildingRow | null>(null);
   const [coverBusy, setCoverBusy] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null);
 
   const buildings = useQuery({
     queryKey: ["buildings", "admin"],
@@ -359,36 +361,6 @@ function BuildingsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const cycleUnitStatus = useMutation({
-    mutationFn: async (unit: UnitProperty) => {
-      const next =
-        unit.status === "available" ? (unit.purpose === "sale" ? "sold" : "rented") : "available";
-      const propertyUpdate = await supabase
-        .from("properties")
-        .update({ status: next })
-        .eq("id", unit.id);
-      if (propertyUpdate.error) throw propertyUpdate.error;
-      if (unit.unit_id) {
-        const unitUpdate = await supabase
-          .from("units")
-          .update({ status: next })
-          .eq("id", unit.unit_id);
-        if (unitUpdate.error) throw unitUpdate.error;
-      }
-      return next;
-    },
-    onSuccess: (next) => {
-      toast.success(
-        next === "available"
-          ? "تمت إعادة الوحدة إلى متاحة"
-          : "تم تعليم الوحدة بالأحمر كمؤجرة أو مبيعة",
-      );
-      void qc.invalidateQueries({ queryKey: ["building-units"] });
-      void qc.invalidateQueries({ queryKey: ["public-buildings"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   const remove = useMutation({
     mutationFn: async (row: BuildingRow) => {
       const { error } = await supabase.from("buildings").delete().eq("id", row.id);
@@ -587,7 +559,7 @@ function BuildingsPage() {
                             <button
                               key={u.id}
                               type="button"
-                              onClick={() => cycleUnitStatus.mutate(u)}
+                              onClick={() => setStatusTarget({ id: u.id, name: u.name, status: u.status, purpose: u.purpose })}
                               title={`${u.name} — ${unitStatusLabels[u.status] ?? u.status}`}
                               className={`grid h-9 min-w-14 place-items-center rounded-lg border px-2 text-[11.5px] font-bold ${statusClass(u.status)}`}
                             >
@@ -932,6 +904,7 @@ function BuildingsPage() {
           />
         </div>
       </Modal>
+      <PropertyStatusDialog target={statusTarget} onClose={() => setStatusTarget(null)} onSaved={() => { void qc.invalidateQueries({ queryKey: ["building-units"] }); void qc.invalidateQueries({ queryKey: ["public-buildings"] }); }} />
 
       <GeneratorModal
         building={generatorFor}

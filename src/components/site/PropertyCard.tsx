@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Building2, GitCompareArrows, MapPin } from "lucide-react";
 
 import { FavoriteButton } from "@/components/site/FavoriteButton";
+import { StatusRibbon } from "@/components/site/StatusRibbon";
 import {
   coverImage,
   propertyEnquiryText,
@@ -19,6 +20,7 @@ export function PropertyCard({ property, comparing = false, onCompare }: { prope
   return (
     <article className="lift group overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-shadow hover:shadow-float">
       <div className="relative h-60 bg-muted sm:h-64">
+        <StatusRibbon status={property.status} />
         {cover ? (
           <img
             src={cover}

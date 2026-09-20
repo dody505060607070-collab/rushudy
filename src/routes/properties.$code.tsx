@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { FavoriteButton } from "@/components/site/FavoriteButton";
 import { Lightbox } from "@/components/kit/Lightbox";
 import { PropertyCard } from "@/components/site/PropertyCard";
+import { StatusRibbon } from "@/components/site/StatusRibbon";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { SOCIAL_PLATFORMS, SocialGlyph } from "@/components/site/SocialIcons";
 import { supabase } from "@/integrations/supabase/client";
@@ -164,6 +165,7 @@ function PropertyPage() {
         <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
           <div>
             <div className="relative overflow-hidden rounded-2xl border border-border bg-muted">
+              <StatusRibbon status={property.status} />
               <FavoriteButton code={property.code} className="absolute end-4 top-4 z-10 size-11" />
               {images[active]?.url ? (
                 <button type="button" className="block w-full cursor-zoom-in" onClick={() => setLightboxOpen(true)} aria-label="عرض الصورة بالحجم الكامل">
