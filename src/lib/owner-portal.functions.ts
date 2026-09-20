@@ -24,6 +24,15 @@ async function ownerContext(userId: string) {
   return { db, contactId, contact: contact.data };
 }
 
+/** نسخة لا ترمي خطأ: تُرجع null لغير الملاك (مستأجرين مثلًا). */
+async function ownerContextOrNull(userId: string) {
+  try {
+    return await ownerContext(userId);
+  } catch {
+    return null;
+  }
+}
+
 const n = (v: unknown) => Number(v ?? 0) || 0;
 const monthKey = (iso: string) => iso.slice(0, 7);
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -275,7 +284,9 @@ export const getOwnerInsights = createServerFn({ method: "GET" })
 export const getOwnerWorkspace = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { db, contactId } = await ownerContext(context.userId);
+    const ctx = await ownerContextOrNull(context.userId);
+    if (!ctx) return null;
+    const { db, contactId } = ctx;
     const [payouts, approvals, messages, notifications, prefs, links, logins, signatures, delegates, documents] =
       await Promise.all([
         db.from("owner_payout_requests").select("*").eq("owner_id", contactId).order("created_at", { ascending: false }).limit(100),
