@@ -427,34 +427,42 @@ function ReservationsPage() {
             {
               header: "إجراءات",
               cell: (row) =>
-                canBook && ["hold", "active"].includes(row.status) ? (
+                canBook ? (
                   <span className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => update.mutate({ row, action: "extend" })}
-                      disabled={update.isPending}
-                    >
-                      <Clock3 />
-                      تمديد 24س
+                    <Button size="sm" variant="outline" onClick={() => openEdit(row)}>
+                      <Pencil />
+                      تعديل كامل
                     </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => update.mutate({ row, action: "approve" })}
-                      disabled={update.isPending}
-                    >
-                      <CheckCircle2 />
-                      تحويل لعقد
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => update.mutate({ row, action: "cancel" })}
-                      disabled={update.isPending}
-                    >
-                      <XCircle />
-                      إلغاء
-                    </Button>
+                    {["hold", "active"].includes(row.status) ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => update.mutate({ row, action: "extend" })}
+                          disabled={update.isPending}
+                        >
+                          <Clock3 />
+                          تمديد 24س
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => update.mutate({ row, action: "approve" })}
+                          disabled={update.isPending}
+                        >
+                          <CheckCircle2 />
+                          تحويل لعقد
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => update.mutate({ row, action: "cancel" })}
+                          disabled={update.isPending}
+                        >
+                          <XCircle />
+                          إلغاء
+                        </Button>
+                      </>
+                    ) : null}
                   </span>
                 ) : (
                   "—"
