@@ -273,6 +273,47 @@ function ReservationsPage() {
     onError: (error) => toast.error(errorMessage(error, "تعذّر تحديث الحجز")),
   });
 
+  const saveEdit = useMutation({
+    mutationFn: async () => {
+      if (!editRow) return;
+      if (!editForm.property_id || !editForm.employee_id) throw new Error("اختر العقار والموظف");
+      const { error } = await supabase
+        .from("reservations")
+        .update({
+          property_id: editForm.property_id,
+          employee_id: editForm.employee_id,
+          contact_id: editForm.contact_id || null,
+          status: editForm.status,
+          starts_at: new Date(editForm.starts_at).toISOString(),
+          ends_at: new Date(editForm.ends_at).toISOString(),
+          notes: editForm.notes.trim() || null,
+        })
+        .eq("id", editRow.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refresh();
+      setEditRow(null);
+      toast.success("تم تحديث بيانات الحجز");
+    },
+    onError: (error) => toast.error(errorMessage(error, "تعذّر تعديل الحجز")),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (row: Row) => {
+      const { error } = await supabase.from("reservations").delete().eq("id", row.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refresh();
+      setEditRow(null);
+      toast.success("تم حذف الحجز");
+    },
+    onError: (error) => toast.error(errorMessage(error, "تعذّر حذف الحجز")),
+  });
+
+
+
   if (authLoading) {
     return (
       <div className="surface-card grid place-items-center gap-2 px-6 py-16 text-center">
