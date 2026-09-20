@@ -173,83 +173,123 @@ export const issueClientAccess = createServerFn({ method: "POST" })
     return { username, password, loginEmail, created: true, generated };
   });
 
-/** يحوّل اسم المستخدم (رقم الهوية) إلى بريد الدخول الداخلي. */
+/**
+ * يحوّل ما يكتبه العميل (رقم العقد أو رقم الهوية أو اسم المستخدم أو البريد) إلى بريد الدخول،
+ * ويضبط كلمة المرور على جوّاله تلقائيًا بعد التحقق — فلا يحتاج أي تفعيل يدوي.
+ */
 export const resolveClientLogin = createServerFn({ method: "POST" })
   .inputValidator((input: { username: string; password?: string }) => input)
   .handler(async ({ data }) => {
     const raw = String(data.username ?? "").trim();
-    const username = clientUsername(data.username);
+    const digits = clientUsername(raw);
+    const suppliedRaw = String(data.password ?? "");
+    const suppliedPhone = localPhone(suppliedRaw);
     const db = await admin();
+    const fail = { email: null as string | null, password: null as string | null };
+    if (!raw) return fail;
 
-    // 1) رقم الهوية أو رقم العقد كما هو مسجَّل في الحسابات
-    for (const candidate of [username, raw].filter(Boolean)) {
+    // 1) تحديد العميل صاحب هذا المُعرِّف
+    let contactId: string | null = null;
+
+    for (const candidate of [...new Set([digits, raw].filter(Boolean))]) {
       const row = await db
         .from("client_accounts")
-        .select("login_email")
+        .select("contact_id")
         .eq("username", candidate)
         .maybeSingle();
-      if (row.data?.login_email) return { email: row.data.login_email };
+      if (row.data?.contact_id) {
+        contactId = row.data.contact_id;
+        break;
+      }
     }
 
-    // 2) دخول المستأجر برقم العقد + جوّاله
-    if (raw) {
-      const contract = await db
-        .from("contracts")
-        .select("id, tenant_id")
-        .eq("contract_number", raw)
+    if (!contactId && raw.includes("@")) {
+      const row = await db
+        .from("client_accounts")
+        .select("contact_id")
+        .eq("login_email", raw.toLowerCase())
         .maybeSingle();
-      if (contract.data?.tenant_id) {
-        const tenant = await db
-          .from("contacts")
-          .select("id, phone, whatsapp")
-          .eq("id", contract.data.tenant_id)
+      contactId = row.data?.contact_id ?? null;
+    }
+
+    let contractId: string | null = null;
+    if (!contactId) {
+      for (const candidate of [...new Set([raw, digits].filter(Boolean))]) {
+        const contract = await db
+          .from("contracts")
+          .select("id, tenant_id")
+          .eq("contract_number", candidate)
           .maybeSingle();
-        const expected = localPhone(tenant.data?.phone ?? tenant.data?.whatsapp);
-        if (expected && expected === localPhone(data.password)) {
-          const existing = await db
-            .from("client_accounts")
-            .select("login_email")
-            .eq("contact_id", contract.data.tenant_id)
-            .maybeSingle();
-          if (existing.data?.login_email) return { email: existing.data.login_email };
-          const { ensureTenantAccountForContract } = await import("./client-account.server");
-          const result = await ensureTenantAccountForContract(contract.data.id);
-          if (result.ok) {
-            const created = await db
-              .from("client_accounts")
-              .select("login_email")
-              .eq("contact_id", contract.data.tenant_id)
-              .maybeSingle();
-            return { email: created.data?.login_email ?? null };
-          }
+        if (contract.data?.tenant_id) {
+          contactId = contract.data.tenant_id;
+          contractId = contract.data.id;
+          break;
         }
       }
     }
-    if (!username) return { email: null as string | null };
 
-    // إصلاح آمن للحسابات القديمة: لا ننشئ الحساب إلا إذا طابقت كلمة المرور جوال
-    // مالك موجود بالفعل وله عقد مسجل في النظام.
-    const suppliedPassword = localPhone(data.password);
-    if (!suppliedPassword) return { email: null as string | null };
+    if (!contactId && digits) {
+      const contact = await db
+        .from("contacts")
+        .select("id")
+        .eq("national_id", digits)
+        .maybeSingle();
+      contactId = contact.data?.id ?? null;
+    }
+
+    if (!contactId) return fail;
+
+    // 2) التحقق من كلمة المرور مقابل جوال العميل المسجّل
     const contact = await db
       .from("contacts")
-      .select("id, phone, whatsapp, roles")
-      .eq("national_id", username)
+      .select("id, phone, whatsapp")
+      .eq("id", contactId)
       .maybeSingle();
-    const isOwner = (contact.data?.roles ?? []).includes("owner");
-    const expectedPassword = localPhone(contact.data?.phone ?? contact.data?.whatsapp);
-    if (!contact.data || !isOwner || suppliedPassword !== expectedPassword) {
-      return { email: null as string | null };
+    if (!contact.data) return fail;
+    const expectedPhone = localPhone(contact.data.phone ?? contact.data.whatsapp);
+    const phoneMatches = Boolean(expectedPhone) && expectedPhone === suppliedPhone;
+
+    const account = await db
+      .from("client_accounts")
+      .select("id, user_id, login_email")
+      .eq("contact_id", contactId)
+      .maybeSingle();
+
+    // كلمة مرور مخصّصة لحساب قائم: نسمح بالمحاولة كما هي
+    if (account.data?.login_email && !phoneMatches) {
+      return { email: account.data.login_email, password: suppliedRaw };
     }
-    const contract = await db
-      .from("contracts")
-      .select("id")
-      .eq("owner_id", contact.data.id)
-      .limit(1);
-    if (!contract.data?.length) return { email: null as string | null };
+    if (!phoneMatches) return fail;
+
+    // 3) الحساب موجود: نزامن كلمة المرور على صيغة الجوال المحلية 05…
+    if (account.data?.login_email) {
+      const sync = await db.auth.admin.updateUserById(account.data.user_id, {
+        password: expectedPhone,
+        email_confirm: true,
+      });
+      if (sync.error) return { email: account.data.login_email, password: suppliedRaw };
+      return { email: account.data.login_email, password: expectedPhone };
+    }
+
+    // 4) لا يوجد حساب بعد: يُنشأ تلقائيًا الآن
+    if (contractId) {
+      const { ensureTenantAccountForContract } = await import("./client-account.server");
+      const result = await ensureTenantAccountForContract(contractId);
+      if (result.ok) {
+        const created = await db
+          .from("client_accounts")
+          .select("login_email")
+          .eq("contact_id", contactId)
+          .maybeSingle();
+        if (created.data?.login_email)
+          return { email: created.data.login_email, password: expectedPhone };
+      }
+    }
     const { ensureClientAccountForContact } = await import("./client-account.server");
-    const repaired = await ensureClientAccountForContact(contact.data.id);
-    return { email: repaired.ok ? `${repaired.username}@${CLIENT_EMAIL_DOMAIN}` : null };
+    const repaired = await ensureClientAccountForContact(contactId);
+    return repaired.ok
+      ? { email: `${repaired.username}@${CLIENT_EMAIL_DOMAIN}`, password: expectedPhone }
+      : fail;
   });
 
 async function currentClient(userId: string) {
