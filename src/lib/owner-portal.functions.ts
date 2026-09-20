@@ -284,7 +284,9 @@ export const getOwnerInsights = createServerFn({ method: "GET" })
 export const getOwnerWorkspace = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { db, contactId } = await ownerContext(context.userId);
+    const ctx = await ownerContextOrNull(context.userId);
+    if (!ctx) return null;
+    const { db, contactId } = ctx;
     const [payouts, approvals, messages, notifications, prefs, links, logins, signatures, delegates, documents] =
       await Promise.all([
         db.from("owner_payout_requests").select("*").eq("owner_id", contactId).order("created_at", { ascending: false }).limit(100),
