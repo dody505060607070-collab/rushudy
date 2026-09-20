@@ -170,30 +170,50 @@ function ReservationsPage() {
     queryKey: ["reservation-options"],
     enabled: canBook,
     queryFn: async () => {
-      const [properties, staff, contacts, activeReservations] = await Promise.all([
-        supabase.from("properties").select("id,name,code").eq("status", "available").order("name"),
+      const [properties, staff, contacts] = await Promise.all([
+        supabase.from("properties").select("id,name,code").neq("status", "archived").order("name"),
         supabase.from("profiles").select("id,full_name").eq("is_active", true).order("full_name"),
         supabase.from("contacts").select("id,full_name").order("full_name").limit(500),
-        supabase
-          .from("reservations")
-          .select("property_id")
-          .in("status", ["hold", "active"])
-          .gt("ends_at", new Date().toISOString()),
       ]);
-      for (const result of [properties, staff, contacts, activeReservations])
-        if (result.error) throw result.error;
-      const reservedPropertyIds = new Set(
-        (activeReservations.data ?? []).map((row) => row.property_id),
-      );
+      for (const result of [properties, staff, contacts]) if (result.error) throw result.error;
       return {
-        properties: (properties.data ?? []).filter(
-          (property) => !reservedPropertyIds.has(property.id),
-        ),
+        properties: properties.data ?? [],
         staff: staff.data ?? [],
         contacts: contacts.data ?? [],
       };
     },
   });
+
+  // تعديل كامل للحجز: المدير يغيّر أي معلومة في أي وقت ومهما كانت الحالة.
+  const [editRow, setEditRow] = useState<Row | null>(null);
+  const [editForm, setEditForm] = useState({
+    property_id: "",
+    employee_id: "",
+    contact_id: "",
+    status: "active",
+    starts_at: "",
+    ends_at: "",
+    notes: "",
+  });
+
+  const toLocalInput = (value: string) => {
+    const date = new Date(value);
+    const offset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  };
+
+  const openEdit = (row: Row) => {
+    setEditRow(row);
+    setEditForm({
+      property_id: row.property_id ?? "",
+      employee_id: row.employee_id ?? "",
+      contact_id: row.contact_id ?? "",
+      status: row.status,
+      starts_at: toLocalInput(row.starts_at),
+      ends_at: toLocalInput(row.ends_at),
+      notes: row.notes ?? "",
+    });
+  };
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["reservations"] });
