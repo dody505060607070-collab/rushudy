@@ -185,7 +185,7 @@ function AuthPage() {
                   <button
                     key={a}
                     type="button"
-                    onClick={() => setAudience(a)}
+                    onClick={() => { setAudience(a); if (a !== "staff") setMode("signin"); }}
                     className={`rounded-lg py-2 transition ${audience === a ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
                   >
                      {a === "staff" ? "موظف" : a === "partner" ? "شركة" : "عميل"}
@@ -273,7 +273,7 @@ function AuthPage() {
                 ) : null}
 
                 <Button type="submit" className="h-12 w-full rounded-full text-base font-bold" disabled={busy}>
-                  {mode === "signup" && !isClient ? "إنشاء الحساب" : "تسجيل الدخول"}
+                  {mode === "signup" && !isClient && !isPartner ? "إنشاء الحساب" : "تسجيل الدخول"}
                 </Button>
               </form>
 

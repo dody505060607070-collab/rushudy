@@ -45,13 +45,13 @@ export async function computeAutoProgress(
   const [contractsRes, dealsRes, allContractsRes, assigneesRes, contactsRes, visitsRes] = await Promise.all([
     supabase
       .from("contracts")
-      .select("id, contract_type")
+      .select("id, contract_type, property_id")
       .eq("created_by", employeeId)
       .gte("created_at", start)
       .lt("created_at", end),
     supabase
       .from("property_deal_events")
-      .select("id, event_type")
+      .select("id, event_type, property_id")
       .eq("employee_id", employeeId)
       .gte("event_date", start.slice(0, 10))
       .lt("event_date", end.slice(0, 10))
@@ -75,7 +75,9 @@ export async function computeAutoProgress(
       .lt("created_at", end),
   ]);
 
+  const propertiesWithRecordedDeals = new Set((dealsRes.data ?? []).map((row) => row.property_id));
   for (const row of contractsRes.data ?? []) {
+    if (row.property_id && propertiesWithRecordedDeals.has(row.property_id)) continue;
     if (row.contract_type === "sale") result.sale += 1;
     else result.rent += 1;
   }
