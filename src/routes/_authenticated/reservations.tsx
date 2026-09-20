@@ -630,6 +630,128 @@ function ReservationsPage() {
           </div>
         )}
       </Modal>
+
+      <Modal
+        open={Boolean(editRow)}
+        onClose={() => setEditRow(null)}
+        title="تعديل الحجز بالكامل"
+        subtitle="يمكنك تغيير العقار والموظف والعميل والحالة والمدة والملاحظات في أي وقت."
+        footer={
+          <>
+            <PrimaryButton onClick={() => saveEdit.mutate()} disabled={saveEdit.isPending}>
+              {saveEdit.isPending ? <Loader2 className="animate-spin" /> : null}
+              حفظ التعديلات
+            </PrimaryButton>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (editRow && window.confirm("سيتم حذف الحجز نهائيًا. هل أنت متأكد؟"))
+                  remove.mutate(editRow);
+              }}
+              disabled={remove.isPending}
+            >
+              <Trash2 />
+              حذف الحجز
+            </Button>
+            <GhostButton onClick={() => setEditRow(null)}>إغلاق</GhostButton>
+          </>
+        }
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="العقار" required className="sm:col-span-2">
+            <select
+              className={inputClass}
+              value={editForm.property_id}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, property_id: event.target.value }))
+              }
+            >
+              <option value="">اختر العقار</option>
+              {options.data?.properties.map((property) => (
+                <option key={property.id} value={property.id}>
+                  {property.code} — {property.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="الموظف" required>
+            <select
+              className={inputClass}
+              value={editForm.employee_id}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, employee_id: event.target.value }))
+              }
+            >
+              <option value="">اختر الموظف</option>
+              {options.data?.staff.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.full_name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="العميل">
+            <select
+              className={inputClass}
+              value={editForm.contact_id}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, contact_id: event.target.value }))
+              }
+            >
+              <option value="">بدون عميل</option>
+              {options.data?.contacts.map((contact) => (
+                <option key={contact.id} value={contact.id}>
+                  {contact.full_name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="الحالة">
+            <select
+              className={inputClass}
+              value={editForm.status}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, status: event.target.value }))
+              }
+            >
+              {["hold", "active", "expired", "cancelled", "converted"].map((status) => (
+                <option key={status} value={status}>
+                  {reservationStatusLabels[status] ?? status}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="يبدأ في">
+            <input
+              type="datetime-local"
+              className={inputClass}
+              value={editForm.starts_at}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, starts_at: event.target.value }))
+              }
+            />
+          </Field>
+          <Field label="ينتهي في" className="sm:col-span-2">
+            <input
+              type="datetime-local"
+              className={inputClass}
+              value={editForm.ends_at}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, ends_at: event.target.value }))
+              }
+            />
+          </Field>
+          <Field label="ملاحظات" className="sm:col-span-2">
+            <textarea
+              className={textareaClass}
+              value={editForm.notes}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, notes: event.target.value }))
+              }
+            />
+          </Field>
+        </div>
+      </Modal>
     </>
   );
 }
