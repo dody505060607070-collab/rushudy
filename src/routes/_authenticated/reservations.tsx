@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CalendarClock, CheckCircle2, Clock3, Loader2, Plus, XCircle } from "lucide-react";
+import {
+  CalendarClock,
+  CheckCircle2,
+  Clock3,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -170,30 +179,50 @@ function ReservationsPage() {
     queryKey: ["reservation-options"],
     enabled: canBook,
     queryFn: async () => {
-      const [properties, staff, contacts, activeReservations] = await Promise.all([
-        supabase.from("properties").select("id,name,code").eq("status", "available").order("name"),
+      const [properties, staff, contacts] = await Promise.all([
+        supabase.from("properties").select("id,name,code").neq("status", "archived").order("name"),
         supabase.from("profiles").select("id,full_name").eq("is_active", true).order("full_name"),
         supabase.from("contacts").select("id,full_name").order("full_name").limit(500),
-        supabase
-          .from("reservations")
-          .select("property_id")
-          .in("status", ["hold", "active"])
-          .gt("ends_at", new Date().toISOString()),
       ]);
-      for (const result of [properties, staff, contacts, activeReservations])
-        if (result.error) throw result.error;
-      const reservedPropertyIds = new Set(
-        (activeReservations.data ?? []).map((row) => row.property_id),
-      );
+      for (const result of [properties, staff, contacts]) if (result.error) throw result.error;
       return {
-        properties: (properties.data ?? []).filter(
-          (property) => !reservedPropertyIds.has(property.id),
-        ),
+        properties: properties.data ?? [],
         staff: staff.data ?? [],
         contacts: contacts.data ?? [],
       };
     },
   });
+
+  // تعديل كامل للحجز: المدير يغيّر أي معلومة في أي وقت ومهما كانت الحالة.
+  const [editRow, setEditRow] = useState<Row | null>(null);
+  const [editForm, setEditForm] = useState({
+    property_id: "",
+    employee_id: "",
+    contact_id: "",
+    status: "active",
+    starts_at: "",
+    ends_at: "",
+    notes: "",
+  });
+
+  const toLocalInput = (value: string) => {
+    const date = new Date(value);
+    const offset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  };
+
+  const openEdit = (row: Row) => {
+    setEditRow(row);
+    setEditForm({
+      property_id: row.property_id ?? "",
+      employee_id: row.employee_id ?? "",
+      contact_id: row.contact_id ?? "",
+      status: row.status,
+      starts_at: toLocalInput(row.starts_at),
+      ends_at: toLocalInput(row.ends_at),
+      notes: row.notes ?? "",
+    });
+  };
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["reservations"] });
@@ -252,6 +281,47 @@ function ReservationsPage() {
     },
     onError: (error) => toast.error(errorMessage(error, "تعذّر تحديث الحجز")),
   });
+
+  const saveEdit = useMutation({
+    mutationFn: async () => {
+      if (!editRow) return;
+      if (!editForm.property_id || !editForm.employee_id) throw new Error("اختر العقار والموظف");
+      const { error } = await supabase
+        .from("reservations")
+        .update({
+          property_id: editForm.property_id,
+          employee_id: editForm.employee_id,
+          contact_id: editForm.contact_id || null,
+          status: editForm.status,
+          starts_at: new Date(editForm.starts_at).toISOString(),
+          ends_at: new Date(editForm.ends_at).toISOString(),
+          notes: editForm.notes.trim() || null,
+        })
+        .eq("id", editRow.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refresh();
+      setEditRow(null);
+      toast.success("تم تحديث بيانات الحجز");
+    },
+    onError: (error) => toast.error(errorMessage(error, "تعذّر تعديل الحجز")),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (row: Row) => {
+      const { error } = await supabase.from("reservations").delete().eq("id", row.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refresh();
+      setEditRow(null);
+      toast.success("تم حذف الحجز");
+    },
+    onError: (error) => toast.error(errorMessage(error, "تعذّر حذف الحجز")),
+  });
+
+
 
   if (authLoading) {
     return (
@@ -366,34 +436,42 @@ function ReservationsPage() {
             {
               header: "إجراءات",
               cell: (row) =>
-                canBook && ["hold", "active"].includes(row.status) ? (
+                canBook ? (
                   <span className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => update.mutate({ row, action: "extend" })}
-                      disabled={update.isPending}
-                    >
-                      <Clock3 />
-                      تمديد 24س
+                    <Button size="sm" variant="outline" onClick={() => openEdit(row)}>
+                      <Pencil />
+                      تعديل كامل
                     </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => update.mutate({ row, action: "approve" })}
-                      disabled={update.isPending}
-                    >
-                      <CheckCircle2 />
-                      تحويل لعقد
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => update.mutate({ row, action: "cancel" })}
-                      disabled={update.isPending}
-                    >
-                      <XCircle />
-                      إلغاء
-                    </Button>
+                    {["hold", "active"].includes(row.status) ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => update.mutate({ row, action: "extend" })}
+                          disabled={update.isPending}
+                        >
+                          <Clock3 />
+                          تمديد 24س
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => update.mutate({ row, action: "approve" })}
+                          disabled={update.isPending}
+                        >
+                          <CheckCircle2 />
+                          تحويل لعقد
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => update.mutate({ row, action: "cancel" })}
+                          disabled={update.isPending}
+                        >
+                          <XCircle />
+                          إلغاء
+                        </Button>
+                      </>
+                    ) : null}
                   </span>
                 ) : (
                   "—"
@@ -560,6 +638,128 @@ function ReservationsPage() {
             })}
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={Boolean(editRow)}
+        onClose={() => setEditRow(null)}
+        title="تعديل الحجز بالكامل"
+        subtitle="يمكنك تغيير العقار والموظف والعميل والحالة والمدة والملاحظات في أي وقت."
+        footer={
+          <>
+            <PrimaryButton onClick={() => saveEdit.mutate()} disabled={saveEdit.isPending}>
+              {saveEdit.isPending ? <Loader2 className="animate-spin" /> : null}
+              حفظ التعديلات
+            </PrimaryButton>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (editRow && window.confirm("سيتم حذف الحجز نهائيًا. هل أنت متأكد؟"))
+                  remove.mutate(editRow);
+              }}
+              disabled={remove.isPending}
+            >
+              <Trash2 />
+              حذف الحجز
+            </Button>
+            <GhostButton onClick={() => setEditRow(null)}>إغلاق</GhostButton>
+          </>
+        }
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="العقار" required className="sm:col-span-2">
+            <select
+              className={inputClass}
+              value={editForm.property_id}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, property_id: event.target.value }))
+              }
+            >
+              <option value="">اختر العقار</option>
+              {options.data?.properties.map((property) => (
+                <option key={property.id} value={property.id}>
+                  {property.code} — {property.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="الموظف" required>
+            <select
+              className={inputClass}
+              value={editForm.employee_id}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, employee_id: event.target.value }))
+              }
+            >
+              <option value="">اختر الموظف</option>
+              {options.data?.staff.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.full_name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="العميل">
+            <select
+              className={inputClass}
+              value={editForm.contact_id}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, contact_id: event.target.value }))
+              }
+            >
+              <option value="">بدون عميل</option>
+              {options.data?.contacts.map((contact) => (
+                <option key={contact.id} value={contact.id}>
+                  {contact.full_name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="الحالة">
+            <select
+              className={inputClass}
+              value={editForm.status}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, status: event.target.value }))
+              }
+            >
+              {["hold", "active", "expired", "cancelled", "converted"].map((status) => (
+                <option key={status} value={status}>
+                  {reservationStatusLabels[status] ?? status}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="يبدأ في">
+            <input
+              type="datetime-local"
+              className={inputClass}
+              value={editForm.starts_at}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, starts_at: event.target.value }))
+              }
+            />
+          </Field>
+          <Field label="ينتهي في" className="sm:col-span-2">
+            <input
+              type="datetime-local"
+              className={inputClass}
+              value={editForm.ends_at}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, ends_at: event.target.value }))
+              }
+            />
+          </Field>
+          <Field label="ملاحظات" className="sm:col-span-2">
+            <textarea
+              className={textareaClass}
+              value={editForm.notes}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, notes: event.target.value }))
+              }
+            />
+          </Field>
+        </div>
       </Modal>
     </>
   );
