@@ -55,9 +55,13 @@ function AuthPage() {
     setBusy(true);
     try {
       if (audience === "client") {
-        const { email: loginEmail } = await resolveClientLogin({ data: { username, password } });
-        if (!loginEmail) throw new Error("لا يوجد حساب عميل بهذا اسم المستخدم. تواصل مع الإدارة.");
-        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+        const resolved = await resolveClientLogin({ data: { username, password } });
+        if (!resolved.email)
+          throw new Error("بيانات الدخول غير صحيحة. استخدم رقم العقد أو الهوية مع رقم جوالك.");
+        const { error } = await supabase.auth.signInWithPassword({
+          email: resolved.email,
+          password: resolved.password ?? password,
+        });
         if (error) throw new Error("اسم المستخدم أو كلمة المرور غير صحيحة.");
         navigate({ to: "/portal" });
       } else if (mode === "signin") {
