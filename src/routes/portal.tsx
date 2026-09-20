@@ -55,7 +55,7 @@ function PortalLayout() {
     retry: false,
     staleTime: 60_000,
   });
-  const isOwner = metaOwner || workspace.isSuccess;
+  const isOwner = metaOwner || !!workspace.data;
 
   useEffect(() => {
     if (!isOwner) return;
