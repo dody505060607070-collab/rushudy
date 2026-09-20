@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Building2, DoorOpen, Layers, MapPin, Printer, Video } from "lucide-react";
 
 import { SiteLayout } from "@/components/site/SiteLayout";
+import { StatusRibbon } from "@/components/site/StatusRibbon";
 import fixedBuildingCover from "@/assets/hero-rent.jpg";
 import {
   buildingCover,
@@ -204,6 +205,7 @@ function BuildingPage() {
                   >
                     <Link to="/properties/$code" params={{ code: unit.code }} className="block">
                       <div className="relative h-52 bg-muted">
+                        <StatusRibbon status={unit.status} />
                         {img ? (
                           <img
                             src={img}

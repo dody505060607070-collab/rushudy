@@ -28,7 +28,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [audience, setAudience] = useState<"staff" | "client">("staff");
+  const [audience, setAudience] = useState<"staff" | "client" | "partner">("client");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -41,12 +41,12 @@ function AuthPage() {
     void (async () => {
       const { data } = await supabase.auth.getSession();
       if (!data.session) return;
-      const account = await supabase
+      const [account, partner] = await Promise.all([supabase
         .from("client_accounts")
         .select("id")
         .eq("user_id", data.session.user.id)
-        .maybeSingle();
-      navigate({ to: account.data ? "/portal" : "/dashboard" });
+        .maybeSingle(), supabase.from("service_partner_accounts").select("id").eq("user_id", data.session.user.id).maybeSingle()]);
+      navigate({ to: partner.data ? "/partner" : account.data ? "/portal" : "/dashboard" });
     })();
   }, [navigate]);
 
@@ -64,6 +64,12 @@ function AuthPage() {
         });
         if (error) throw new Error("اسم المستخدم أو كلمة المرور غير صحيحة.");
         navigate({ to: "/portal" });
+      } else if (audience === "partner") {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw new Error("البريد أو كلمة المرور غير صحيحة.");
+        const partner = await supabase.from("service_partner_accounts").select("id").eq("user_id", data.user.id).maybeSingle();
+        if (!partner.data) { await supabase.auth.signOut(); throw new Error("هذا الحساب غير مرتبط بشركة خدمات."); }
+        navigate({ to: "/partner" });
       } else if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -104,6 +110,7 @@ function AuthPage() {
   };
 
   const isClient = audience === "client";
+  const isPartner = audience === "partner";
 
   return (
     <main className="min-h-screen bg-muted/40 p-4 sm:grid sm:place-items-center sm:p-8" dir="rtl">
@@ -122,12 +129,12 @@ function AuthPage() {
 
             <div className="relative mt-12">
               <h2 className="text-2xl font-black sm:text-3xl">
-                {isClient ? "بوابة الرشودي للعملاء" : "بوابة الرشودي للموظفين"}
+                {isClient ? "بوابة الرشودي للعملاء" : isPartner ? "بوابة شركاء الخدمات" : "بوابة الرشودي للموظفين"}
               </h2>
               <p className="mt-4 text-sm leading-7 text-primary-foreground/75">
-                {isClient
+                 {isClient
                   ? "بوابة مخصصة لعملاء الرشودي للعقارات لمتابعة العقود والمدفوعات وفق الصلاحيات المعتمدة."
-                  : "بوابة مخصصة لموظفي وإدارة الرشودي للعقارات لمتابعة الأعمال اليومية وفق الصلاحيات المعتمدة."}
+                   : isPartner ? "بوابة مخصصة للشركات لمتابعة طلبات العملاء وإصدار الفواتير." : "بوابة مخصصة لموظفي وإدارة الرشودي للعقارات لمتابعة الأعمال اليومية وفق الصلاحيات المعتمدة."}
               </p>
               <ul className="mt-6 space-y-3 text-[13px] leading-6 text-primary-foreground/85">
                 {(isClient
@@ -173,15 +180,15 @@ function AuthPage() {
                   : "استخدم حسابك المعتمد للوصول إلى لوحة إدارة الرشودي للعقارات."}
               </p>
 
-              <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 text-sm font-semibold">
-                {(["staff", "client"] as const).map((a) => (
+               <div className="mt-6 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1 text-sm font-semibold">
+                 {(["client", "partner", "staff"] as const).map((a) => (
                   <button
                     key={a}
                     type="button"
                     onClick={() => setAudience(a)}
                     className={`rounded-lg py-2 transition ${audience === a ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
                   >
-                    {a === "staff" ? "موظف" : "عميل"}
+                     {a === "staff" ? "موظف" : a === "partner" ? "شركة" : "عميل"}
                   </button>
                 ))}
               </div>

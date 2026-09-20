@@ -42,13 +42,20 @@ export async function computeAutoProgress(
   const { start, end } = monthRange(month);
   const result: AutoProgress = { rent: 0, sale: 0, collection: 0, tasks: 0, leads: 0, visits: 0 };
 
-  const [contractsRes, allContractsRes, assigneesRes, contactsRes, visitsRes] = await Promise.all([
+  const [contractsRes, dealsRes, allContractsRes, assigneesRes, contactsRes, visitsRes] = await Promise.all([
     supabase
       .from("contracts")
       .select("id, contract_type")
       .eq("created_by", employeeId)
       .gte("created_at", start)
       .lt("created_at", end),
+    supabase
+      .from("property_deal_events")
+      .select("id, event_type")
+      .eq("employee_id", employeeId)
+      .gte("event_date", start.slice(0, 10))
+      .lt("event_date", end.slice(0, 10))
+      .in("event_type", ["rent", "sale"]),
     supabase.from("contracts").select("id").eq("created_by", employeeId).limit(500),
     supabase
       .from("task_assignees")
@@ -70,6 +77,10 @@ export async function computeAutoProgress(
 
   for (const row of contractsRes.data ?? []) {
     if (row.contract_type === "sale") result.sale += 1;
+    else result.rent += 1;
+  }
+  for (const row of dealsRes.data ?? []) {
+    if (row.event_type === "sale") result.sale += 1;
     else result.rent += 1;
   }
 

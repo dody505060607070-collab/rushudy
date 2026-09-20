@@ -54,6 +54,7 @@ export const navGroups: NavGroup[] = [
       { label: "الفواتير", to: "/invoices", countKey: "invoices", module: "invoices" },
       { label: "إدارة التذكيرات", to: "/reminders", countKey: "followups", module: "reminders" },
       { label: "الصيانة", to: "/maintenance", module: "maintenance" },
+      { label: "شركاء الخدمات", to: "/service-partners", module: "maintenance" },
     ],
   },
   {
