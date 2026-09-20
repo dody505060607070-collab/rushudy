@@ -18,6 +18,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as ListPropertyRouteImport } from './routes/list-property'
 import { Route as MaintenanceRequestRouteImport } from './routes/maintenance-request'
+import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RentRouteImport } from './routes/rent'
@@ -51,6 +52,7 @@ import { Route as AuthenticatedRenewalsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReservationsRouteImport } from './routes/_authenticated/reservations'
 import { Route as AuthenticatedReserveRouteImport } from './routes/_authenticated/reserve'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
+import { Route as AuthenticatedServicePartnersRouteImport } from './routes/_authenticated/service-partners'
 import { Route as AuthenticatedServicesRouteImport } from './routes/_authenticated/services'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTaskFormRouteImport } from './routes/_authenticated/task-form'
@@ -59,6 +61,7 @@ import { Route as AuthenticatedTeamChatRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedWhatsappLinkRouteImport } from './routes/_authenticated/whatsapp-link'
 import { Route as BuildingsCodeRouteImport } from './routes/buildings.$code'
 import { Route as OwnerReportTokenRouteImport } from './routes/owner-report.$token'
+import { Route as PartnerIndexRouteImport } from './routes/partner.index'
 import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PortalCareRouteImport } from './routes/portal.care'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
@@ -66,6 +69,7 @@ import { Route as PortalFinanceRouteImport } from './routes/portal.finance'
 import { Route as PortalInsightsRouteImport } from './routes/portal.insights'
 import { Route as PortalMaintenanceRouteImport } from './routes/portal.maintenance'
 import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
+import { Route as PortalServicesRouteImport } from './routes/portal.services'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as PortalUnitsRouteImport } from './routes/portal.units'
 import { Route as PropertiesCodeRouteImport } from './routes/properties.$code'
@@ -133,6 +137,11 @@ const ListPropertyRoute = ListPropertyRouteImport.update({
 const MaintenanceRequestRoute = MaintenanceRequestRouteImport.update({
   id: '/maintenance-request',
   path: '/maintenance-request',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerRoute = PartnerRouteImport.update({
+  id: '/partner',
+  path: '/partner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortalRoute = PortalRouteImport.update({
@@ -307,6 +316,12 @@ const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedServicePartnersRoute =
+  AuthenticatedServicePartnersRouteImport.update({
+    id: '/service-partners',
+    path: '/service-partners',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedServicesRoute = AuthenticatedServicesRouteImport.update({
   id: '/services',
   path: '/services',
@@ -348,6 +363,11 @@ const OwnerReportTokenRoute = OwnerReportTokenRouteImport.update({
   path: '/owner-report/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PartnerIndexRoute = PartnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PartnerRoute,
+} as any)
 const PortalIndexRoute = PortalIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -381,6 +401,11 @@ const PortalMaintenanceRoute = PortalMaintenanceRouteImport.update({
 const PortalMessagesRoute = PortalMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalServicesRoute = PortalServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalSettingsRoute = PortalSettingsRouteImport.update({
@@ -528,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
   '/maintenance-request': typeof MaintenanceRequestRoute
+  '/partner': typeof PartnerRouteWithChildren
   '/portal': typeof PortalRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/rent': typeof RentRoute
@@ -561,6 +587,7 @@ export interface FileRoutesByFullPath {
   '/reservations': typeof AuthenticatedReservationsRoute
   '/reserve': typeof AuthenticatedReserveRoute
   '/roles': typeof AuthenticatedRolesRoute
+  '/service-partners': typeof AuthenticatedServicePartnersRoute
   '/services': typeof AuthenticatedServicesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/task-form': typeof AuthenticatedTaskFormRoute
@@ -575,9 +602,11 @@ export interface FileRoutesByFullPath {
   '/portal/insights': typeof PortalInsightsRoute
   '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
+  '/portal/services': typeof PortalServicesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
+  '/partner/': typeof PartnerIndexRoute
   '/portal/': typeof PortalIndexRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/goals/$employeeId': typeof AuthenticatedGoalsEmployeeIdRoute
@@ -642,6 +671,7 @@ export interface FileRoutesByTo {
   '/reservations': typeof AuthenticatedReservationsRoute
   '/reserve': typeof AuthenticatedReserveRoute
   '/roles': typeof AuthenticatedRolesRoute
+  '/service-partners': typeof AuthenticatedServicePartnersRoute
   '/services': typeof AuthenticatedServicesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/task-form': typeof AuthenticatedTaskFormRoute
@@ -656,9 +686,11 @@ export interface FileRoutesByTo {
   '/portal/insights': typeof PortalInsightsRoute
   '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
+  '/portal/services': typeof PortalServicesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
+  '/partner': typeof PartnerIndexRoute
   '/portal': typeof PortalIndexRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/goals/$employeeId': typeof AuthenticatedGoalsEmployeeIdRoute
@@ -693,6 +725,7 @@ export interface FileRoutesById {
   '/favorites': typeof FavoritesRoute
   '/list-property': typeof ListPropertyRoute
   '/maintenance-request': typeof MaintenanceRequestRoute
+  '/partner': typeof PartnerRouteWithChildren
   '/portal': typeof PortalRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/rent': typeof RentRoute
@@ -726,6 +759,7 @@ export interface FileRoutesById {
   '/_authenticated/reservations': typeof AuthenticatedReservationsRoute
   '/_authenticated/reserve': typeof AuthenticatedReserveRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
+  '/_authenticated/service-partners': typeof AuthenticatedServicePartnersRoute
   '/_authenticated/services': typeof AuthenticatedServicesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/task-form': typeof AuthenticatedTaskFormRoute
@@ -740,9 +774,11 @@ export interface FileRoutesById {
   '/portal/insights': typeof PortalInsightsRoute
   '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
+  '/portal/services': typeof PortalServicesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
+  '/partner/': typeof PartnerIndexRoute
   '/portal/': typeof PortalIndexRoute
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/_authenticated/goals/$employeeId': typeof AuthenticatedGoalsEmployeeIdRoute
@@ -777,6 +813,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/list-property'
     | '/maintenance-request'
+    | '/partner'
     | '/portal'
     | '/privacy'
     | '/rent'
@@ -810,6 +847,7 @@ export interface FileRouteTypes {
     | '/reservations'
     | '/reserve'
     | '/roles'
+    | '/service-partners'
     | '/services'
     | '/settings'
     | '/task-form'
@@ -824,9 +862,11 @@ export interface FileRouteTypes {
     | '/portal/insights'
     | '/portal/maintenance'
     | '/portal/messages'
+    | '/portal/services'
     | '/portal/settings'
     | '/portal/units'
     | '/properties/$code'
+    | '/partner/'
     | '/portal/'
     | '/contracts/$contractId'
     | '/goals/$employeeId'
@@ -891,6 +931,7 @@ export interface FileRouteTypes {
     | '/reservations'
     | '/reserve'
     | '/roles'
+    | '/service-partners'
     | '/services'
     | '/settings'
     | '/task-form'
@@ -905,9 +946,11 @@ export interface FileRouteTypes {
     | '/portal/insights'
     | '/portal/maintenance'
     | '/portal/messages'
+    | '/portal/services'
     | '/portal/settings'
     | '/portal/units'
     | '/properties/$code'
+    | '/partner'
     | '/portal'
     | '/contracts/$contractId'
     | '/goals/$employeeId'
@@ -941,6 +984,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/list-property'
     | '/maintenance-request'
+    | '/partner'
     | '/portal'
     | '/privacy'
     | '/rent'
@@ -974,6 +1018,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reservations'
     | '/_authenticated/reserve'
     | '/_authenticated/roles'
+    | '/_authenticated/service-partners'
     | '/_authenticated/services'
     | '/_authenticated/settings'
     | '/_authenticated/task-form'
@@ -988,9 +1033,11 @@ export interface FileRouteTypes {
     | '/portal/insights'
     | '/portal/maintenance'
     | '/portal/messages'
+    | '/portal/services'
     | '/portal/settings'
     | '/portal/units'
     | '/properties/$code'
+    | '/partner/'
     | '/portal/'
     | '/_authenticated/contracts/$contractId'
     | '/_authenticated/goals/$employeeId'
@@ -1025,6 +1072,7 @@ export interface RootRouteChildren {
   FavoritesRoute: typeof FavoritesRoute
   ListPropertyRoute: typeof ListPropertyRoute
   MaintenanceRequestRoute: typeof MaintenanceRequestRoute
+  PartnerRoute: typeof PartnerRouteWithChildren
   PortalRoute: typeof PortalRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RentRoute: typeof RentRoute
@@ -1104,6 +1152,13 @@ declare module '@tanstack/react-router' {
       path: '/maintenance-request'
       fullPath: '/maintenance-request'
       preLoaderRoute: typeof MaintenanceRequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partner': {
+      id: '/partner'
+      path: '/partner'
+      fullPath: '/partner'
+      preLoaderRoute: typeof PartnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portal': {
@@ -1337,6 +1392,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRolesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/service-partners': {
+      id: '/_authenticated/service-partners'
+      path: '/service-partners'
+      fullPath: '/service-partners'
+      preLoaderRoute: typeof AuthenticatedServicePartnersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/services': {
       id: '/_authenticated/services'
       path: '/services'
@@ -1393,6 +1455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerReportTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/partner/': {
+      id: '/partner/'
+      path: '/'
+      fullPath: '/partner/'
+      preLoaderRoute: typeof PartnerIndexRouteImport
+      parentRoute: typeof PartnerRoute
+    }
     '/portal/': {
       id: '/portal/'
       path: '/'
@@ -1440,6 +1509,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/portal/messages'
       preLoaderRoute: typeof PortalMessagesRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/services': {
+      id: '/portal/services'
+      path: '/services'
+      fullPath: '/portal/services'
+      preLoaderRoute: typeof PortalServicesRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/settings': {
@@ -1653,6 +1729,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReservationsRoute: typeof AuthenticatedReservationsRoute
   AuthenticatedReserveRoute: typeof AuthenticatedReserveRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
+  AuthenticatedServicePartnersRoute: typeof AuthenticatedServicePartnersRoute
   AuthenticatedServicesRoute: typeof AuthenticatedServicesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTaskFormRoute: typeof AuthenticatedTaskFormRoute
@@ -1700,6 +1777,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReservationsRoute: AuthenticatedReservationsRoute,
   AuthenticatedReserveRoute: AuthenticatedReserveRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
+  AuthenticatedServicePartnersRoute: AuthenticatedServicePartnersRoute,
   AuthenticatedServicesRoute: AuthenticatedServicesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTaskFormRoute: AuthenticatedTaskFormRoute,
@@ -1730,6 +1808,17 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface PartnerRouteChildren {
+  PartnerIndexRoute: typeof PartnerIndexRoute
+}
+
+const PartnerRouteChildren: PartnerRouteChildren = {
+  PartnerIndexRoute: PartnerIndexRoute,
+}
+
+const PartnerRouteWithChildren =
+  PartnerRoute._addFileChildren(PartnerRouteChildren)
+
 interface PortalRouteChildren {
   PortalCareRoute: typeof PortalCareRoute
   PortalDocumentsRoute: typeof PortalDocumentsRoute
@@ -1737,6 +1826,7 @@ interface PortalRouteChildren {
   PortalInsightsRoute: typeof PortalInsightsRoute
   PortalMaintenanceRoute: typeof PortalMaintenanceRoute
   PortalMessagesRoute: typeof PortalMessagesRoute
+  PortalServicesRoute: typeof PortalServicesRoute
   PortalSettingsRoute: typeof PortalSettingsRoute
   PortalUnitsRoute: typeof PortalUnitsRoute
   PortalIndexRoute: typeof PortalIndexRoute
@@ -1753,6 +1843,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalInsightsRoute: PortalInsightsRoute,
   PortalMaintenanceRoute: PortalMaintenanceRoute,
   PortalMessagesRoute: PortalMessagesRoute,
+  PortalServicesRoute: PortalServicesRoute,
   PortalSettingsRoute: PortalSettingsRoute,
   PortalUnitsRoute: PortalUnitsRoute,
   PortalIndexRoute: PortalIndexRoute,
@@ -1775,6 +1866,7 @@ const rootRouteChildren: RootRouteChildren = {
   FavoritesRoute: FavoritesRoute,
   ListPropertyRoute: ListPropertyRoute,
   MaintenanceRequestRoute: MaintenanceRequestRoute,
+  PartnerRoute: PartnerRouteWithChildren,
   PortalRoute: PortalRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RentRoute: RentRoute,
