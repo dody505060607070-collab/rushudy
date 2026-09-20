@@ -3345,6 +3345,84 @@ export type Database = {
           },
         ]
       }
+      property_deal_events: {
+        Row: {
+          amount: number | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          employee_id: string | null
+          event_date: string
+          event_type: string
+          id: string
+          notes: string | null
+          property_id: string
+          unit_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string | null
+          event_date?: string
+          event_type: string
+          id?: string
+          notes?: string | null
+          property_id: string
+          unit_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          notes?: string | null
+          property_id?: string
+          unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_deal_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_deal_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_deal_events_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_deal_events_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_deal_events_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_guarantees: {
         Row: {
           id: string
@@ -3759,6 +3837,228 @@ export type Database = {
           is_active?: boolean
           name?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      service_partner_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          login_email: string
+          partner_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          login_email: string
+          partner_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          login_email?: string
+          partner_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_partner_accounts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "service_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_partner_invoices: {
+        Row: {
+          amount: number | null
+          created_at: string
+          customer_user_id: string
+          description: string | null
+          id: string
+          image_path: string | null
+          invoice_number: string
+          issued_at: string
+          partner_id: string
+          request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          customer_user_id: string
+          description?: string | null
+          id?: string
+          image_path?: string | null
+          invoice_number?: string
+          issued_at?: string
+          partner_id: string
+          request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          customer_user_id?: string
+          description?: string | null
+          id?: string
+          image_path?: string | null
+          invoice_number?: string
+          issued_at?: string
+          partner_id?: string
+          request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_partner_invoices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "service_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_partner_invoices_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "service_partner_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_partner_requests: {
+        Row: {
+          address: string
+          contact_id: string | null
+          contract_id: string | null
+          created_at: string
+          customer_identity: string | null
+          customer_name: string
+          customer_phone: string
+          details: string
+          id: string
+          partner_id: string
+          partner_notes: string | null
+          request_number: string
+          requester_user_id: string
+          service_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          contact_id?: string | null
+          contract_id?: string | null
+          created_at?: string
+          customer_identity?: string | null
+          customer_name: string
+          customer_phone: string
+          details: string
+          id?: string
+          partner_id: string
+          partner_notes?: string | null
+          request_number?: string
+          requester_user_id: string
+          service_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          contact_id?: string | null
+          contract_id?: string | null
+          created_at?: string
+          customer_identity?: string | null
+          customer_name?: string
+          customer_phone?: string
+          details?: string
+          id?: string
+          partner_id?: string
+          partner_notes?: string | null
+          request_number?: string
+          requester_user_id?: string
+          service_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_partner_requests_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_partner_requests_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_partner_requests_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "service_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_partners: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          image_key: string | null
+          is_active: boolean
+          name: string
+          services: string[]
+          sort_order: number
+          updated_at: string
+          video_urls: string[]
+          whatsapp_number: string | null
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          image_key?: string | null
+          is_active?: boolean
+          name: string
+          services?: string[]
+          sort_order?: number
+          updated_at?: string
+          video_urls?: string[]
+          whatsapp_number?: string | null
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          image_key?: string | null
+          is_active?: boolean
+          name?: string
+          services?: string[]
+          sort_order?: number
+          updated_at?: string
+          video_urls?: string[]
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
@@ -4655,6 +4955,7 @@ export type Database = {
         }
       }
       current_owner_contact_id: { Args: never; Returns: string }
+      current_service_partner_id: { Args: never; Returns: string }
       expire_reservations: { Args: never; Returns: number }
       extend_reservation: {
         Args: { _reservation_id: string }
@@ -4723,6 +5024,18 @@ export type Database = {
           _visitor_id: string
         }
         Returns: Json
+      }
+      record_property_status_change: {
+        Args: {
+          _amount?: number
+          _contact_id?: string
+          _employee_id?: string
+          _event_date?: string
+          _notes?: string
+          _property_id: string
+          _status: string
+        }
+        Returns: string
       }
       touch_employee_session: {
         Args: { _device?: string; _path: string; _session_id: string }

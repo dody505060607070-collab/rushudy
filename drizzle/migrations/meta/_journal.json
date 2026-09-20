@@ -232,6 +232,13 @@
       "when": 1789862039118,
       "tag": "0032_harden_function_execute_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1789873287029,
+      "tag": "0033_service_partners_and_property_deals",
+      "breakpoints": true
     }
   ]
 }
