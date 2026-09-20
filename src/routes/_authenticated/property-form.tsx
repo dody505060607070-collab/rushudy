@@ -483,14 +483,18 @@ function PropertyFormPage() {
       };
       if (payload.latitude == null || payload.longitude == null) {
         try {
-          const coords = await resolvePropertyCoordinates({
-            data: {
-              mapUrl: payload.map_url,
-              hint: [payload.name, payload.district, payload.city, "بريدة، السعودية"]
-                .filter(Boolean)
-                .join("، "),
-            },
-          });
+          // الموقع اختياري: نمنحه 8 ثوانٍ فقط حتى لا يتعطل زر الحفظ إن تأخر مزود الخرائط.
+          const coords = await Promise.race([
+            resolvePropertyCoordinates({
+              data: {
+                mapUrl: payload.map_url,
+                hint: [payload.name, payload.district, payload.city, "بريدة، السعودية"]
+                  .filter(Boolean)
+                  .join("، "),
+              },
+            }),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+          ]);
           if (coords) {
             payload.latitude = coords.latitude;
             payload.longitude = coords.longitude;
