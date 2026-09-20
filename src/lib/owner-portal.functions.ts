@@ -24,6 +24,15 @@ async function ownerContext(userId: string) {
   return { db, contactId, contact: contact.data };
 }
 
+/** نسخة لا ترمي خطأ: تُرجع null لغير الملاك (مستأجرين مثلًا). */
+async function ownerContextOrNull(userId: string) {
+  try {
+    return await ownerContext(userId);
+  } catch {
+    return null;
+  }
+}
+
 const n = (v: unknown) => Number(v ?? 0) || 0;
 const monthKey = (iso: string) => iso.slice(0, 7);
 const todayISO = () => new Date().toISOString().slice(0, 10);
