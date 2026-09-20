@@ -61,13 +61,15 @@ function ListPropertyPage() {
       const referral = getStoredReferral();
       if (mode === "offer") {
         const attachments: { path: string; name: string; size: number; type: string }[] = [];
+        let failedUploads = 0;
         for (const file of images) {
           const extension = file.name.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "") || "jpg";
           const path = `public/${crypto.randomUUID()}.${extension}`;
           const upload = await supabase.storage.from("listing-request-media").upload(path, file, { contentType: file.type });
-          if (upload.error) throw upload.error;
+          if (upload.error) { failedUploads += 1; continue; }
           attachments.push({ path, name: file.name, size: file.size, type: file.type });
         }
+        if (failedUploads > 0) toast.warning(`تعذّر رفع ${failedUploads} صورة، وسيتم إرسال الطلب بدونها`);
         const notes = [form.description, additionalNotes, isBroker && form.broker_phone ? `جوال الوسيط: ${form.broker_phone}` : ""].filter(Boolean).join("\n\n");
         const result = await supabase.from("listing_requests").insert({ full_name: form.full_name, phone: form.phone, purpose: form.purpose, property_type: form.property_type, city: form.city || null, district: form.district || null, asking_price: form.asking_price, description: notes, map_url: form.map_url, attachments, referral_code: referral?.code ?? null });
         if (result.error) throw result.error;
