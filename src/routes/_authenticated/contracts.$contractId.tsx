@@ -29,6 +29,7 @@ import { PaymentRecorder, type RecorderPayment } from "@/components/payments/Pay
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteContractWithOwner } from "@/lib/delete-helpers";
+import { localPhone } from "@/lib/client-credentials";
 import { ensureTenantContractAccount } from "@/lib/portal.functions";
 
 export const Route = createFileRoute("/_authenticated/contracts/$contractId")({
