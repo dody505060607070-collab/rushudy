@@ -38,7 +38,7 @@ function ServicesPage() {
   const [contractId, setContractId] = useState("");
   const partner = partners.data?.find((p) => p.id === selected);
   const submit = useMutation({
-    mutationFn: () => createServiceRequest({ data: { partnerId: selected ?? "", address, serviceType, details, phone: phone || overview.data?.contact?.phone || "", contractId: contractId || undefined } }),
+    mutationFn: () => createServiceRequest({ data: { partnerId: selected ?? "", address, serviceType, details, phone: phone || overview.data?.contact?.phone || "", ...(contractId ? { contractId } : {}) } }),
     onSuccess: (request) => {
       void qc.invalidateQueries({ queryKey: ["portal-service-requests"] });
       const text = [`طلب خدمة جديد من الرشودي`, `رقم الطلب: ${request.request_number}`, `العميل: ${overview.data?.contact?.full_name ?? "عميل"}`, `الجوال: ${phone || overview.data?.contact?.phone || "—"}`, `العنوان: ${address}`, `الخدمة: ${serviceType}`, `التفاصيل: ${details}`].join("\n");

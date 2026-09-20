@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Field, GhostButton, Modal, PrimaryButton, inputClass, textareaClass } from "@/components/kit/Modal";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,11 +21,17 @@ export function PropertyStatusDialog({ target, onClose, onSaved }: { target: Sta
     if (!target) return;
     setBusy(true);
     try {
-      const result = await supabase.rpc("record_property_status_change", { _property_id: target.id, _status: next, _employee_id: employeeId || undefined, _contact_id: contactId || undefined, _amount: amount ? Number(amount) : undefined, _event_date: eventDate, _notes: notes || undefined });
+      const args: { _property_id: string; _status: string; _employee_id?: string; _contact_id?: string; _amount?: number; _event_date?: string; _notes?: string } = { _property_id: target.id, _status: next, _event_date: eventDate };
+      if (employeeId) args._employee_id = employeeId;
+      if (contactId) args._contact_id = contactId;
+      if (amount) args._amount = Number(amount);
+      if (notes.trim()) args._notes = notes.trim();
+      const result = await supabase.rpc("record_property_status_change", args);
       if (result.error) throw result.error;
       onSaved();
       onClose();
-    } finally { setBusy(false); }
+      toast.success(next === "available" ? "تمت إعادة العقار إلى متاح" : "تم حفظ الحالة وبيانات العملية");
+    } catch (error) { toast.error(error instanceof Error ? error.message : "تعذّر تحديث الحالة"); } finally { setBusy(false); }
   };
   return <Modal open={Boolean(target)} onClose={onClose} title={`تغيير حالة ${target?.name ?? "العقار"}`} subtitle={`الحالة الجديدة: ${next === "available" ? "متاح" : next === "sold" ? "مباع" : "مؤجر"}. كل البيانات التالية اختيارية.`} footer={<><PrimaryButton onClick={() => void save()} disabled={busy}>{busy ? "جاري الحفظ…" : "تأكيد وحفظ"}</PrimaryButton><GhostButton onClick={onClose}>إلغاء</GhostButton></>}>
     <div className="grid gap-4 sm:grid-cols-2">

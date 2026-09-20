@@ -31,6 +31,7 @@ import { Pills } from "@/components/kit/Pills";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
 import { sendPropertyToMarketer } from "@/lib/marketing.functions";
+import { PropertyStatusDialog, type StatusTarget } from "@/components/properties/PropertyStatusDialog";
 
 type PropertyRow = {
   id: string;
@@ -123,6 +124,7 @@ function PropertiesPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [shareProperty, setShareProperty] = useState<PropertyRow | null>(null);
   const [selectedMarketer, setSelectedMarketer] = useState("");
+  const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null);
   const queryClient = useQueryClient();
   const sendToMarketer = useServerFn(sendPropertyToMarketer);
   const marketers = useQuery({
@@ -225,22 +227,6 @@ function PropertiesPage() {
       const patch =
         input.field === "is_visible" ? { is_visible: input.value } : { is_featured: input.value };
       const { error: err } = await supabase.from("properties").update(patch).eq("id", input.id);
-      if (err) throw err;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["properties"] });
-      queryClient.invalidateQueries({ queryKey: ["public-properties"] });
-      toast.success("تم تحديث حالة العقار");
-    },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر التحديث"),
-  });
-
-  const statusToggle = useMutation({
-    mutationFn: async (input: { id: string; status: string }) => {
-      const { error: err } = await supabase
-        .from("properties")
-        .update({ status: input.status })
-        .eq("id", input.id);
       if (err) throw err;
     },
     onSuccess: () => {
@@ -420,10 +406,9 @@ function PropertiesPage() {
                   <button
                     type="button"
                     title={`تحويل الحالة إلى «${statusLabels[next]}»`}
-                    disabled={statusToggle.isPending}
                     onClick={(event) => {
                       event.stopPropagation();
-                      statusToggle.mutate({ id: r.id, status: next });
+                      setStatusTarget({ id: r.id, name: r.name, status: r.status, purpose: r.purpose });
                     }}
                   >
                     <Chip tone={r.status === "available" ? "success" : "warning"}>
@@ -663,6 +648,7 @@ function PropertiesPage() {
           </div>
         </div>
       </Modal>
+      <PropertyStatusDialog target={statusTarget} onClose={() => setStatusTarget(null)} onSaved={() => { void queryClient.invalidateQueries({ queryKey: ["properties"] }); void queryClient.invalidateQueries({ queryKey: ["public-properties"] }); }} />
       <Modal
         open={Boolean(shareProperty)}
         onClose={() => setShareProperty(null)}
