@@ -29,6 +29,7 @@ import { PaymentRecorder, type RecorderPayment } from "@/components/payments/Pay
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteContractWithOwner } from "@/lib/delete-helpers";
+import { localPhone } from "@/lib/client-credentials";
 import { ensureTenantContractAccount } from "@/lib/portal.functions";
 
 export const Route = createFileRoute("/_authenticated/contracts/$contractId")({
@@ -561,7 +562,10 @@ function ContractViewPage() {
                 <Row label="الجوال" value={c.tenant?.phone} />
                 <Row label="البريد" value={c.tenant?.email} />
                 <Row label="اسم المستخدم في بوابة المستأجر" value={c.contract_number} />
-                <Row label="كلمة المرور" value={c.tenant?.phone ?? "جوال المستأجر"} />
+                <Row
+                  label="كلمة المرور"
+                  value={localPhone(c.tenant?.phone) || "جوال المستأجر بصيغة 05xxxxxxxx"}
+                />
                 <div className="pt-2">
                   <GhostButton
                     onClick={() => tenantAccess.mutate()}
