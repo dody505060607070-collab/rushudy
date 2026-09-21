@@ -21,6 +21,7 @@ import { Field, inputClass, textareaClass } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import { priorityLabels, taskStatusLabels } from "@/lib/labels";
+import { parseCoordsFromMapLink, resolveMapLink } from "@/lib/maps.functions";
 import { finishTask, notifyTaskNow } from "@/lib/tasks.functions";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +114,8 @@ function TaskFormPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [assignees, setAssignees] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [mapLink, setMapLink] = useState("");
+  const [resolvingMap, setResolvingMap] = useState(false);
 
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
@@ -203,8 +206,7 @@ function TaskFormPage() {
     if (taskAssignees.data) setAssignees(taskAssignees.data.map((a) => a.user_id));
   }, [taskAssignees.data]);
 
-  const save = useMutation({
-    mutationFn: async () => {
+  const persistTask = async () => {
       if (!form.title.trim()) throw new Error("عنوان المهمة مطلوب");
       const payload = {
         title: form.title.trim(),
@@ -246,8 +248,11 @@ function TaskFormPage() {
           .in("user_id", toRemove);
         if (error) throw error;
       }
-      return { taskId, added: toAdd };
-    },
+      return { taskId: taskId as string, added: toAdd };
+  };
+
+  const save = useMutation({
+    mutationFn: persistTask,
     onSuccess: async ({ taskId: newId, added }) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
@@ -321,24 +326,28 @@ function TaskFormPage() {
 
   const upload = async (files: FileList | null) => {
     if (!files?.length) return;
-    if (!id) {
-      toast.error("احفظ المهمة أولًا ثم أرفق الملفات");
-      return;
-    }
     setUploading(true);
     try {
+      // المرفقات متاحة فورًا: لو المهمة جديدة تُحفظ تلقائيًا قبل الرفع.
+      let taskId = id;
+      if (!taskId) {
+        const saved = await persistTask();
+        taskId = saved.taskId;
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        navigate({ to: "/task-form", search: { id: taskId } });
+      }
       for (const file of Array.from(files)) {
-        const path = `tasks/${id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+        const path = `tasks/${taskId}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
         await uploadMedia("internal-files", path, file);
         const { error } = await supabase.from("task_attachments").insert({
-          task_id: id,
+          task_id: taskId,
           file_path: path,
           file_name: file.name,
           kind: "reference",
         });
         if (error) throw error;
       }
-      queryClient.invalidateQueries({ queryKey: ["task-attachments", id] });
+      queryClient.invalidateQueries({ queryKey: ["task-attachments", taskId] });
       toast.success("تم إرفاق الملفات");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "تعذّر الإرفاق");
