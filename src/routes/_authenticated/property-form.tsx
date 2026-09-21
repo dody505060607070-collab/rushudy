@@ -767,7 +767,7 @@ function PropertyFormPage() {
     onSuccess: () => {
       setVideoUrl("");
       setVideoTitle("");
-      queryClient.invalidateQueries({ queryKey: ["property-videos", id] });
+      queryClient.invalidateQueries({ queryKey: ["property-videos"] });
       toast.success("تمت إضافة الفيديو");
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّرت الإضافة"),
