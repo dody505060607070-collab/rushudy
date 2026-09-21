@@ -99,6 +99,45 @@ export async function whatsappSend(input: { to: string; body: string }): Promise
   return result;
 }
 
+/** إرسال صورة/ملف على واتساب عبر رابط مباشر (Evolution API). */
+export async function whatsappSendMedia(input: {
+  to: string;
+  url: string;
+  caption?: string;
+  fileName?: string;
+  mediatype?: "image" | "document" | "video";
+}): Promise<WhatsAppResult> {
+  const cfg = evoConfig();
+  if (!cfg) return { ok: false, error: "خدمة واتساب غير مُعدّة — تأكد من إعدادات الربط" };
+  const to = toE164(input.to);
+  if (!to.startsWith("+") || to.length < 8) {
+    return { ok: false, error: `رقم الجوال غير صالح: ${input.to}` };
+  }
+  try {
+    const res = await evoFetch(`/message/sendMedia/${cfg.instance}`, {
+      method: "POST",
+      body: JSON.stringify({
+        number: to.replace("+", ""),
+        mediatype: input.mediatype ?? "image",
+        media: input.url,
+        ...(input.caption ? { caption: input.caption } : {}),
+        ...(input.fileName ? { fileName: input.fileName } : {}),
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      key?: { id?: string };
+      message?: string;
+      error?: string;
+    };
+    if (res.ok) return { ok: true, sid: data.key?.id ?? "" };
+    return { ok: false, error: data.message ?? data.error ?? `WhatsApp ${res.status}` };
+  } catch (e) {
+    return { ok: false, error: `تعذر إرسال الصورة على واتساب: ${(e as Error).message}` };
+  }
+}
+
+
+
 
 export const sendWhatsAppMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
