@@ -754,10 +754,10 @@ function PropertyFormPage() {
 
   const addVideo = useMutation({
     mutationFn: async () => {
-      if (!id) throw new Error("احفظ العقار أولًا ثم أضِف الفيديوهات");
       if (!videoUrl.trim()) throw new Error("ضع رابط الفيديو");
+      const targetId = await ensurePropertyId();
       const { error } = await supabase.from("property_videos").insert({
-        property_id: id,
+        property_id: targetId,
         url: videoUrl.trim(),
         title: videoTitle.trim() || null,
         sort_order: videos.data?.length ?? 0,
