@@ -779,7 +779,7 @@ function PropertyFormPage() {
     try {
       const targetId = await ensurePropertyId();
       for (const file of Array.from(files)) {
-        const path = `${targetId}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+        const path = `${targetId}/${Date.now()}-${file.name.replace(/[^\w.-]/g, "_")}`;
         const { url } = await uploadMedia("property-media", path, file);
         await addImage.mutateAsync(url);
       }

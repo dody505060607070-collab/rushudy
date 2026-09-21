@@ -321,8 +321,6 @@ function ReservationsPage() {
     onError: (error) => toast.error(errorMessage(error, "تعذّر حذف الحجز")),
   });
 
-
-
   if (authLoading) {
     return (
       <div className="surface-card grid place-items-center gap-2 px-6 py-16 text-center">
