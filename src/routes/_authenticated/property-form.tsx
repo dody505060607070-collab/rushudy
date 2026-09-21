@@ -567,7 +567,11 @@ function PropertyFormPage() {
           search: requestId ? { id: newId, requestId } : { id: newId },
         });
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
+    onError: (err) =>
+      toast.error(describeDbError(err, "تعذّر الحفظ"), {
+        duration: 8000,
+        description: "صحّح السبب الظاهر أعلاه ثم اضغط حفظ مرة أخرى.",
+      }),
   });
 
   const approve = useMutation({
