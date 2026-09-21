@@ -621,21 +621,39 @@ function TaskFormPage() {
       </SectionCard>
 
       <SectionCard
-        title="المرفقات المرجعية"
-        subtitle="صور أو ملفات توضّح المطلوب — تُخزَّن بشكل خاص للفريق فقط."
+        title="صور ومرفقات المهمة"
+        subtitle="أضف الصور مباشرة — تُحفظ المهمة تلقائيًا، وتُرسل الصور مع رسالة واتساب للموظف."
         icon={Paperclip}
       >
-        {false ? null : (
-          <div className="space-y-4">
-            <label className="grid cursor-pointer place-items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center">
-              {uploading ? (
-                <Loader2 className="size-6 animate-spin text-primary" />
-              ) : (
-                <UploadCloud className="size-6 text-muted-foreground" />
-              )}
-              <span className="text-[13px] text-muted-foreground">اضغط لاختيار الملفات</span>
-              <input type="file" multiple className="hidden" onChange={(e) => upload(e.target.files)} />
-            </label>
+        <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid cursor-pointer place-items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center hover:bg-muted">
+                {uploading ? (
+                  <Loader2 className="size-6 animate-spin text-primary" />
+                ) : (
+                  <UploadCloud className="size-6 text-muted-foreground" />
+                )}
+                <span className="text-[13px] text-muted-foreground">اختر صورًا أو ملفات من الجهاز</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={(e) => upload(e.target.files)}
+                />
+              </label>
+              <label className="grid cursor-pointer place-items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center hover:bg-muted">
+                <Camera className="size-6 text-muted-foreground" />
+                <span className="text-[13px] text-muted-foreground">التقاط صورة بالكاميرا</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => upload(e.target.files)}
+                />
+              </label>
+            </div>
             <ul className="divide-y divide-border rounded-xl border border-border">
               {(attachments.data ?? []).map((file) => (
                 <li key={file.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
@@ -662,8 +680,7 @@ function TaskFormPage() {
                 </li>
               ) : null}
             </ul>
-          </div>
-        )}
+        </div>
       </SectionCard>
 
       {id && nextSend ? (
