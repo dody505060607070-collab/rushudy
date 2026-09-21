@@ -1536,9 +1536,9 @@ function PropertyFormPage() {
             subtitle="روابط فيديو من YouTube أو TikTok أو أي مصدر آخر."
             icon={Film}
           >
-            {!id ? (
+            {!id && !form.name.trim() ? (
               <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-                احفظ بيانات العقار أولًا.
+                اكتب اسم العقار أولًا، ثم أضِف الفيديوهات — سيُحفظ العقار تلقائيًا.
               </p>
             ) : (
               <div className="space-y-4">
