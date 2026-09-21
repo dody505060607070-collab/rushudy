@@ -31,6 +31,7 @@ import { SOCIAL_PLATFORMS, SocialGlyph } from "@/components/site/SocialIcons";
 import { PageHero } from "@/components/kit/PageHero";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
+import { describeDbError } from "@/lib/db-errors";
 import { resolvePropertyCoordinates } from "@/lib/geo.functions";
 import { approveListingRequest } from "@/lib/requests.functions";
 
