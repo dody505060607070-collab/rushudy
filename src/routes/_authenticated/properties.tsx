@@ -30,6 +30,7 @@ import { PageHero } from "@/components/kit/PageHero";
 import { Pills } from "@/components/kit/Pills";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
+import { describeDbError } from "@/lib/db-errors";
 import { sendPropertyToMarketer } from "@/lib/marketing.functions";
 import { PropertyStatusDialog, type StatusTarget } from "@/components/properties/PropertyStatusDialog";
 
@@ -215,7 +216,7 @@ function PropertiesPage() {
       toast.success(editing ? "تم تحديث العقار" : "تم إضافة العقار وسيظهر على الموقع");
       setOpen(false);
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
+    onError: (err) => toast.error(describeDbError(err, "تعذّر الحفظ")),
   });
 
   const flags = useMutation({

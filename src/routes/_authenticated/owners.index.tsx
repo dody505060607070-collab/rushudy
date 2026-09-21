@@ -18,6 +18,7 @@ import {
 import { PageHero } from "@/components/kit/PageHero";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
+import { describeDbError } from "@/lib/db-errors";
 import { deleteOwners } from "@/lib/delete-helpers";
 
 type Row = {
@@ -164,7 +165,7 @@ function OwnersPage() {
       toast.success(editing ? "تم تحديث بيانات المالك" : "تم إضافة المالك");
       setOpen(false);
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
+    onError: (err) => toast.error(describeDbError(err, "تعذّر الحفظ")),
   });
 
   const toggleActive = useMutation({
