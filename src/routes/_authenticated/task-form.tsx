@@ -524,10 +524,34 @@ function TaskFormPage() {
 
       <SectionCard
         title="موقع المهمة"
-        subtitle="حدد وصف الموقع والإحداثيات؛ تظهر خريطة مصغّرة للموظف مع إمكانية فتح الاتجاهات."
+        subtitle="الصق رابط خرائط Google أو أدخل الإحداثيات — يصل الرابط مع رسالة واتساب للموظف."
         icon={MapPin}
       >
         <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="رابط خرائط Google (الصق الرابط هنا)" className="sm:col-span-3">
+            <div className="flex gap-2">
+              <input
+                className={inputClass}
+                dir="ltr"
+                value={mapLink}
+                onChange={(e) => setMapLink(e.target.value)}
+                onPaste={(e) => {
+                  const text = e.clipboardData.getData("text");
+                  if (text) applyMapLink(text);
+                }}
+                placeholder="https://maps.app.goo.gl/..."
+              />
+              <button
+                type="button"
+                onClick={() => applyMapLink(mapLink)}
+                disabled={resolvingMap || !mapLink.trim()}
+                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-primary disabled:opacity-60"
+              >
+                {resolvingMap ? <Loader2 className="size-4 animate-spin" /> : <MapPin className="size-4" />}
+                تحديد الموقع
+              </button>
+            </div>
+          </Field>
           <Field label="وصف الموقع" className="sm:col-span-3">
             <input
               className={inputClass}
