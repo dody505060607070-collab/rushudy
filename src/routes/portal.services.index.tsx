@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { createServiceRequest, getMyServiceRequests, getServicePartners } from "@/lib/service-partners.functions";
 import { getPortalOverview } from "@/lib/portal.functions";
 
-export const Route = createFileRoute("/portal/services")({
+export const Route = createFileRoute("/portal/services/")({
   ssr: false,
   head: () => ({ meta: [
     { title: "شركاؤنا وخدماتنا | بوابة عميل الرشودي" },
