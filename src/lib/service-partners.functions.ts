@@ -19,6 +19,36 @@ export const getServicePartners = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+/** بيانات شركة خدمات واحدة بالكود (لصفحة الشركة داخل البوابة). */
+export const getServicePartnerByCode = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { code: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { data: partner, error } = await context.supabase
+      .from("service_partners")
+      .select("id, code, name, category, description, whatsapp_number, image_key, video_urls, services, is_active")
+      .eq("code", data.code)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!partner) throw new Error("الشركة غير موجودة.");
+    return partner;
+  });
+
+/** تحديث روابط الفيديو الخاصة بشركة خدمات (للموظفين فقط). */
+export const updatePartnerVideos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { partnerId: string; videoUrls: string[] }) => input)
+  .handler(async ({ data, context }) => {
+    const staff = await context.supabase.rpc("is_staff", { _user_id: context.userId });
+    if (!staff.data) throw new Error("غير مصرّح.");
+    const urls = data.videoUrls.map((u) => u.trim()).filter((u) => /^https?:\/\//i.test(u)).slice(0, 12);
+    const db = await admin();
+    const result = await db.from("service_partners").update({ video_urls: urls }).eq("id", data.partnerId);
+    if (result.error) throw new Error(result.error.message);
+    return { ok: true, videoUrls: urls };
+  });
+
 export const getMyServiceRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

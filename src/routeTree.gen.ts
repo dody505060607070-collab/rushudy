@@ -67,9 +67,7 @@ import { Route as PortalCareRouteImport } from './routes/portal.care'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
 import { Route as PortalFinanceRouteImport } from './routes/portal.finance'
 import { Route as PortalInsightsRouteImport } from './routes/portal.insights'
-import { Route as PortalMaintenanceRouteImport } from './routes/portal.maintenance'
 import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
-import { Route as PortalServicesRouteImport } from './routes/portal.services'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as PortalUnitsRouteImport } from './routes/portal.units'
 import { Route as PropertiesCodeRouteImport } from './routes/properties.$code'
@@ -93,6 +91,8 @@ import { Route as PortalContractsIndexRouteImport } from './routes/portal.contra
 import { Route as PortalContractsContractIdRouteImport } from './routes/portal.contracts.$contractId'
 import { Route as PortalInvoicesIndexRouteImport } from './routes/portal.invoices.index'
 import { Route as PortalInvoicesInvoiceIdRouteImport } from './routes/portal.invoices.$invoiceId'
+import { Route as PortalServicesIndexRouteImport } from './routes/portal.services.index'
+import { Route as PortalServicesPartnerCodeRouteImport } from './routes/portal.services.$partnerCode'
 import { Route as ApiPublicFilesSplatRouteImport } from './routes/api/public/files/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -393,19 +393,9 @@ const PortalInsightsRoute = PortalInsightsRouteImport.update({
   path: '/insights',
   getParentRoute: () => PortalRoute,
 } as any)
-const PortalMaintenanceRoute = PortalMaintenanceRouteImport.update({
-  id: '/maintenance',
-  path: '/maintenance',
-  getParentRoute: () => PortalRoute,
-} as any)
 const PortalMessagesRoute = PortalMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
-  getParentRoute: () => PortalRoute,
-} as any)
-const PortalServicesRoute = PortalServicesRouteImport.update({
-  id: '/services',
-  path: '/services',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalSettingsRoute = PortalSettingsRouteImport.update({
@@ -538,6 +528,17 @@ const PortalInvoicesInvoiceIdRoute = PortalInvoicesInvoiceIdRouteImport.update({
   path: '/invoices/$invoiceId',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalServicesIndexRoute = PortalServicesIndexRouteImport.update({
+  id: '/services/',
+  path: '/services/',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalServicesPartnerCodeRoute =
+  PortalServicesPartnerCodeRouteImport.update({
+    id: '/services/$partnerCode',
+    path: '/services/$partnerCode',
+    getParentRoute: () => PortalRoute,
+  } as any)
 const ApiPublicFilesSplatRoute = ApiPublicFilesSplatRouteImport.update({
   id: '/api/public/files/$',
   path: '/api/public/files/$',
@@ -600,9 +601,7 @@ export interface FileRoutesByFullPath {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
-  '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
-  '/portal/services': typeof PortalServicesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
@@ -620,6 +619,7 @@ export interface FileRoutesByFullPath {
   '/api/public/n8n': typeof ApiPublicN8nRoute
   '/portal/contracts/$contractId': typeof PortalContractsContractIdRoute
   '/portal/invoices/$invoiceId': typeof PortalInvoicesInvoiceIdRoute
+  '/portal/services/$partnerCode': typeof PortalServicesPartnerCodeRoute
   '/contracts/': typeof AuthenticatedContractsIndexRoute
   '/goals/': typeof AuthenticatedGoalsIndexRoute
   '/invoices/': typeof AuthenticatedInvoicesIndexRoute
@@ -628,6 +628,7 @@ export interface FileRoutesByFullPath {
   '/supply-requests/': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts/': typeof PortalContractsIndexRoute
   '/portal/invoices/': typeof PortalInvoicesIndexRoute
+  '/portal/services/': typeof PortalServicesIndexRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
 }
 export interface FileRoutesByTo {
@@ -684,9 +685,7 @@ export interface FileRoutesByTo {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
-  '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
-  '/portal/services': typeof PortalServicesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
@@ -704,6 +703,7 @@ export interface FileRoutesByTo {
   '/api/public/n8n': typeof ApiPublicN8nRoute
   '/portal/contracts/$contractId': typeof PortalContractsContractIdRoute
   '/portal/invoices/$invoiceId': typeof PortalInvoicesInvoiceIdRoute
+  '/portal/services/$partnerCode': typeof PortalServicesPartnerCodeRoute
   '/contracts': typeof AuthenticatedContractsIndexRoute
   '/goals': typeof AuthenticatedGoalsIndexRoute
   '/invoices': typeof AuthenticatedInvoicesIndexRoute
@@ -712,6 +712,7 @@ export interface FileRoutesByTo {
   '/supply-requests': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts': typeof PortalContractsIndexRoute
   '/portal/invoices': typeof PortalInvoicesIndexRoute
+  '/portal/services': typeof PortalServicesIndexRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
 }
 export interface FileRoutesById {
@@ -772,9 +773,7 @@ export interface FileRoutesById {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/finance': typeof PortalFinanceRoute
   '/portal/insights': typeof PortalInsightsRoute
-  '/portal/maintenance': typeof PortalMaintenanceRoute
   '/portal/messages': typeof PortalMessagesRoute
-  '/portal/services': typeof PortalServicesRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/units': typeof PortalUnitsRoute
   '/properties/$code': typeof PropertiesCodeRoute
@@ -792,6 +791,7 @@ export interface FileRoutesById {
   '/api/public/n8n': typeof ApiPublicN8nRoute
   '/portal/contracts/$contractId': typeof PortalContractsContractIdRoute
   '/portal/invoices/$invoiceId': typeof PortalInvoicesInvoiceIdRoute
+  '/portal/services/$partnerCode': typeof PortalServicesPartnerCodeRoute
   '/_authenticated/contracts/': typeof AuthenticatedContractsIndexRoute
   '/_authenticated/goals/': typeof AuthenticatedGoalsIndexRoute
   '/_authenticated/invoices/': typeof AuthenticatedInvoicesIndexRoute
@@ -800,6 +800,7 @@ export interface FileRoutesById {
   '/_authenticated/supply-requests/': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts/': typeof PortalContractsIndexRoute
   '/portal/invoices/': typeof PortalInvoicesIndexRoute
+  '/portal/services/': typeof PortalServicesIndexRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
 }
 export interface FileRouteTypes {
@@ -860,9 +861,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
-    | '/portal/maintenance'
     | '/portal/messages'
-    | '/portal/services'
     | '/portal/settings'
     | '/portal/units'
     | '/properties/$code'
@@ -880,6 +879,7 @@ export interface FileRouteTypes {
     | '/api/public/n8n'
     | '/portal/contracts/$contractId'
     | '/portal/invoices/$invoiceId'
+    | '/portal/services/$partnerCode'
     | '/contracts/'
     | '/goals/'
     | '/invoices/'
@@ -888,6 +888,7 @@ export interface FileRouteTypes {
     | '/supply-requests/'
     | '/portal/contracts/'
     | '/portal/invoices/'
+    | '/portal/services/'
     | '/api/public/files/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -944,9 +945,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
-    | '/portal/maintenance'
     | '/portal/messages'
-    | '/portal/services'
     | '/portal/settings'
     | '/portal/units'
     | '/properties/$code'
@@ -964,6 +963,7 @@ export interface FileRouteTypes {
     | '/api/public/n8n'
     | '/portal/contracts/$contractId'
     | '/portal/invoices/$invoiceId'
+    | '/portal/services/$partnerCode'
     | '/contracts'
     | '/goals'
     | '/invoices'
@@ -972,6 +972,7 @@ export interface FileRouteTypes {
     | '/supply-requests'
     | '/portal/contracts'
     | '/portal/invoices'
+    | '/portal/services'
     | '/api/public/files/$'
   id:
     | '__root__'
@@ -1031,9 +1032,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/finance'
     | '/portal/insights'
-    | '/portal/maintenance'
     | '/portal/messages'
-    | '/portal/services'
     | '/portal/settings'
     | '/portal/units'
     | '/properties/$code'
@@ -1051,6 +1050,7 @@ export interface FileRouteTypes {
     | '/api/public/n8n'
     | '/portal/contracts/$contractId'
     | '/portal/invoices/$invoiceId'
+    | '/portal/services/$partnerCode'
     | '/_authenticated/contracts/'
     | '/_authenticated/goals/'
     | '/_authenticated/invoices/'
@@ -1059,6 +1059,7 @@ export interface FileRouteTypes {
     | '/_authenticated/supply-requests/'
     | '/portal/contracts/'
     | '/portal/invoices/'
+    | '/portal/services/'
     | '/api/public/files/$'
   fileRoutesById: FileRoutesById
 }
@@ -1497,25 +1498,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalInsightsRouteImport
       parentRoute: typeof PortalRoute
     }
-    '/portal/maintenance': {
-      id: '/portal/maintenance'
-      path: '/maintenance'
-      fullPath: '/portal/maintenance'
-      preLoaderRoute: typeof PortalMaintenanceRouteImport
-      parentRoute: typeof PortalRoute
-    }
     '/portal/messages': {
       id: '/portal/messages'
       path: '/messages'
       fullPath: '/portal/messages'
       preLoaderRoute: typeof PortalMessagesRouteImport
-      parentRoute: typeof PortalRoute
-    }
-    '/portal/services': {
-      id: '/portal/services'
-      path: '/services'
-      fullPath: '/portal/services'
-      preLoaderRoute: typeof PortalServicesRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/settings': {
@@ -1679,6 +1666,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalInvoicesInvoiceIdRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/services/': {
+      id: '/portal/services/'
+      path: '/services'
+      fullPath: '/portal/services/'
+      preLoaderRoute: typeof PortalServicesIndexRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/services/$partnerCode': {
+      id: '/portal/services/$partnerCode'
+      path: '/services/$partnerCode'
+      fullPath: '/portal/services/$partnerCode'
+      preLoaderRoute: typeof PortalServicesPartnerCodeRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/api/public/files/$': {
       id: '/api/public/files/$'
       path: '/api/public/files/$'
@@ -1824,16 +1825,16 @@ interface PortalRouteChildren {
   PortalDocumentsRoute: typeof PortalDocumentsRoute
   PortalFinanceRoute: typeof PortalFinanceRoute
   PortalInsightsRoute: typeof PortalInsightsRoute
-  PortalMaintenanceRoute: typeof PortalMaintenanceRoute
   PortalMessagesRoute: typeof PortalMessagesRoute
-  PortalServicesRoute: typeof PortalServicesRoute
   PortalSettingsRoute: typeof PortalSettingsRoute
   PortalUnitsRoute: typeof PortalUnitsRoute
   PortalIndexRoute: typeof PortalIndexRoute
   PortalContractsContractIdRoute: typeof PortalContractsContractIdRoute
   PortalInvoicesInvoiceIdRoute: typeof PortalInvoicesInvoiceIdRoute
+  PortalServicesPartnerCodeRoute: typeof PortalServicesPartnerCodeRoute
   PortalContractsIndexRoute: typeof PortalContractsIndexRoute
   PortalInvoicesIndexRoute: typeof PortalInvoicesIndexRoute
+  PortalServicesIndexRoute: typeof PortalServicesIndexRoute
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
@@ -1841,16 +1842,16 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalDocumentsRoute: PortalDocumentsRoute,
   PortalFinanceRoute: PortalFinanceRoute,
   PortalInsightsRoute: PortalInsightsRoute,
-  PortalMaintenanceRoute: PortalMaintenanceRoute,
   PortalMessagesRoute: PortalMessagesRoute,
-  PortalServicesRoute: PortalServicesRoute,
   PortalSettingsRoute: PortalSettingsRoute,
   PortalUnitsRoute: PortalUnitsRoute,
   PortalIndexRoute: PortalIndexRoute,
   PortalContractsContractIdRoute: PortalContractsContractIdRoute,
   PortalInvoicesInvoiceIdRoute: PortalInvoicesInvoiceIdRoute,
+  PortalServicesPartnerCodeRoute: PortalServicesPartnerCodeRoute,
   PortalContractsIndexRoute: PortalContractsIndexRoute,
   PortalInvoicesIndexRoute: PortalInvoicesIndexRoute,
+  PortalServicesIndexRoute: PortalServicesIndexRoute,
 }
 
 const PortalRouteWithChildren =
