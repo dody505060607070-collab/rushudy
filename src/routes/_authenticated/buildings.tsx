@@ -32,6 +32,7 @@ import {
 import { PageHero } from "@/components/kit/PageHero";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
+import { describeDbError } from "@/lib/db-errors";
 import { uploadMedia } from "@/lib/media";
 import { PropertyStatusDialog, type StatusTarget } from "@/components/properties/PropertyStatusDialog";
 
@@ -346,7 +347,7 @@ function BuildingsPage() {
       setOpen(false);
       void qc.invalidateQueries({ queryKey: ["buildings", "admin"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(describeDbError(e)),
   });
 
   const toggleVisible = useMutation({
@@ -358,7 +359,7 @@ function BuildingsPage() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["buildings", "admin"] }),
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(describeDbError(e)),
   });
 
   const remove = useMutation({
@@ -371,7 +372,7 @@ function BuildingsPage() {
       void qc.invalidateQueries({ queryKey: ["buildings", "admin"] });
       void qc.invalidateQueries({ queryKey: ["building-units"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(describeDbError(e)),
   });
 
   const rows = buildings.data ?? [];
@@ -1087,7 +1088,7 @@ function GeneratorModal({
       toast.success(`تم إنشاء ${count} شقة`);
       onDone();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(describeDbError(e)),
   });
 
   return (
