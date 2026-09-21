@@ -1364,9 +1364,9 @@ function PropertyFormPage() {
             subtitle="ارفع الصور من جهازك أو أضِف روابط جاهزة، وحدّد الصورة الرئيسية."
             icon={ImageIcon}
           >
-            {!id ? (
+            {!id && !form.name.trim() ? (
               <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-                احفظ بيانات العقار أولًا لتفعيل رفع الصور والفيديوهات.
+                اكتب اسم العقار أولًا، ثم ارفع الصور مباشرة — سيُحفظ العقار تلقائيًا عند الرفع.
               </p>
             ) : (
               <div className="space-y-4">
