@@ -8,7 +8,7 @@ import partnerImage from "@/assets/almqrin-services.jpg";
 import { PageHero } from "@/components/kit/PageHero";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { issueServicePartnerAccess } from "@/lib/service-partners.functions";
+import { issueServicePartnerAccess, updatePartnerVideos } from "@/lib/service-partners.functions";
 
 export const Route = createFileRoute("/_authenticated/service-partners")({ head: () => ({ meta: [{ title: "شركاء الخدمات | الرشودي للعقارات" }, { name: "description", content: "إدارة شركات الخدمات وطلبات العملاء وفواتير الشركاء." }, { property: "og:title", content: "شركاء الخدمات | الرشودي للعقارات" }, { property: "og:description", content: "إدارة شركات الخدمات وطلبات العملاء." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }), component: AdminPartners });
 
