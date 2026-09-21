@@ -6,6 +6,11 @@
  */
 import { taskMessage } from "@/lib/automation-runner.server";
 
+/** امتدادات الصور التي تُرسل كصور داخل رسالة واتساب. */
+function isImagePath(path: string) {
+  return /\.(jpe?g|png|webp|gif|bmp|heic)$/i.test(path);
+}
+
 export type NotifyResult = {
   ok: boolean;
   sent: number;
@@ -29,17 +34,33 @@ export async function notifyTaskAssigneesNow(
   options?: { schedule?: boolean },
 ): Promise<NotifyResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { whatsappSend } = await import("@/lib/whatsapp.functions");
+  const { whatsappSend, whatsappSendMedia } = await import("@/lib/whatsapp.functions");
 
   const result: NotifyResult = { ok: true, sent: 0, failed: 0, skipped: 0, errors: [] };
 
   const { data: task } = await supabaseAdmin
     .from("tasks")
-    .select("id, title, details, priority, status, due_date, due_time")
+    .select(
+      "id, title, details, priority, status, due_date, due_time, location_text, location_lat, location_lng",
+    )
     .eq("id", taskId)
     .maybeSingle();
   if (!task) return { ...result, ok: false, errors: ["المهمة غير موجودة"] };
   if (CLOSED_TASK_STATUSES.includes(task.status)) return result;
+
+  // صور المهمة المرفقة تُرسل مع الرسالة (روابط مؤقتة صالحة 24 ساعة).
+  const { data: files } = await supabaseAdmin
+    .from("task_attachments")
+    .select("file_path, file_name")
+    .eq("task_id", taskId)
+    .order("created_at");
+  const imageUrls: Array<{ url: string; name: string }> = [];
+  for (const file of (files ?? []).filter((f) => isImagePath(f.file_path)).slice(0, 5)) {
+    const { data: signed } = await supabaseAdmin.storage
+      .from("internal-files")
+      .createSignedUrl(file.file_path, 60 * 60 * 24);
+    if (signed?.signedUrl) imageUrls.push({ url: signed.signedUrl, name: file.file_name ?? "صورة" });
+  }
 
   let q = supabaseAdmin
     .from("task_assignees")
@@ -67,12 +88,21 @@ export async function notifyTaskAssigneesNow(
       priority: task.priority,
       dueDate: task.due_date,
       dueTime: task.due_time,
+      locationText: task.location_text,
+      locationLat: task.location_lat,
+      locationLng: task.location_lng,
     });
     const sendResult = await whatsappSend({ to: phone, body });
     if (sendResult.ok) result.sent += 1;
     else {
       result.failed += 1;
       result.errors.push(sendResult.error);
+    }
+
+    if (sendResult.ok) {
+      for (const image of imageUrls) {
+        await whatsappSendMedia({ to: phone, url: image.url, fileName: image.name });
+      }
     }
 
     await supabaseAdmin.from("message_log").upsert(

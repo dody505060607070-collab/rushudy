@@ -21,6 +21,7 @@ import { Field, inputClass, textareaClass } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import { priorityLabels, taskStatusLabels } from "@/lib/labels";
+import { parseCoordsFromMapLink, resolveMapLink } from "@/lib/maps.functions";
 import { finishTask, notifyTaskNow } from "@/lib/tasks.functions";
 import { cn } from "@/lib/utils";
 
@@ -113,8 +114,37 @@ function TaskFormPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [assignees, setAssignees] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [mapLink, setMapLink] = useState("");
+  const [resolvingMap, setResolvingMap] = useState(false);
 
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
+
+  /** يقرأ الإحداثيات من رابط خرائط Google (بما فيها الروابط المختصرة). */
+  const applyMapLink = async (raw: string) => {
+    const value = raw.trim();
+    setMapLink(value);
+    if (!value) return;
+    const direct = parseCoordsFromMapLink(value);
+    if (direct) {
+      set({ location_lat: direct.lat, location_lng: direct.lng });
+      toast.success("تم تحديد الموقع من الرابط");
+      return;
+    }
+    setResolvingMap(true);
+    try {
+      const coords = await resolveMapLink({ data: { url: value } });
+      if (coords) {
+        set({ location_lat: coords.lat, location_lng: coords.lng });
+        toast.success("تم تحديد الموقع من الرابط");
+      } else {
+        toast.error("تعذّر قراءة الموقع من هذا الرابط — أدخل الإحداثيات يدويًا");
+      }
+    } catch {
+      toast.error("تعذّر قراءة الموقع من هذا الرابط");
+    } finally {
+      setResolvingMap(false);
+    }
+  };
 
   const task = useQuery({
     queryKey: ["task", id],
@@ -197,14 +227,16 @@ function TaskFormPage() {
       location_lat: (row as Record<string, unknown>)["location_lat"]?.toString() ?? "",
       location_lng: (row as Record<string, unknown>)["location_lng"]?.toString() ?? "",
     });
+    const lat = (row as Record<string, unknown>)["location_lat"];
+    const lng = (row as Record<string, unknown>)["location_lng"];
+    if (lat && lng) setMapLink(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
   }, [task.data]);
 
   useEffect(() => {
     if (taskAssignees.data) setAssignees(taskAssignees.data.map((a) => a.user_id));
   }, [taskAssignees.data]);
 
-  const save = useMutation({
-    mutationFn: async () => {
+  const persistTask = async () => {
       if (!form.title.trim()) throw new Error("عنوان المهمة مطلوب");
       const payload = {
         title: form.title.trim(),
@@ -246,8 +278,11 @@ function TaskFormPage() {
           .in("user_id", toRemove);
         if (error) throw error;
       }
-      return { taskId, added: toAdd };
-    },
+      return { taskId: taskId as string, added: toAdd };
+  };
+
+  const save = useMutation({
+    mutationFn: persistTask,
     onSuccess: async ({ taskId: newId, added }) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
@@ -321,24 +356,28 @@ function TaskFormPage() {
 
   const upload = async (files: FileList | null) => {
     if (!files?.length) return;
-    if (!id) {
-      toast.error("احفظ المهمة أولًا ثم أرفق الملفات");
-      return;
-    }
     setUploading(true);
     try {
+      // المرفقات متاحة فورًا: لو المهمة جديدة تُحفظ تلقائيًا قبل الرفع.
+      let taskId = id;
+      if (!taskId) {
+        const saved = await persistTask();
+        taskId = saved.taskId;
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        navigate({ to: "/task-form", search: { id: taskId } });
+      }
       for (const file of Array.from(files)) {
-        const path = `tasks/${id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+        const path = `tasks/${taskId}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
         await uploadMedia("internal-files", path, file);
         const { error } = await supabase.from("task_attachments").insert({
-          task_id: id,
+          task_id: taskId,
           file_path: path,
           file_name: file.name,
           kind: "reference",
         });
         if (error) throw error;
       }
-      queryClient.invalidateQueries({ queryKey: ["task-attachments", id] });
+      queryClient.invalidateQueries({ queryKey: ["task-attachments", taskId] });
       toast.success("تم إرفاق الملفات");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "تعذّر الإرفاق");
@@ -515,10 +554,34 @@ function TaskFormPage() {
 
       <SectionCard
         title="موقع المهمة"
-        subtitle="حدد وصف الموقع والإحداثيات؛ تظهر خريطة مصغّرة للموظف مع إمكانية فتح الاتجاهات."
+        subtitle="الصق رابط خرائط Google أو أدخل الإحداثيات — يصل الرابط مع رسالة واتساب للموظف."
         icon={MapPin}
       >
         <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="رابط خرائط Google (الصق الرابط هنا)" className="sm:col-span-3">
+            <div className="flex gap-2">
+              <input
+                className={inputClass}
+                dir="ltr"
+                value={mapLink}
+                onChange={(e) => setMapLink(e.target.value)}
+                onPaste={(e) => {
+                  const text = e.clipboardData.getData("text");
+                  if (text) applyMapLink(text);
+                }}
+                placeholder="https://maps.app.goo.gl/..."
+              />
+              <button
+                type="button"
+                onClick={() => applyMapLink(mapLink)}
+                disabled={resolvingMap || !mapLink.trim()}
+                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-primary disabled:opacity-60"
+              >
+                {resolvingMap ? <Loader2 className="size-4 animate-spin" /> : <MapPin className="size-4" />}
+                تحديد الموقع
+              </button>
+            </div>
+          </Field>
           <Field label="وصف الموقع" className="sm:col-span-3">
             <input
               className={inputClass}
@@ -612,25 +675,39 @@ function TaskFormPage() {
       </SectionCard>
 
       <SectionCard
-        title="المرفقات المرجعية"
-        subtitle="صور أو ملفات توضّح المطلوب — تُخزَّن بشكل خاص للفريق فقط."
+        title="صور ومرفقات المهمة"
+        subtitle="أضف الصور مباشرة — تُحفظ المهمة تلقائيًا، وتُرسل الصور مع رسالة واتساب للموظف."
         icon={Paperclip}
       >
-        {!id ? (
-          <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-            احفظ المهمة أولًا لتفعيل المرفقات.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            <label className="grid cursor-pointer place-items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center">
-              {uploading ? (
-                <Loader2 className="size-6 animate-spin text-primary" />
-              ) : (
-                <UploadCloud className="size-6 text-muted-foreground" />
-              )}
-              <span className="text-[13px] text-muted-foreground">اضغط لاختيار الملفات</span>
-              <input type="file" multiple className="hidden" onChange={(e) => upload(e.target.files)} />
-            </label>
+        <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid cursor-pointer place-items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center hover:bg-muted">
+                {uploading ? (
+                  <Loader2 className="size-6 animate-spin text-primary" />
+                ) : (
+                  <UploadCloud className="size-6 text-muted-foreground" />
+                )}
+                <span className="text-[13px] text-muted-foreground">اختر صورًا أو ملفات من الجهاز</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={(e) => upload(e.target.files)}
+                />
+              </label>
+              <label className="grid cursor-pointer place-items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center hover:bg-muted">
+                <Camera className="size-6 text-muted-foreground" />
+                <span className="text-[13px] text-muted-foreground">التقاط صورة بالكاميرا</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => upload(e.target.files)}
+                />
+              </label>
+            </div>
             <ul className="divide-y divide-border rounded-xl border border-border">
               {(attachments.data ?? []).map((file) => (
                 <li key={file.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
@@ -657,8 +734,7 @@ function TaskFormPage() {
                 </li>
               ) : null}
             </ul>
-          </div>
-        )}
+        </div>
       </SectionCard>
 
       {id && nextSend ? (
