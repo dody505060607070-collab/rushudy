@@ -644,7 +644,7 @@ function ReservationsPage() {
         open={Boolean(editRow)}
         onClose={() => setEditRow(null)}
         title="تعديل الحجز بالكامل"
-        subtitle="يمكنك تغيير العقار والموظف والعميل والحالة والمدة والملاحظات في أي وقت."
+        subtitle="يمكنك تغيير العقار والموظف والحالة والمدة والملاحظات في أي وقت (بيانات العميل تُكتب في الملاحظات)."
         footer={
           <>
             <PrimaryButton onClick={() => saveEdit.mutate()} disabled={saveEdit.isPending}>
