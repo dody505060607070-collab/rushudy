@@ -31,6 +31,7 @@ import { SOCIAL_PLATFORMS, SocialGlyph } from "@/components/site/SocialIcons";
 import { PageHero } from "@/components/kit/PageHero";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
+import { describeDbError } from "@/lib/db-errors";
 import { resolvePropertyCoordinates } from "@/lib/geo.functions";
 import { approveListingRequest } from "@/lib/requests.functions";
 
@@ -503,14 +504,35 @@ function PropertyFormPage() {
           /* الموقع اختياري — لا نمنع الحفظ */
         }
       }
+      // فحص مسبق للكود حتى تظهر رسالة واضحة بدل خطأ قاعدة البيانات العام.
+      const duplicate = await supabase
+        .from("properties")
+        .select("id, name")
+        .eq("code", payload.code)
+        .limit(1);
+      const clash = duplicate.data?.find((row) => row.id !== id);
+      if (clash) {
+        throw new Error(
+          `كود العقار «${payload.code}» مستخدم مسبقًا في العقار: ${clash.name}. غيّر الكود ثم احفظ.`,
+        );
+      }
       if (id) {
         const { error } = await supabase.from("properties").update(payload).eq("id", id);
-        if (error) throw error;
+        if (error) throw new Error(describeDbError(error));
         return id;
       }
       let unitId: string | null = null;
       if (payload.building_id) {
-        const unitNumber = payload.code || `${Date.now().toString(36).toUpperCase()}`;
+        // رقم وحدة فريد داخل نفس العمارة حتى لا يفشل الحفظ بسبب التكرار.
+        const base = payload.code || `${Date.now().toString(36).toUpperCase()}`;
+        const existing = await supabase
+          .from("units")
+          .select("unit_number")
+          .eq("building_id", payload.building_id);
+        const taken = new Set((existing.data ?? []).map((row) => row.unit_number));
+        let unitNumber = base;
+        let counter = 2;
+        while (taken.has(unitNumber)) unitNumber = `${base}-${counter++}`;
         const unitResult = await supabase
           .from("units")
           .insert({
@@ -525,7 +547,7 @@ function PropertyFormPage() {
           })
           .select("id")
           .single();
-        if (unitResult.error) throw unitResult.error;
+        if (unitResult.error) throw new Error(describeDbError(unitResult.error));
         unitId = unitResult.data.id;
       }
       const { data, error } = await supabase
@@ -533,7 +555,7 @@ function PropertyFormPage() {
         .insert({ ...payload, unit_id: unitId })
         .select("id")
         .single();
-      if (error) throw error;
+      if (error) throw new Error(describeDbError(error));
       return data.id as string;
     },
     onSuccess: (newId) => {
@@ -545,7 +567,11 @@ function PropertyFormPage() {
           search: requestId ? { id: newId, requestId } : { id: newId },
         });
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
+    onError: (err) =>
+      toast.error(describeDbError(err, "تعذّر الحفظ"), {
+        duration: 8000,
+        description: "صحّح السبب الظاهر أعلاه ثم اضغط حفظ مرة أخرى.",
+      }),
   });
 
   const approve = useMutation({
@@ -566,20 +592,23 @@ function PropertyFormPage() {
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الاعتماد والنشر"),
   });
 
+  // يحفظ العقار تلقائيًا عند أول إضافة صورة/فيديو حتى لا يُطلب الحفظ يدويًا أولًا.
+  const ensurePropertyId = async () => id ?? (await save.mutateAsync());
+
   const addImage = useMutation({
     mutationFn: async (url: string) => {
-      if (!id) throw new Error("احفظ العقار أولًا ثم أضِف الصور");
+      const targetId = await ensurePropertyId();
       const { error } = await supabase.from("property_images").insert({
-        property_id: id,
+        property_id: targetId,
         url,
         sort_order: images.data?.length ?? 0,
         is_cover: !images.data?.length,
       });
-      if (error) throw error;
+      if (error) throw new Error(describeDbError(error, "تعذّرت إضافة الصورة"));
     },
     onSuccess: () => {
       setImageUrl("");
-      queryClient.invalidateQueries({ queryKey: ["property-images", id] });
+      queryClient.invalidateQueries({ queryKey: ["property-images"] });
       queryClient.invalidateQueries({ queryKey: ["public-properties"] });
       toast.success("تمت إضافة الصورة");
     },
@@ -725,10 +754,10 @@ function PropertyFormPage() {
 
   const addVideo = useMutation({
     mutationFn: async () => {
-      if (!id) throw new Error("احفظ العقار أولًا ثم أضِف الفيديوهات");
       if (!videoUrl.trim()) throw new Error("ضع رابط الفيديو");
+      const targetId = await ensurePropertyId();
       const { error } = await supabase.from("property_videos").insert({
-        property_id: id,
+        property_id: targetId,
         url: videoUrl.trim(),
         title: videoTitle.trim() || null,
         sort_order: videos.data?.length ?? 0,
@@ -738,7 +767,7 @@ function PropertyFormPage() {
     onSuccess: () => {
       setVideoUrl("");
       setVideoTitle("");
-      queryClient.invalidateQueries({ queryKey: ["property-videos", id] });
+      queryClient.invalidateQueries({ queryKey: ["property-videos"] });
       toast.success("تمت إضافة الفيديو");
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّرت الإضافة"),
@@ -746,14 +775,11 @@ function PropertyFormPage() {
 
   const uploadFiles = async (files: FileList | null) => {
     if (!files?.length) return;
-    if (!id) {
-      toast.error("احفظ العقار أولًا ثم ارفع الصور");
-      return;
-    }
     setUploading(true);
     try {
+      const targetId = await ensurePropertyId();
       for (const file of Array.from(files)) {
-        const path = `${id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+        const path = `${targetId}/${Date.now()}-${file.name.replace(/[^\w.-]/g, "_")}`;
         const { url } = await uploadMedia("property-media", path, file);
         await addImage.mutateAsync(url);
       }
@@ -1338,9 +1364,9 @@ function PropertyFormPage() {
             subtitle="ارفع الصور من جهازك أو أضِف روابط جاهزة، وحدّد الصورة الرئيسية."
             icon={ImageIcon}
           >
-            {!id ? (
+            {!id && !form.name.trim() ? (
               <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-                احفظ بيانات العقار أولًا لتفعيل رفع الصور والفيديوهات.
+                اكتب اسم العقار أولًا، ثم ارفع الصور مباشرة — سيُحفظ العقار تلقائيًا عند الرفع.
               </p>
             ) : (
               <div className="space-y-4">
@@ -1510,9 +1536,9 @@ function PropertyFormPage() {
             subtitle="روابط فيديو من YouTube أو TikTok أو أي مصدر آخر."
             icon={Film}
           >
-            {!id ? (
+            {!id && !form.name.trim() ? (
               <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-                احفظ بيانات العقار أولًا.
+                اكتب اسم العقار أولًا، ثم أضِف الفيديوهات — سيُحفظ العقار تلقائيًا.
               </p>
             ) : (
               <div className="space-y-4">

@@ -19,6 +19,7 @@ import { PageHero } from "@/components/kit/PageHero";
 import { Pills } from "@/components/kit/Pills";
 import { StatusLegend } from "@/components/kit/StatusLegend";
 import { supabase } from "@/integrations/supabase/client";
+import { describeDbError } from "@/lib/db-errors";
 import { analyzeContractPdf } from "@/lib/ai.functions";
 import { finalizeContractImport } from "@/lib/contracts.functions";
 import { deleteContractWithOwner } from "@/lib/delete-helpers";
@@ -296,7 +297,7 @@ function ContractsPage() {
       }
       setFormOpen(false);
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الحفظ"),
+    onError: (err) => toast.error(describeDbError(err, "تعذّر الحفظ")),
   });
 
   const remove = useMutation({

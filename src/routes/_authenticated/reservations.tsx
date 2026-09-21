@@ -321,8 +321,6 @@ function ReservationsPage() {
     onError: (error) => toast.error(errorMessage(error, "تعذّر حذف الحجز")),
   });
 
-
-
   if (authLoading) {
     return (
       <div className="surface-card grid place-items-center gap-2 px-6 py-16 text-center">
@@ -644,7 +642,7 @@ function ReservationsPage() {
         open={Boolean(editRow)}
         onClose={() => setEditRow(null)}
         title="تعديل الحجز بالكامل"
-        subtitle="يمكنك تغيير العقار والموظف والعميل والحالة والمدة والملاحظات في أي وقت."
+        subtitle="يمكنك تغيير العقار والموظف والحالة والمدة والملاحظات في أي وقت (بيانات العميل تُكتب في الملاحظات)."
         footer={
           <>
             <PrimaryButton onClick={() => saveEdit.mutate()} disabled={saveEdit.isPending}>
@@ -695,22 +693,6 @@ function ReservationsPage() {
               {options.data?.staff.map((profile) => (
                 <option key={profile.id} value={profile.id}>
                   {profile.full_name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="العميل">
-            <select
-              className={inputClass}
-              value={editForm.contact_id}
-              onChange={(event) =>
-                setEditForm((current) => ({ ...current, contact_id: event.target.value }))
-              }
-            >
-              <option value="">بدون عميل</option>
-              {options.data?.contacts.map((contact) => (
-                <option key={contact.id} value={contact.id}>
-                  {contact.full_name}
                 </option>
               ))}
             </select>
