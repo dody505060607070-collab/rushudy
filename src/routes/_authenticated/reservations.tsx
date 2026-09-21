@@ -180,7 +180,11 @@ function ReservationsPage() {
     enabled: canBook,
     queryFn: async () => {
       const [properties, staff, contacts] = await Promise.all([
-        supabase.from("properties").select("id,name,code").neq("status", "archived").order("name"),
+        supabase
+          .from("properties")
+          .select("id,name,code")
+          .not("status", "in", "(archived,rented,sold)")
+          .order("name"),
         supabase.from("profiles").select("id,full_name").eq("is_active", true).order("full_name"),
         supabase.from("contacts").select("id,full_name").order("full_name").limit(500),
       ]);

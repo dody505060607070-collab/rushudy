@@ -170,13 +170,22 @@ function PortalLayout() {
                 </Link>
               </>
             ) : (
-              <Link
-                to="/portal/services"
-                className={link}
-                activeProps={{ className: `${link} ${active}` }}
-              >
-                <Handshake className="h-4 w-4" /> شركاؤنا وخدماتنا
-              </Link>
+              <>
+                <Link
+                  to="/portal/maintenance"
+                  className={link}
+                  activeProps={{ className: `${link} ${active}` }}
+                >
+                  <Wrench className="h-4 w-4" /> طلبات الصيانة
+                </Link>
+                <Link
+                  to="/portal/services"
+                  className={link}
+                  activeProps={{ className: `${link} ${active}` }}
+                >
+                  <Handshake className="h-4 w-4" /> شركاؤنا وخدماتنا
+                </Link>
+              </>
             )}
           </nav>
 
