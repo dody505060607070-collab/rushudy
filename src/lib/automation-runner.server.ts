@@ -60,6 +60,22 @@ function nextSendDate(from: Date, interval: string, now: Date): string | null {
 }
 
 
+/** رابط خرائط Google لموقع المهمة (إحداثيات أو بحث بالوصف). */
+export function taskMapUrl(input: {
+  locationLat?: number | string | null;
+  locationLng?: number | string | null;
+  locationText?: string | null;
+}): string | null {
+  const lat = input.locationLat;
+  const lng = input.locationLng;
+  if (lat !== null && lat !== undefined && lat !== "" && lng !== null && lng !== undefined && lng !== "") {
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  }
+  const text = input.locationText?.trim();
+  if (text) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(text)}`;
+  return null;
+}
+
 export function taskMessage(input: {
   employeeName: string;
   title: string;
@@ -67,14 +83,20 @@ export function taskMessage(input: {
   priority: string;
   dueDate: string | null;
   dueTime: string | null;
+  locationText?: string | null;
+  locationLat?: number | string | null;
+  locationLng?: number | string | null;
 }): string {
   const priority = input.priority === "urgent" ? "عاجلة" : input.priority === "high" ? "عالية" : "عادية";
   const due = [input.dueDate, input.dueTime].filter(Boolean).join(" ");
+  const mapUrl = taskMapUrl(input);
   return [
     `مرحبًا ${input.employeeName}،`,
     `تذكير بمهمة ${priority}: ${input.title}`,
     input.details ? `التفاصيل: ${input.details}` : null,
     due ? `موعد التسليم: ${due}` : null,
+    input.locationText ? `الموقع: ${input.locationText}` : null,
+    mapUrl ? `الموقع على الخريطة: ${mapUrl}` : null,
     "يرجى تحديث حالة المهمة من لوحة الرشودي للعقارات عند الانتهاء.",
   ]
     .filter(Boolean)
