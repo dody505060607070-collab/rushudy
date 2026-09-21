@@ -592,20 +592,23 @@ function PropertyFormPage() {
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر الاعتماد والنشر"),
   });
 
+  // يحفظ العقار تلقائيًا عند أول إضافة صورة/فيديو حتى لا يُطلب الحفظ يدويًا أولًا.
+  const ensurePropertyId = async () => id ?? (await save.mutateAsync());
+
   const addImage = useMutation({
     mutationFn: async (url: string) => {
-      if (!id) throw new Error("احفظ العقار أولًا ثم أضِف الصور");
+      const targetId = await ensurePropertyId();
       const { error } = await supabase.from("property_images").insert({
-        property_id: id,
+        property_id: targetId,
         url,
         sort_order: images.data?.length ?? 0,
         is_cover: !images.data?.length,
       });
-      if (error) throw error;
+      if (error) throw new Error(describeDbError(error, "تعذّرت إضافة الصورة"));
     },
     onSuccess: () => {
       setImageUrl("");
-      queryClient.invalidateQueries({ queryKey: ["property-images", id] });
+      queryClient.invalidateQueries({ queryKey: ["property-images"] });
       queryClient.invalidateQueries({ queryKey: ["public-properties"] });
       toast.success("تمت إضافة الصورة");
     },
