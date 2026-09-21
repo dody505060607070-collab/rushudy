@@ -275,7 +275,7 @@ export async function runHourlyAutomation(): Promise<RunResult> {
     const { data: dueTasks, error: taskError } = await supabaseAdmin
       .from("task_reminder_state")
       .select(
-        "id, task_id, user_id, sent_count, next_send_at, task:task_id(title, details, priority, status, due_date, due_time), profile:user_id(full_name, phone, whatsapp, whatsapp_notify, is_active)",
+        "id, task_id, user_id, sent_count, next_send_at, task:task_id(title, details, priority, status, due_date, due_time, location_text, location_lat, location_lng), profile:user_id(full_name, phone, whatsapp, whatsapp_notify, is_active)",
       )
       .lte("next_send_at", nowIso)
       .order("next_send_at", { ascending: true })
@@ -307,6 +307,9 @@ export async function runHourlyAutomation(): Promise<RunResult> {
         priority: task.priority,
         dueDate: task.due_date,
         dueTime: task.due_time,
+        locationText: task.location_text,
+        locationLat: task.location_lat,
+        locationLng: task.location_lng,
       });
       const scheduledAt = state.next_send_at ?? nowIso;
       const idempotencyKey = `task-cycle:${state.id}:${scheduledAt}`;
