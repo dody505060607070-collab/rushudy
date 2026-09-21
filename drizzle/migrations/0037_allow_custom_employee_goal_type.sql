@@ -1,0 +1,2 @@
+ALTER TABLE public.employee_goals DROP CONSTRAINT IF EXISTS employee_goals_goal_type_check;
+ALTER TABLE public.employee_goals ADD CONSTRAINT employee_goals_goal_type_check CHECK (goal_type IN ('rent','sale','collection','tasks','leads','visits','custom'));
