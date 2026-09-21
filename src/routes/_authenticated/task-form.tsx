@@ -119,6 +119,33 @@ function TaskFormPage() {
 
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
+  /** يقرأ الإحداثيات من رابط خرائط Google (بما فيها الروابط المختصرة). */
+  const applyMapLink = async (raw: string) => {
+    const value = raw.trim();
+    setMapLink(value);
+    if (!value) return;
+    const direct = parseCoordsFromMapLink(value);
+    if (direct) {
+      set({ location_lat: direct.lat, location_lng: direct.lng });
+      toast.success("تم تحديد الموقع من الرابط");
+      return;
+    }
+    setResolvingMap(true);
+    try {
+      const coords = await resolveMapLink({ data: { url: value } });
+      if (coords) {
+        set({ location_lat: coords.lat, location_lng: coords.lng });
+        toast.success("تم تحديد الموقع من الرابط");
+      } else {
+        toast.error("تعذّر قراءة الموقع من هذا الرابط — أدخل الإحداثيات يدويًا");
+      }
+    } catch {
+      toast.error("تعذّر قراءة الموقع من هذا الرابط");
+    } finally {
+      setResolvingMap(false);
+    }
+  };
+
   const task = useQuery({
     queryKey: ["task", id],
     enabled: Boolean(id),
@@ -200,6 +227,9 @@ function TaskFormPage() {
       location_lat: (row as Record<string, unknown>)["location_lat"]?.toString() ?? "",
       location_lng: (row as Record<string, unknown>)["location_lng"]?.toString() ?? "",
     });
+    const lat = (row as Record<string, unknown>)["location_lat"];
+    const lng = (row as Record<string, unknown>)["location_lng"];
+    if (lat && lng) setMapLink(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
   }, [task.data]);
 
   useEffect(() => {
