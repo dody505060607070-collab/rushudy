@@ -504,14 +504,35 @@ function PropertyFormPage() {
           /* الموقع اختياري — لا نمنع الحفظ */
         }
       }
+      // فحص مسبق للكود حتى تظهر رسالة واضحة بدل خطأ قاعدة البيانات العام.
+      const duplicate = await supabase
+        .from("properties")
+        .select("id, name")
+        .eq("code", payload.code)
+        .limit(1);
+      const clash = duplicate.data?.find((row) => row.id !== id);
+      if (clash) {
+        throw new Error(
+          `كود العقار «${payload.code}» مستخدم مسبقًا في العقار: ${clash.name}. غيّر الكود ثم احفظ.`,
+        );
+      }
       if (id) {
         const { error } = await supabase.from("properties").update(payload).eq("id", id);
-        if (error) throw error;
+        if (error) throw new Error(describeDbError(error));
         return id;
       }
       let unitId: string | null = null;
       if (payload.building_id) {
-        const unitNumber = payload.code || `${Date.now().toString(36).toUpperCase()}`;
+        // رقم وحدة فريد داخل نفس العمارة حتى لا يفشل الحفظ بسبب التكرار.
+        const base = payload.code || `${Date.now().toString(36).toUpperCase()}`;
+        const existing = await supabase
+          .from("units")
+          .select("unit_number")
+          .eq("building_id", payload.building_id);
+        const taken = new Set((existing.data ?? []).map((row) => row.unit_number));
+        let unitNumber = base;
+        let counter = 2;
+        while (taken.has(unitNumber)) unitNumber = `${base}-${counter++}`;
         const unitResult = await supabase
           .from("units")
           .insert({
@@ -526,7 +547,7 @@ function PropertyFormPage() {
           })
           .select("id")
           .single();
-        if (unitResult.error) throw unitResult.error;
+        if (unitResult.error) throw new Error(describeDbError(unitResult.error));
         unitId = unitResult.data.id;
       }
       const { data, error } = await supabase
@@ -534,7 +555,7 @@ function PropertyFormPage() {
         .insert({ ...payload, unit_id: unitId })
         .select("id")
         .single();
-      if (error) throw error;
+      if (error) throw new Error(describeDbError(error));
       return data.id as string;
     },
     onSuccess: (newId) => {
