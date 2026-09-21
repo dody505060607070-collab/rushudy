@@ -699,22 +699,6 @@ function ReservationsPage() {
               ))}
             </select>
           </Field>
-          <Field label="العميل">
-            <select
-              className={inputClass}
-              value={editForm.contact_id}
-              onChange={(event) =>
-                setEditForm((current) => ({ ...current, contact_id: event.target.value }))
-              }
-            >
-              <option value="">بدون عميل</option>
-              {options.data?.contacts.map((contact) => (
-                <option key={contact.id} value={contact.id}>
-                  {contact.full_name}
-                </option>
-              ))}
-            </select>
-          </Field>
           <Field label="الحالة">
             <select
               className={inputClass}
