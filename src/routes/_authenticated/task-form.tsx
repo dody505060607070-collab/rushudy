@@ -625,11 +625,7 @@ function TaskFormPage() {
         subtitle="صور أو ملفات توضّح المطلوب — تُخزَّن بشكل خاص للفريق فقط."
         icon={Paperclip}
       >
-        {!id ? (
-          <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-            احفظ المهمة أولًا لتفعيل المرفقات.
-          </p>
-        ) : (
+        {false ? null : (
           <div className="space-y-4">
             <label className="grid cursor-pointer place-items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center">
               {uploading ? (
