@@ -775,14 +775,11 @@ function PropertyFormPage() {
 
   const uploadFiles = async (files: FileList | null) => {
     if (!files?.length) return;
-    if (!id) {
-      toast.error("احفظ العقار أولًا ثم ارفع الصور");
-      return;
-    }
     setUploading(true);
     try {
+      const targetId = await ensurePropertyId();
       for (const file of Array.from(files)) {
-        const path = `${id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+        const path = `${targetId}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
         const { url } = await uploadMedia("property-media", path, file);
         await addImage.mutateAsync(url);
       }
