@@ -6,6 +6,11 @@
  */
 import { taskMessage } from "@/lib/automation-runner.server";
 
+/** امتدادات الصور التي تُرسل كصور داخل رسالة واتساب. */
+function isImagePath(path: string) {
+  return /\.(jpe?g|png|webp|gif|bmp|heic)$/i.test(path);
+}
+
 export type NotifyResult = {
   ok: boolean;
   sent: number;
