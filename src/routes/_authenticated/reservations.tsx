@@ -75,9 +75,9 @@ const emptyForm = {
 };
 
 export const Route = createFileRoute("/_authenticated/reservations")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { newReservation: boolean; propertyId?: string } => ({
     newReservation: search["newReservation"] === true || search["newReservation"] === "true",
-    propertyId: typeof search["propertyId"] === "string" ? (search["propertyId"] as string) : undefined,
+    ...(typeof search["propertyId"] === "string" ? { propertyId: search["propertyId"] as string } : {}),
   }),
   head: () => ({
     meta: [
