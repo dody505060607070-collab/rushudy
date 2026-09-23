@@ -15,5 +15,5 @@ export const Route = createFileRoute("/_authenticated/reserve")({
 });
 
 function ReserveRedirect() {
-  return <Navigate to="/reservations" search={{ newReservation: true }} replace />;
+  return <Navigate to="/rent" replace />;
 }

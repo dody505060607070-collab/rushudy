@@ -3,6 +3,7 @@ import { Building2, GitCompareArrows, MapPin } from "lucide-react";
 
 import { FavoriteButton } from "@/components/site/FavoriteButton";
 import { StatusRibbon } from "@/components/site/StatusRibbon";
+import { useCurrentUser } from "@/hooks/useAuth";
 import {
   coverImage,
   propertyEnquiryText,
@@ -13,6 +14,9 @@ import {
 
 export function PropertyCard({ property, comparing = false, onCompare }: { property: PublicProperty; comparing?: boolean; onCompare?: (property: PublicProperty) => void }) {
   const cover = coverImage(property);
+  const { roles, isSuperAdmin } = useCurrentUser();
+  const isStaff = isSuperAdmin || roles.includes("employee");
+  const canReserve = isStaff && property.status === "available";
   const price =
     property.price_text ??
     (property.price_value ? `${property.price_value.toLocaleString("ar-SA")} ريال` : "السعر عند الطلب");
@@ -84,6 +88,15 @@ export function PropertyCard({ property, comparing = false, onCompare }: { prope
             واتساب
           </a>
         </div>
+        {canReserve ? (
+          <Link
+            to="/reservations"
+            search={{ newReservation: true, propertyId: property.id }}
+            className="block rounded-lg border border-primary py-2 text-center text-[13px] font-bold text-primary"
+          >
+            حجز هذا العقار
+          </Link>
+        ) : null}
       </div>
     </article>
   );
