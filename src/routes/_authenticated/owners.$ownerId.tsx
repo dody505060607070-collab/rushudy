@@ -647,19 +647,7 @@ function OwnerDetailPage() {
 
   return (
     <>
-      <PageHero
-        title="الملاك"
-        subtitle="إدارة بيانات الملاك وعقاراتهم وعقودهم الإيجارية"
-        icon={UserRound}
-        stats={[
-          { value: String(data.properties.length + data.units.length), label: "العقارات والوحدات" },
-          { value: formatCurrency(stats.totalDue), label: "إجمالي الإيجارات" },
-          { value: formatCurrency(stats.overdueAmount), label: "المتأخرات" },
-          { value: `${stats.rate}%`, label: "نسبة التحصيل" },
-        ]}
-      />
-
-      <div className="flex flex-wrap items-center justify-between gap-3 text-[12px]">
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background/95 py-3 text-[12px] backdrop-blur">
         <Link
           to="/owners"
           className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary"
@@ -812,7 +800,7 @@ function OwnerDetailPage() {
           </div>
         </div>
 
-        <div className="grid gap-px border-t border-border bg-border sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-px border-t border-border bg-border sm:grid-cols-2 xl:grid-cols-4">
           <Kpi
             label="المتأخرات"
             value={formatCurrency(stats.overdueAmount)}
@@ -825,29 +813,14 @@ function OwnerDetailPage() {
             hint={`${stats.next30Count} دفعة قادمة`}
           />
           <Kpi
-            label="نسبة التحصيل"
-            value={`${stats.rate}%`}
-            hint={`${formatCurrency(stats.totalPaid)} من ${formatCurrency(stats.totalDue)}`}
-            progress={stats.rate}
+            label="العقود النشطة"
+            value={`${activeContracts.length}`}
+            hint={`من أصل ${data.contracts.length} عقد`}
           />
           <Kpi
-            label="العقارات والوحدات"
-            value={`${data.properties.length + data.units.length}`}
-            hint={`${data.buildings.length} عمارة · ${data.units.length} وحدة`}
-          />
-          <Kpi
-            label="أقرب دفعة"
-            value={stats.nextPayment ? formatDate(stats.nextPayment.due_date) : "—"}
-            hint={
-              stats.nextPayment
-                ? `${formatCurrency(remainingOf(stats.nextPayment))} ريال`
-                : "لا توجد دفعات قادمة"
-            }
-          />
-          <Kpi
-            label="آخر سداد"
-            value={data.lastPaidAt ? formatDate(data.lastPaidAt) : "—"}
-            hint="آخر عملية سداد مسجلة"
+            label="الإشغال"
+            value={`${unitCounts.occupied} مؤجرة`}
+            hint={`${unitCounts.vacant} شاغرة · ${unitCounts.outOfService} خارج الخدمة`}
           />
         </div>
 
@@ -878,6 +851,23 @@ function OwnerDetailPage() {
         </div>
       </section>
 
+      <Tabs defaultValue="overview" dir="rtl" className="w-full">
+        <TabsList className="sticky top-[64px] z-10 grid h-auto w-full grid-cols-2 border border-border bg-card p-1 sm:grid-cols-4">
+          <TabsTrigger value="overview" className="min-h-10 gap-2">
+            <House className="size-4" /> نظرة عامة
+          </TabsTrigger>
+          <TabsTrigger value="assets" className="min-h-10 gap-2">
+            <Building2 className="size-4" /> العقارات والوحدات
+          </TabsTrigger>
+          <TabsTrigger value="contracts" className="min-h-10 gap-2">
+            <UserRound className="size-4" /> العقود والمستأجرون
+          </TabsTrigger>
+          <TabsTrigger value="finance" className="min-h-10 gap-2">
+            <WalletCards className="size-4" /> الفواتير والتحصيل
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-5">
       <RecordSection
         title="أقرب الدفعات"
         subtitle="أولوية المتابعة والتحصيل حسب تاريخ الاستحقاق"
@@ -1014,6 +1004,9 @@ function OwnerDetailPage() {
           )}
         </div>
       </section>
+        </TabsContent>
+
+        <TabsContent value="assets" className="space-y-5">
 
       <RecordSection
         title="العقارات والوحدات"
@@ -1021,7 +1014,24 @@ function OwnerDetailPage() {
         icon={House}
         count={groups.reduce((s, g) => s + g.items.length, 0)}
       >
-        <div className="mb-4 rounded-md border border-border bg-card p-3">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card p-3">
+          <div>
+            <h3 className="text-[13.5px] font-bold">تقسيم محفظة المالك</h3>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              الأقسام ظاهرة دائمًا، وأدوات النقل والتعديل تظهر فقط عند تشغيل وضع التنظيم.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOrganizeMode((value) => !value)}
+            className={`inline-flex h-9 items-center gap-2 rounded-md px-3 text-[12.5px] font-semibold ${organizeMode ? "bg-primary text-primary-foreground" : "border border-border bg-card"}`}
+          >
+            <Settings2 className="size-4" />
+            {organizeMode ? "إنهاء التنظيم" : "تنظيم الأقسام"}
+          </button>
+        </div>
+
+        {organizeMode ? <div className="mb-4 rounded-md border border-border bg-card p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="text-[13.5px] font-bold">أقسامي (تقسيم بأسماء من عندك)</h3>
@@ -1051,9 +1061,9 @@ function OwnerDetailPage() {
               </button>
             </form>
           </div>
-        </div>
+        </div> : null}
 
-        <div className="mb-4 rounded-md border border-dashed border-primary/40 bg-secondary/20 p-3">
+        {organizeMode ? <div className="mb-4 rounded-md border border-dashed border-primary/40 bg-secondary/20 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-[13.5px] font-bold">لوحة الترتيب اليدوي</h3>
             <p className="text-[12px] text-muted-foreground">
@@ -1147,7 +1157,7 @@ function OwnerDetailPage() {
               إخراج من العمارات (مستقل)
             </button>
           </div>
-        </div>
+        </div> : null}
 
         {(() => {
           const renderGroup = (group: (typeof groups)[number], plain = false) => {
