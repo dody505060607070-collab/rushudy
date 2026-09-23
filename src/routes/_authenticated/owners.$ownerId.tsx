@@ -81,6 +81,7 @@ function OwnerDetailPage() {
   const [dragContractId, setDragContractId] = useState<string | null>(null);
   const [newSectionName, setNewSectionName] = useState("");
   const [organizeMode, setOrganizeMode] = useState(false);
+  const [showOwnerDetails, setShowOwnerDetails] = useState(false);
   const [dragGroup, setDragGroup] = useState<{
     id: string;
     type: "building" | "property" | "unit";
@@ -214,6 +215,10 @@ function OwnerDetailPage() {
   }, [data]);
 
   const activeContracts = data?.contracts.filter((c) => c.status === "active") ?? [];
+  const assignedSectionItems = sectionsQuery.data?.items ?? [];
+  const assignedAssetIds = new Set(
+    assignedSectionItems.filter((item) => item.item_type !== "building").map((item) => item.item_id),
+  );
 
   const moveAsset = useMutation({
     mutationFn: (buildingId: string | null) => {
@@ -825,7 +830,18 @@ function OwnerDetailPage() {
         </div>
 
         <div className="border-t border-border p-4">
-          <h2 className="mb-3 text-[13px] font-bold text-foreground">البيانات الشخصية والهوية</h2>
+          <button
+            type="button"
+            onClick={() => setShowOwnerDetails((value) => !value)}
+            className="flex w-full items-center justify-between gap-3 text-start"
+          >
+            <span className="text-[13px] font-bold text-foreground">البيانات الشخصية والهوية</span>
+            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-primary">
+              {showOwnerDetails ? "إخفاء التفاصيل" : "عرض كل التفاصيل"}
+              <ChevronDown className={`size-4 transition-transform ${showOwnerDetails ? "rotate-180" : ""}`} />
+            </span>
+          </button>
+          {showOwnerDetails ? <>
           <div className="grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2 lg:grid-cols-4">
             <Info icon={KeyRound} label="رقم الهوية / السجل" value={data.owner.national_id} ltr />
             <Info icon={Phone} label="الجوال" value={data.owner.phone} ltr />
@@ -848,6 +864,7 @@ function OwnerDetailPage() {
           {data.owner.notes ? (
             <p className="mt-3 rounded-lg bg-secondary/60 p-3 text-[13px]">{data.owner.notes}</p>
           ) : null}
+          </> : null}
         </div>
       </section>
 
@@ -1078,10 +1095,10 @@ function OwnerDetailPage() {
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
             {[
               ...data.properties
-                .filter((p) => !p.building_id)
+                .filter((p) => !p.building_id && !assignedAssetIds.has(p.id))
                 .map((p) => ({ id: p.id, type: "property" as const, label: p.name })),
               ...data.units
-                .filter((u) => !u.building_id)
+                .filter((u) => !u.building_id && !assignedAssetIds.has(u.id))
                 .map((u) => ({
                   id: u.id,
                   type: "unit" as const,
@@ -1165,7 +1182,7 @@ function OwnerDetailPage() {
             return (
               <article
                 key={group.key}
-                draggable={!plain && group.key !== "__standalone"}
+                draggable={organizeMode && !plain && group.key !== "__standalone"}
                 onDragStart={(event) => {
                   if (plain || group.key === "__standalone") return;
                   event.stopPropagation();
@@ -1210,7 +1227,7 @@ function OwnerDetailPage() {
                       return (
                         <div
                           key={item.key}
-                          draggable
+                          draggable={organizeMode}
                           onDragStart={(event) => {
                             event.stopPropagation();
                             setDragAsset({ id: item.key, type: item.assetType });
@@ -1244,7 +1261,7 @@ function OwnerDetailPage() {
                                   ? `${contract.tenant?.full_name ?? "مستأجر غير مسجل"}${contract.tenant?.phone ? ` · ${contract.tenant.phone}` : ""} · ينتهي ${formatDate(contract.end_date)}`
                                   : item.subtitle || "لا يوجد عقد نشط"}
                               </p>
-                              <select
+                              {organizeMode ? <div className="mt-2 flex flex-wrap gap-2"><select
                                 value={group.key === "__standalone" ? "" : group.key}
                                 onChange={(event) =>
                                   moveItem.mutate({
@@ -1263,6 +1280,23 @@ function OwnerDetailPage() {
                                   </option>
                                 ))}
                               </select>
+                              <select
+                                value={sectionOfAsset.get(item.key) ?? ""}
+                                onChange={(event) =>
+                                  assignToSection.mutate({
+                                    sectionId: event.target.value || null,
+                                    itemType: item.assetType,
+                                    itemId: item.key,
+                                  })
+                                }
+                                className="h-8 rounded-md border border-border bg-card px-2 text-[12px]"
+                                aria-label="نقل إلى قسم"
+                              >
+                                <option value="">بدون قسم</option>
+                                {sections.map((section) => (
+                                  <option key={section.id} value={section.id}>{section.name}</option>
+                                ))}
+                              </select></div> : null}
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
