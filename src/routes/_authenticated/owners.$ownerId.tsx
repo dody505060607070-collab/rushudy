@@ -215,10 +215,6 @@ function OwnerDetailPage() {
   }, [data]);
 
   const activeContracts = data?.contracts.filter((c) => c.status === "active") ?? [];
-  const assignedSectionItems = sectionsQuery.data?.items ?? [];
-  const assignedAssetIds = new Set(
-    assignedSectionItems.filter((item) => item.item_type !== "building").map((item) => item.item_id),
-  );
 
   const moveAsset = useMutation({
     mutationFn: (buildingId: string | null) => {
@@ -288,6 +284,11 @@ function OwnerDetailPage() {
   });
   const refreshSections = () =>
     queryClient.invalidateQueries({ queryKey: ["owner-sections", ownerId] });
+  const assignedAssetIds = new Set(
+    (sectionsQuery.data?.items ?? [])
+      .filter((item) => item.item_type !== "building")
+      .map((item) => item.item_id),
+  );
 
   const createSection = useMutation({
     mutationFn: async (name: string) => {
@@ -1484,7 +1485,7 @@ function OwnerDetailPage() {
                     className="rounded-md border-2 border-dashed border-primary/40 bg-secondary/10 p-3"
                   >
                     <header className="flex flex-wrap items-center justify-between gap-2">
-                      <input
+                      {organizeMode ? <input
                         defaultValue={section.name}
                         onBlur={(event) => {
                           if (event.target.value.trim() === section.name) return;
@@ -1492,7 +1493,7 @@ function OwnerDetailPage() {
                         }}
                         className="h-9 rounded-md border border-transparent bg-transparent px-2 text-[14px] font-bold hover:border-border focus:border-border"
                         aria-label="اسم القسم"
-                      />
+                      /> : <h3 className="px-2 text-[14px] font-bold">{section.name}</h3>}
                       <div className="flex items-center gap-2">
                         <Chip tone="primary">{sectionCount} عنصر</Chip>
                         <Link
@@ -1502,7 +1503,7 @@ function OwnerDetailPage() {
                         >
                           فتح القسم
                         </Link>
-                        <button
+                        {organizeMode ? <button
                           type="button"
                           onClick={() => {
                             if (window.confirm(`حذف القسم «${section.name}»؟`))
@@ -1511,7 +1512,7 @@ function OwnerDetailPage() {
                           className="h-8 rounded-md border border-border px-3 text-[12px] font-semibold text-muted-foreground hover:text-destructive"
                         >
                           حذف القسم
-                        </button>
+                        </button> : null}
                       </div>
                     </header>
                     <div className="mt-3 grid gap-4">
@@ -1557,6 +1558,9 @@ function OwnerDetailPage() {
           );
         })()}
       </RecordSection>
+        </TabsContent>
+
+        <TabsContent value="contracts" className="space-y-5">
 
       <RecordSection
         title="العقود"
@@ -1687,6 +1691,9 @@ function OwnerDetailPage() {
           {!data.contracts.length ? <Empty text="لا توجد عقود مرتبطة" /> : null}
         </div>
       </RecordSection>
+        </TabsContent>
+
+        <TabsContent value="finance" className="space-y-5">
 
       <RecordSection
         title="الفواتير"
@@ -1737,6 +1744,8 @@ function OwnerDetailPage() {
           {!data.invoices.length ? <Empty text="لا توجد فواتير مرتبطة" /> : null}
         </div>
       </RecordSection>
+        </TabsContent>
+      </Tabs>
 
       <ImportDialog
         open={importOpen}
