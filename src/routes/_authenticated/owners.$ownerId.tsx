@@ -19,9 +19,11 @@ import {
   Pencil,
   Phone,
   ReceiptText,
+  Settings2,
   UserRound,
+  WalletCards,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { ReactNode } from "react";
 
@@ -36,6 +38,7 @@ import { PaymentRecorder } from "@/components/payments/PaymentRecorder";
 import { ImportDialog } from "@/routes/_authenticated/contracts.index";
 import { assignOwnerContract, moveOwnerAsset } from "@/lib/owner-operations.functions";
 import { issueClientAccess } from "@/lib/portal.functions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/owners/$ownerId")({
   head: () => ({
@@ -77,6 +80,7 @@ function OwnerDetailPage() {
   );
   const [dragContractId, setDragContractId] = useState<string | null>(null);
   const [newSectionName, setNewSectionName] = useState("");
+  const [organizeMode, setOrganizeMode] = useState(false);
   const [dragGroup, setDragGroup] = useState<{
     id: string;
     type: "building" | "property" | "unit";
@@ -86,6 +90,19 @@ function OwnerDetailPage() {
     null,
   );
   const [payingPayment, setPayingPayment] = useState<PaymentRow | null>(null);
+
+  useEffect(() => {
+    const autoScrollWhileDragging = (event: DragEvent) => {
+      if (!dragAsset && !dragGroup && !dragContractId) return;
+      const edge = 110;
+      const speed = 22;
+      if (event.clientY < edge) window.scrollBy({ top: -speed, behavior: "instant" });
+      if (event.clientY > window.innerHeight - edge)
+        window.scrollBy({ top: speed, behavior: "instant" });
+    };
+    window.addEventListener("dragover", autoScrollWhileDragging);
+    return () => window.removeEventListener("dragover", autoScrollWhileDragging);
+  }, [dragAsset, dragContractId, dragGroup]);
 
   const dossier = useQuery({
     queryKey: ["owner-dossier", ownerId],
