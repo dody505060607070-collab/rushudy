@@ -267,6 +267,13 @@
       "when": 1789979051518,
       "tag": "0037_allow_custom_employee_goal_type",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1790183290610,
+      "tag": "0038_public_properties_higher_limit",
+      "breakpoints": true
     }
   ]
 }

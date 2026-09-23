@@ -75,8 +75,9 @@ const emptyForm = {
 };
 
 export const Route = createFileRoute("/_authenticated/reservations")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { newReservation: boolean; propertyId?: string } => ({
     newReservation: search["newReservation"] === true || search["newReservation"] === "true",
+    ...(typeof search["propertyId"] === "string" ? { propertyId: search["propertyId"] as string } : {}),
   }),
   head: () => ({
     meta: [
@@ -100,12 +101,14 @@ function errorMessage(error: unknown, fallback: string) {
 }
 
 function ReservationsPage() {
-  const { newReservation } = Route.useSearch();
+  const { newReservation, propertyId } = Route.useSearch();
   const { userId, roles, isSuperAdmin, loading: authLoading } = useCurrentUser();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(newReservation);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(() =>
+    propertyId ? { ...emptyForm, property_id: propertyId } : emptyForm,
+  );
   const isStaff = isSuperAdmin || roles.includes("employee");
   const canView = isStaff;
   const canBook = isStaff;
@@ -368,9 +371,9 @@ function ReservationsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ReservationStatusLegend />
         {canBook ? (
-          <Button onClick={() => setPicker(true)}>
+          <Button onClick={() => void navigate({ to: "/rent" })}>
             <Plus />
-            حجز جديد
+            حجز جديد من العروض
           </Button>
         ) : null}
       </div>
