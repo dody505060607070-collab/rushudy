@@ -1204,6 +1204,26 @@ function OwnerDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Chip tone="primary">{group.items.length} وحدة</Chip>
+                    {organizeMode && !plain && group.key !== "__standalone" ? (
+                      <select
+                        value={sectionOfBuilding.get(group.key) ?? ""}
+                        onChange={(event) =>
+                          assignToSection.mutate({
+                            sectionId: event.target.value || null,
+                            itemType: "building",
+                            itemId: group.key,
+                          })
+                        }
+                        onClick={(event) => event.stopPropagation()}
+                        className="h-8 max-w-40 rounded-md border border-border bg-card px-2 text-[12px]"
+                        aria-label="نقل العمارة إلى قسم"
+                      >
+                        <option value="">بدون قسم</option>
+                        {sections.map((section) => (
+                          <option key={section.id} value={section.id}>{section.name}</option>
+                        ))}
+                      </select>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => setCollapsedGroups((s) => ({ ...s, [group.key]: !collapsed }))}
