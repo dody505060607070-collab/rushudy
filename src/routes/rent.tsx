@@ -54,14 +54,18 @@ function RentPage() {
   );
 
   const filtered = useMemo(() => {
-    const q = term.trim();
+    const q = term.trim().toLowerCase();
     const cap = Number(maxPrice) || 0;
     const list = (data ?? []).filter(
       (p) =>
         (!district || p.district === district) &&
         (!type || p.property_type === type) &&
-        (!q || `${p.name} ${p.code} ${p.district ?? ""}`.includes(q)) &&
-        !p.building_code &&
+        (!q ||
+          `${p.name} ${p.code} ${p.district ?? ""} ${p.building_name ?? ""}`
+            .toLowerCase()
+            .includes(q)) &&
+        // وحدات العمارات تظهر داخل كرت العمارة، لكن البحث يعرضها مباشرة
+        (q ? true : !p.building_code) &&
         (!cap || (p.price_value ?? 0) <= cap),
     );
     const sorted = [...list];
