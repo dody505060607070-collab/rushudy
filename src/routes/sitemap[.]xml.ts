@@ -12,6 +12,7 @@ const STATIC_PATHS = [
   "/list-property",
   "/privacy",
   "/terms",
+  "/company-profile",
 ];
 
 function xmlEscape(value: string) {
