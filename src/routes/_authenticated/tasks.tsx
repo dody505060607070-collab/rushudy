@@ -112,6 +112,26 @@ function TasksPage() {
   });
 
   const rows = data ?? [];
+
+  const assigneeNames = useQuery({
+    queryKey: ["tasks", "assignee-names", rows.map((r) => r.id).join(",")],
+    enabled: rows.length > 0,
+    queryFn: async () => {
+      const { data: links, error } = await supabase
+        .from("task_assignees")
+        .select("task_id, user_id")
+        .in("task_id", rows.map((r) => r.id));
+      if (error) throw error;
+      const ids = [...new Set((links ?? []).map((l) => l.user_id))];
+      const { data: profs } = ids.length
+        ? await supabase.from("profiles").select("id, full_name").in("id", ids)
+        : { data: [] as { id: string; full_name: string | null }[] };
+      const nameOf = new Map((profs ?? []).map((p) => [p.id, p.full_name ?? "موظف"]));
+      const map: Record<string, string[]> = {};
+      for (const l of links ?? []) (map[l.task_id] ??= []).push(nameOf.get(l.user_id) ?? "موظف");
+      return map;
+    },
+  });
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
   const save = useMutation({
@@ -304,7 +324,10 @@ function TasksPage() {
                 </Chip>
               ),
             },
-            { header: "العقار", cell: (r) => r.property?.name ?? "—" },
+            {
+              header: "الموظف",
+              cell: (r) => assigneeNames.data?.[r.id]?.join("، ") || "—",
+            },
             {
               header: "الموقع",
               cell: (r) =>
