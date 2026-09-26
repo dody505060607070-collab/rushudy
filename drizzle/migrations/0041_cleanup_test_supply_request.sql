@@ -1,0 +1,1 @@
+DELETE FROM public.supply_requests WHERE full_name='اختبار نظام' AND phone='0500000000';
