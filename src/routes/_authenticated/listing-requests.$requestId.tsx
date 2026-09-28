@@ -117,7 +117,7 @@ function ListingRequestDetail() {
 
   const save = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("listing_requests")
         .update({
           full_name: form.full_name,
@@ -135,8 +135,11 @@ function ListingRequestDetail() {
           status: form.status,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", requestId);
+        .eq("id", requestId)
+        .select("id");
       if (error) throw error;
+      if (!data || data.length === 0)
+        throw new Error("لم يتم الحفظ: حسابك ليس لديه صلاحية تعديل الطلبات. اطلب من المدير تفعيل صلاحية \"تعديل الطلبات\".");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["listing_request", requestId] });

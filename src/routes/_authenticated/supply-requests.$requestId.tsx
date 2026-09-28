@@ -101,7 +101,7 @@ function SupplyRequestDetail() {
 
   const save = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("supply_requests")
         .update({
           full_name: form.full_name,
@@ -120,8 +120,11 @@ function SupplyRequestDetail() {
           status: form.status,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", requestId);
+        .eq("id", requestId)
+        .select("id");
       if (error) throw error;
+      if (!data || data.length === 0)
+        throw new Error("لم يتم الحفظ: حسابك ليس لديه صلاحية تعديل الطلبات. اطلب من المدير تفعيل صلاحية \"تعديل الطلبات\".");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["supply_request", requestId] });
