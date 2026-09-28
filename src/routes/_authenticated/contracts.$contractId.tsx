@@ -22,6 +22,7 @@ import { toast } from "sonner";
 
 import { Chip } from "@/components/kit/Chip";
 import { GhostButton, Modal, PrimaryButton } from "@/components/kit/Modal";
+import { InlineEdit } from "@/components/kit/InlineEdit";
 import { PageHero } from "@/components/kit/PageHero";
 import { SignaturePad } from "@/components/kit/SignaturePad";
 import { Toggle } from "@/components/kit/Toggle";
@@ -481,7 +482,7 @@ function ContractViewPage() {
             icon={FileText}
           >
             <div className="grid gap-3 sm:grid-cols-3">
-              <Row icon={FileText} label="رقم العقد" value={c.contract_number} />
+              <Row icon={FileText} label="رقم العقد" value={<InlineEdit table="contracts" id={c.id} column="contract_number" value={c.contract_number} />} />
               <Row
                 label="الحالة"
                 value={
@@ -499,12 +500,12 @@ function ContractViewPage() {
                 }
               />
               <Row label="نوع العقد" value={c.contract_type === "sale" ? "بيع" : "إيجار"} />
-              <Row icon={CalendarDays} label="تاريخ البداية" value={c.start_date} />
-              <Row icon={CalendarDays} label="تاريخ النهاية" value={c.end_date} />
-              <Row label="دورة السداد" value={c.payment_cycle} />
-              <Row label="الإيجار السنوي" value={money(c.annual_rent)} />
-              <Row icon={CircleDollarSign} label="القيمة الإجمالية" value={money(c.total_value)} />
-              <Row label="التأمين" value={money(c.deposit)} />
+              <Row icon={CalendarDays} label="تاريخ البداية" value={<InlineEdit table="contracts" id={c.id} column="start_date" type="date" value={c.start_date} />} />
+              <Row icon={CalendarDays} label="تاريخ النهاية" value={<InlineEdit table="contracts" id={c.id} column="end_date" type="date" value={c.end_date} />} />
+              <Row label="دورة السداد" value={<InlineEdit table="contracts" id={c.id} column="payment_cycle" value={c.payment_cycle} options={[{value:"monthly",label:"شهري"},{value:"quarterly",label:"ربع سنوي"},{value:"semi_annual",label:"نصف سنوي"},{value:"annual",label:"سنوي"}]} />} />
+              <Row label="الإيجار السنوي" value={<InlineEdit table="contracts" id={c.id} column="annual_rent" type="number" value={c.annual_rent} display={money(c.annual_rent)} />} />
+              <Row icon={CircleDollarSign} label="القيمة الإجمالية" value={<InlineEdit table="contracts" id={c.id} column="total_value" type="number" value={c.total_value} display={money(c.total_value)} />} />
+              <Row label="التأمين" value={<InlineEdit table="contracts" id={c.id} column="deposit" type="number" value={c.deposit} display={money(c.deposit)} />} />
               <Row label="عدد الدفعات" value={c.payments_count} />
               <Row label="المصدر" value={c.source === "import" ? "استيراد PDF" : "إدخال يدوي"} />
               <Row label="تاريخ الإنشاء" value={c.created_at?.slice(0, 10)} />
@@ -535,9 +536,10 @@ function ContractViewPage() {
                     )
                   }
                 />
-                <Row label="رقم الهوية" value={c.owner?.national_id} />
-                <Row label="الجوال" value={c.owner?.phone} />
-                <Row label="البريد" value={c.owner?.email} />
+                <Row label="اسم المالك (تعديل سريع)" value={<InlineEdit table="contacts" id={c.owner_id} column="full_name" value={c.owner?.full_name} />} />
+                <Row label="رقم الهوية" value={<InlineEdit table="contacts" id={c.owner_id} column="national_id" value={c.owner?.national_id} />} />
+                <Row label="الجوال" value={<InlineEdit table="contacts" id={c.owner_id} column="phone" type="tel" value={c.owner?.phone} />} />
+                <Row label="البريد" value={<InlineEdit table="contacts" id={c.owner_id} column="email" type="email" value={c.owner?.email} />} />
               </div>
             </Section>
             <Section title="المستأجر / المشتري" subtitle="بيانات الطرف المستفيد" icon={UserRound}>
@@ -558,9 +560,10 @@ function ContractViewPage() {
                     )
                   }
                 />
-                <Row label="رقم الهوية" value={c.tenant?.national_id} />
-                <Row label="الجوال" value={c.tenant?.phone} />
-                <Row label="البريد" value={c.tenant?.email} />
+                <Row label="اسم المستأجر (تعديل سريع)" value={<InlineEdit table="contacts" id={c.tenant_id} column="full_name" value={c.tenant?.full_name} />} />
+                <Row label="رقم الهوية" value={<InlineEdit table="contacts" id={c.tenant_id} column="national_id" value={c.tenant?.national_id} />} />
+                <Row label="الجوال" value={<InlineEdit table="contacts" id={c.tenant_id} column="phone" type="tel" value={c.tenant?.phone} />} />
+                <Row label="البريد" value={<InlineEdit table="contacts" id={c.tenant_id} column="email" type="email" value={c.tenant?.email} />} />
                 <Row label="اسم المستخدم في بوابة المستأجر" value={c.contract_number} />
                 <Row
                   label="كلمة المرور"
