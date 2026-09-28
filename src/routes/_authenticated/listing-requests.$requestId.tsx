@@ -117,7 +117,7 @@ function ListingRequestDetail() {
 
   const save = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("listing_requests")
         .update({
           full_name: form.full_name,

@@ -101,7 +101,7 @@ function SupplyRequestDetail() {
 
   const save = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("supply_requests")
         .update({
           full_name: form.full_name,
