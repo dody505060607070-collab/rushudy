@@ -135,8 +135,11 @@ function ListingRequestDetail() {
           status: form.status,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", requestId);
+        .eq("id", requestId)
+        .select("id");
       if (error) throw error;
+      if (!data || data.length === 0)
+        throw new Error("لم يتم الحفظ: حسابك ليس لديه صلاحية تعديل الطلبات. اطلب من المدير تفعيل صلاحية \"تعديل الطلبات\".");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["listing_request", requestId] });
