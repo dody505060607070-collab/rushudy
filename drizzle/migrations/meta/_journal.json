@@ -302,6 +302,13 @@
       "when": 1790621577017,
       "tag": "0042_sync_contact_phone_everywhere",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1790918328912,
+      "tag": "0043_invoice_item_vat_and_attachments",
+      "breakpoints": true
     }
   ]
 }
