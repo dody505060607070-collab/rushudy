@@ -1348,28 +1348,37 @@ export type Database = {
           description: string
           id: string
           invoice_id: string
+          item_type: string
           quantity: number
           sort_order: number
           total: number
           unit_price: number
+          vat_amount: number
+          vat_rate: number
         }
         Insert: {
           description: string
           id?: string
           invoice_id: string
+          item_type?: string
           quantity?: number
           sort_order?: number
           total?: number
           unit_price?: number
+          vat_amount?: number
+          vat_rate?: number
         }
         Update: {
           description?: string
           id?: string
           invoice_id?: string
+          item_type?: string
           quantity?: number
           sort_order?: number
           total?: number
           unit_price?: number
+          vat_amount?: number
+          vat_rate?: number
         }
         Relationships: [
           {
@@ -1434,6 +1443,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          attachment_name: string | null
+          attachment_path: string | null
           contact_id: string | null
           contract_id: string | null
           created_at: string
@@ -1450,6 +1461,8 @@ export type Database = {
           vat_amount: number
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_path?: string | null
           contact_id?: string | null
           contract_id?: string | null
           created_at?: string
@@ -1466,6 +1479,8 @@ export type Database = {
           vat_amount?: number
         }
         Update: {
+          attachment_name?: string | null
+          attachment_path?: string | null
           contact_id?: string | null
           contract_id?: string | null
           created_at?: string
