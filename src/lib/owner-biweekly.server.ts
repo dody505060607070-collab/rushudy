@@ -35,11 +35,21 @@ export async function runOwnerBiweekly(now = new Date()) {
   if (!acquired) return { ran: false, reason: "sent within last 14 days" };
 
   const { whatsappSend } = await import("@/lib/whatsapp.functions");
-  const { data: owners } = await supabaseAdmin
-    .from("contacts")
-    .select("id, full_name, phone, whatsapp")
-    .contains("roles", ["owner"])
-    .eq("is_active", true);
+  const [c, u, p, r] = await Promise.all([
+    supabaseAdmin.from("contracts").select("owner_id").not("owner_id", "is", null),
+    supabaseAdmin.from("units").select("owner_id").not("owner_id", "is", null),
+    supabaseAdmin.from("properties").select("owner_id").not("owner_id", "is", null),
+    supabaseAdmin.from("contacts").select("id").contains("roles", ["owner"]),
+  ]);
+  const ids = new Set<string>([
+    ...(c.data ?? []).map((x) => x.owner_id as string),
+    ...(u.data ?? []).map((x) => x.owner_id as string),
+    ...(p.data ?? []).map((x) => x.owner_id as string),
+    ...(r.data ?? []).map((x) => x.id),
+  ]);
+  const { data: owners } = ids.size
+    ? await supabaseAdmin.from("contacts").select("id, full_name, phone, whatsapp").in("id", [...ids]).eq("is_active", true)
+    : { data: [] as { id: string; full_name: string; phone: string | null; whatsapp: string | null }[] };
   const seen = new Set<string>();
   let sent = 0;
   let failed = 0;
