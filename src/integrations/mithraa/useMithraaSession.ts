@@ -32,8 +32,17 @@ export function useMithraaSession() {
 
 /** تسجيل دخول موظف الرشودي إلى قاعدة مثراء + ضمان org = 'rashoudi'. */
 export async function signInToMithraa(email: string, password: string, fullName?: string) {
-  const { data, error } = await mithraa.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  let res;
+  try {
+    res = await mithraa.auth.signInWithPassword({ email, password });
+  } catch {
+    throw new Error("خادم الشات المشترك (مثراء) غير متاح حاليًا — الخدمة متوقفة من جهتهم. تواصل مع مسؤول مثراء لإعادة تشغيلها.");
+  }
+  const { data, error } = res;
+  if (error) {
+    if (/fetch|network/i.test(error.message)) throw new Error("خادم الشات المشترك (مثراء) غير متاح حاليًا — الخدمة متوقفة من جهتهم. تواصل مع مسؤول مثراء لإعادة تشغيلها.");
+    throw error;
+  }
   const uid = data.user?.id;
   if (!uid) throw new Error("تعذّر تسجيل الدخول");
   // لا ننشئ جداول — فقط نضمن وجود ملف الموظف بمؤسسة الرشودي
