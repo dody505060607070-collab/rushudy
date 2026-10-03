@@ -131,7 +131,7 @@ function SupplyRequestsPage() {
           columns={[
             { header: "مقدّم الطلب", sortable: true, cell: (r) => r.full_name, className: "font-semibold" },
             { header: "الجوال", cell: (r) => <span dir="ltr">{r.phone}</span> },
-            { header: "نوع الطلب", cell: (r) => (r.request_type === "buy" ? "شراء" : "إيجار") },
+            { header: "نوع الطلب", cell: (r) => (r.request_type === "buy" || r.request_type === "sale" ? "شراء" : "إيجار") },
             { header: "نوع العقار", cell: (r) => r.property_type ?? "—" },
             { header: "الموقع", cell: (r) => [r.city, r.districts].filter(Boolean).join(" - ") || "—" },
             {
