@@ -65,7 +65,7 @@ type Activity = {
 const SELECT =
   "id, employee_id, created_by, activity_type, subject, details, notes, related_contact_id, status, outcome, closed_at, created_at, employee:employee_id(full_name, job_title), contact:related_contact_id(full_name)";
 
-function ActivitiesPage() {
+export function ActivitiesPage() {
   const qc = useQueryClient();
   const { userId, isSuperAdmin } = useCurrentUser();
   const [open, setOpen] = useState(false);

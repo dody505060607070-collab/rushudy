@@ -61,7 +61,7 @@ export const navGroups: NavGroup[] = [
     label: "المهام",
     icon: CircleCheck,
     items: [
-      { label: "كل المهام", to: "/tasks", countKey: "tasks", module: "tasks" },
+      { label: "المهام والمتابعات والشات", to: "/tasks", countKey: "tasks", module: "tasks" },
       { label: "أهداف الموظفين", to: "/goals", module: "employees" },
     ],
   },
@@ -71,8 +71,6 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "نظام CRM", to: "/crm", module: "crm" },
       { label: "العملاء", to: "/clients", countKey: "contacts", module: "contacts" },
-      { label: "المتابعات والأنشطة", to: "/activities", module: "crm" },
-      { label: "شات الموظفين", to: "/team-chat", module: "chat" },
     ],
   },
   {

@@ -20,6 +20,8 @@ import { Pills } from "@/components/kit/Pills";
 import { StatusLegend } from "@/components/kit/StatusLegend";
 import { supabase } from "@/integrations/supabase/client";
 import { priorityLabels, taskStatusLabels } from "@/lib/labels";
+import { ActivitiesPage } from "./activities";
+import { TeamChatPage } from "./team-chat";
 import { rowTone, toneBadgeClass, toneRowClass } from "@/lib/status-tone";
 
 type Row = {
@@ -53,7 +55,7 @@ export const Route = createFileRoute("/_authenticated/tasks")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: TasksPage,
+  component: TasksHub,
 });
 
 const SELECT =
@@ -482,5 +484,32 @@ function TasksPage() {
         </div>
       </Modal>
     </>
+  );
+}
+
+const HUB_TABS = [
+  { key: "tasks", label: "المهام" },
+  { key: "activities", label: "المتابعات والأنشطة" },
+  { key: "chat", label: "شات الموظفين" },
+] as const;
+
+function TasksHub() {
+  const [tab, setTab] = useState<(typeof HUB_TABS)[number]["key"]>("tasks");
+  return (
+    <div className="space-y-4">
+      <div className="sticky top-0 z-20 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card p-1 shadow-sm">
+        {HUB_TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={`whitespace-nowrap rounded-lg px-4 py-2 text-[13px] font-semibold transition ${tab === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === "tasks" ? <TasksPage /> : tab === "activities" ? <ActivitiesPage /> : <TeamChatPage />}
+    </div>
   );
 }
