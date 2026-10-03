@@ -46,7 +46,7 @@ function InvoiceFormPage() {
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({ invoice_number: "", contact_id: ownerId, contract_id: "", issue_date: today, due_date: "", status: "unpaid", vat_rate: "15", notes: "" });
   const [items, setItems] = useState<Item[]>([blankItem()]);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const set = (patch: Partial<typeof form>) => setForm((previous) => ({ ...previous, ...patch }));
   const options = useQuery({ queryKey: ["invoice-form-options"], queryFn: async () => {
     const [contacts, contracts, settings] = await Promise.all([
@@ -79,10 +79,15 @@ function InvoiceFormPage() {
     else { const insert = await supabase.from("invoices").insert(payload).select("id").single(); if (insert.error) throw insert.error; invoiceId = insert.data.id; }
     const inserted = await supabase.from("invoice_items").insert(validItems.map((item, index) => ({ invoice_id: invoiceId, description: item.description.trim(), quantity: Number(item.quantity), unit_price: Number(item.unit_price), total: lineBase(item), vat_rate: Number(item.vat_rate) || 0, vat_amount: lineVat(item), item_type: item.item_type, sort_order: index })));
     if (inserted.error) throw inserted.error;
-    if (file && invoiceId) {
-      const path = `invoices/${invoiceId}/${Date.now()}-${file.name.replace(/[^\w.\-]+/g, "_")}`;
-      await uploadMedia("internal-files", path, file);
-      const att = await supabase.from("invoices").update({ attachment_path: path, attachment_name: file.name }).eq("id", invoiceId);
+    if (files.length && invoiceId) {
+      const cur = await supabase.from("invoices").select("attachments").eq("id", invoiceId).maybeSingle();
+      const list = (Array.isArray(cur.data?.attachments) ? cur.data!.attachments : []) as { path: string; name: string }[];
+      for (const f of files) {
+        const path = `invoices/${invoiceId}/${Date.now()}-${f.name.replace(/[^\w.\-]+/g, "_")}`;
+        await uploadMedia("internal-files", path, f);
+        list.push({ path, name: f.name });
+      }
+      const att = await supabase.from("invoices").update({ attachments: list, attachment_path: list[0]?.path ?? null, attachment_name: list[0]?.name ?? null }).eq("id", invoiceId);
       if (att.error) throw att.error;
     }
     // ترحيل تلقائي: الفاتورة المدفوعة يُسجّل لها المتبقي كدفعة تلقائيًا
@@ -96,7 +101,7 @@ function InvoiceFormPage() {
         if (pay.error) throw pay.error;
       }
     }
-    setFile(null);
+    setFiles([]);
     return { invoiceId, addAnother };
   }, onSuccess: ({ invoiceId, addAnother }) => { queryClient.invalidateQueries({ queryKey: ["invoices"] }); toast.success(id ? "تم تحديث الفاتورة" : "تم إنشاء الفاتورة"); if (addAnother) { setForm({ invoice_number: "", contact_id: ownerId, contract_id: "", issue_date: today, due_date: "", status: "unpaid", vat_rate: form.vat_rate, notes: "" }); setItems([blankItem()]); } else void navigate({ to: "/invoices/$invoiceId", params: { invoiceId } }); }, onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الحفظ") });
 
@@ -113,7 +118,7 @@ function InvoiceFormPage() {
     </div></Section>
     <Section title="بنود الفاتورة" icon={FileText}><div className="space-y-3">{items.map((item, index) => <div key={index} className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-[150px_1fr_80px_120px_100px_44px]"><Field label="نوع البند"><select className={inputClass} value={item.item_type} onChange={(event) => { const t = itemTypes.find((x) => x.value === event.target.value); setItems((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, item_type: event.target.value, vat_rate: t?.vat ?? row.vat_rate } : row)); }}>{itemTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></Field><Field label="الوصف"><input className={inputClass} value={item.description} onChange={(event) => setItems((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, description: event.target.value } : row))} /></Field><Field label="العدد"><input className={inputClass} dir="ltr" inputMode="decimal" value={item.quantity} onChange={(event) => setItems((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, quantity: event.target.value } : row))} /></Field><Field label="سعر الوحدة"><input className={inputClass} dir="ltr" inputMode="decimal" value={item.unit_price} onChange={(event) => setItems((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, unit_price: event.target.value } : row))} /></Field><Field label="الضريبة %"><select className={inputClass} value={item.vat_rate} onChange={(event) => setItems((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, vat_rate: event.target.value } : row))}><option value="0">بدون (0%)</option><option value="5">5%</option><option value="15">15%</option>{!["0","5","15"].includes(item.vat_rate) ? <option value={item.vat_rate}>{item.vat_rate}%</option> : null}</select></Field><button type="button" onClick={() => setItems((current) => current.length === 1 ? current : current.filter((_, rowIndex) => rowIndex !== index))} className="mt-6 grid size-10 place-items-center rounded-lg text-destructive hover:bg-destructive/10" aria-label="حذف البند" title={`ضريبة البند: ${lineVat(item).toFixed(2)} ر.س`}><Trash2 className="size-4" /></button></div>)}<button type="button" onClick={() => setItems((current) => [...current, blankItem(form.vat_rate)])} className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-[12.5px] font-semibold"><Plus className="size-4" />إضافة بند</button></div></Section>
     <Section title="الضريبة والإجماليات" icon={ReceiptText}><div className="grid gap-4 sm:grid-cols-4"><Field label="الضريبة الافتراضية للبنود الجديدة %" hint="كل بند له ضريبته الخاصة"><input className={inputClass} dir="ltr" inputMode="decimal" value={form.vat_rate} onChange={(event) => set({ vat_rate: event.target.value })} /></Field><Total label="قبل الضريبة" value={subtotal} /><Total label="الضريبة" value={vat} /><Total label="الإجمالي" value={total} strong /></div></Section>
-    <Section title="إرفاق الفاتورة" icon={Paperclip}><div className="space-y-2"><input type="file" accept="image/*,application/pdf" className={inputClass} onChange={(event) => setFile(event.target.files?.[0] ?? null)} />{existing.data?.invoice.attachment_path ? <button type="button" className="text-[12.5px] font-semibold text-primary hover:underline" onClick={async () => window.open(await mediaUrl("internal-files", existing.data!.invoice.attachment_path!), "_blank", "noopener")}>عرض المرفق الحالي: {existing.data.invoice.attachment_name}</button> : null}<p className="text-[11.5px] text-muted-foreground">صورة أو PDF للفاتورة الأصلية. عند اختيار الحالة "مدفوعة" يُسجَّل المتبقي كدفعة تلقائيًا.</p></div></Section>
+    <Section title="إرفاق الفواتير" icon={Paperclip}><div className="space-y-2"><input type="file" multiple accept="image/*,application/pdf" className={inputClass} onChange={(event) => { const picked = Array.from(event.target.files ?? []); setFiles((cur) => [...cur, ...picked]); event.target.value = ""; }} />{files.length ? <ul className="space-y-1 text-[12.5px]">{files.map((f, i) => <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1"><span className="truncate">{f.name}</span><button type="button" className="text-destructive" onClick={() => setFiles((cur) => cur.filter((_, j) => j !== i))}>إزالة</button></li>)}</ul> : null}{((existing.data?.invoice as { attachments?: { path: string; name: string }[] } | undefined)?.attachments ?? []).map((a2) => <button key={a2.path} type="button" className="block text-[12.5px] font-semibold text-primary hover:underline" onClick={async () => window.open(await mediaUrl("internal-files", a2.path), "_blank", "noopener")}>عرض: {a2.name}</button>)}<p className="text-[11.5px] text-muted-foreground">تقدر تختار أكثر من صورة أو PDF مرة واحدة. عند اختيار الحالة "مدفوعة" يُسجَّل المتبقي كدفعة تلقائيًا.</p></div></Section>
     <Section title="ملاحظات وشروط" icon={FileText}><Field label="ملاحظات الفاتورة"><textarea className={textareaClass} value={form.notes} onChange={(event) => set({ notes: event.target.value })} placeholder="تفاصيل السداد أو أي شروط تظهر في سجل الفاتورة." /></Field></Section>
     <div className="flex flex-wrap justify-center gap-3 pb-4"><button type="button" onClick={() => save.mutate(false)} disabled={save.isPending} className="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-6 text-[13px] font-bold text-primary-foreground disabled:opacity-50">{save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}{id ? "حفظ التعديلات" : "إضافة"}</button>{!id ? <button type="button" onClick={() => save.mutate(true)} disabled={save.isPending} className="inline-flex h-11 items-center rounded-lg border border-border bg-card px-5 text-[13px] font-semibold">إضافة وبدء فاتورة جديدة</button> : null}<Link to="/invoices" className="inline-flex h-11 items-center rounded-lg border border-border bg-card px-5 text-[13px] font-semibold">إلغاء</Link></div>
   </>;

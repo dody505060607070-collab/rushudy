@@ -72,12 +72,11 @@ export function DataTable<T>({
   const rowText = (row: T) =>
     columns
       .map((c) => (c.value ? String(c.value(row) ?? "") : textOf(c.cell(row))))
-      .join(" ")
-      .toLowerCase();
+      .join(" ");
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = q ? rows.filter((r) => rowText(r).includes(q)) : [...rows];
+    const q = normalizeSearch(query);
+    const list = q ? rows.filter((r) => normalizeSearch(rowText(r)).includes(q)) : [...rows];
     if (sort) {
       const col = columns.find((c) => c.header === sort.header);
       if (col) {
@@ -417,4 +416,15 @@ function PageBtn({
       {children}
     </button>
   );
+}
+
+/** تطبيع عربي للبحث: يتجاهل المسافات والهمزات والتاء المربوطة */
+export function normalizeSearch(v: string) {
+  return v
+    .toLowerCase()
+    .replace(/[\u064B-\u0652\u0640]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/\s+/g, "");
 }
