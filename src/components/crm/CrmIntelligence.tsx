@@ -48,8 +48,13 @@ type Payment = { amount_due: number; amount_paid: number; due_date: string; stat
 type Expense = { amount: number; spent_on: string };
 type Opportunity = Dated & { stage: string; expected_value: number | null; close_probability: number; contact_id: string | null };
 type Contact = Dated & { id: string; source: string | null; roles: string[] };
-type PageView = { visitor_id: string; path: string; user_id: string | null; visited_at: string };
 type Session = { user_id: string; duration_seconds: number; last_seen_at: string; ended_at: string | null };
+type Traffic = {
+  views: number; visitors: number; public_visitors: number; previous_views: number; previous_visitors: number;
+  live_visitors: number; live_public_visitors: number; last_visit_at: string | null; events: number;
+  top_pages: { path: string; views: number }[]; top_pages_all: { path: string; views: number }[];
+  recent: { path: string; at: string; signed_in: boolean }[];
+};
 
 const ranges: { key: Range; label: string; days: number }[] = [
   { key: "week", label: "أسبوعي", days: 7 },
@@ -70,11 +75,10 @@ export function CrmIntelligence() {
   const since = new Date(Date.now() - days * 2 * 86400000).toISOString();
   const query = useQuery({
     queryKey: ["crm-intelligence", range],
-    staleTime: 60_000,
-    refetchInterval: 120_000,
+    staleTime: 20_000,
+    refetchInterval: 60_000,
     queryFn: async () => {
       const results = await Promise.all([
-        supabase.from("site_page_views").select("visitor_id, path, user_id, visited_at").gte("visited_at", since).limit(10000),
         supabase.from("contacts").select("id, source, roles, created_at").gte("created_at", since),
         supabase.from("opportunities").select("stage, expected_value, close_probability, contact_id, created_at"),
         supabase.from("crm_activities").select("activity_type, happened_at, next_follow_up, created_at").gte("created_at", since),
@@ -86,23 +90,36 @@ export function CrmIntelligence() {
         supabase.from("reservations").select("status, converted_at, created_at").gte("created_at", since),
         supabase.from("tasks").select("status, created_at, started_at, approved_at").gte("created_at", since),
         supabase.from("employee_sessions").select("user_id, duration_seconds, last_seen_at, ended_at").gte("started_at", since),
-        supabase.from("activity_log").select("actor_id, created_at").gte("created_at", since),
         supabase.from("message_log").select("result, created_at").gte("created_at", since),
       ]);
       const failure = results.find((result) => result.error);
       if (failure?.error) throw failure.error;
       return {
-        views: (results[0].data ?? []) as PageView[], contacts: (results[1].data ?? []) as Contact[], opportunities: (results[2].data ?? []) as Opportunity[],
-        activities: (results[3].data ?? []) as { activity_type: string; happened_at: string; next_follow_up: string | null; created_at: string }[], payments: (results[4].data ?? []) as Payment[], expenses: (results[5].data ?? []) as Expense[],
-        invoices: (results[6].data ?? []) as (Dated & { total: number; status: string; issue_date: string })[], supply: (results[7].data ?? []) as (Dated & { status: string; updated_at: string })[], listing: (results[8].data ?? []) as (Dated & { status: string; updated_at: string })[],
-        reservations: (results[9].data ?? []) as (Dated & { status: string; converted_at: string | null })[], tasks: (results[10].data ?? []) as (Dated & { status: string; started_at: string | null; approved_at: string | null })[], sessions: (results[11].data ?? []) as Session[], events: (results[12].data ?? []) as (Dated & { actor_id: string | null })[], messages: (results[13].data ?? []) as (Dated & { result: string })[],
+        contacts: (results[0].data ?? []) as Contact[], opportunities: (results[1].data ?? []) as Opportunity[],
+        activities: (results[2].data ?? []) as { activity_type: string; happened_at: string; next_follow_up: string | null; created_at: string }[], payments: (results[3].data ?? []) as Payment[], expenses: (results[4].data ?? []) as Expense[],
+        invoices: (results[5].data ?? []) as (Dated & { total: number; status: string; issue_date: string })[], supply: (results[6].data ?? []) as (Dated & { status: string; updated_at: string })[], listing: (results[7].data ?? []) as (Dated & { status: string; updated_at: string })[],
+        reservations: (results[8].data ?? []) as (Dated & { status: string; converted_at: string | null })[], tasks: (results[9].data ?? []) as (Dated & { status: string; started_at: string | null; approved_at: string | null })[], sessions: (results[10].data ?? []) as Session[], messages: (results[11].data ?? []) as (Dated & { result: string })[],
       };
     },
   });
-  const metrics = useMemo(() => query.data ? calculate(query.data, days) : null, [query.data, days]);
+  // Visitor numbers are counted inside the database: the API returns at most
+  // 1000 rows per request, so fetching raw visits froze the counts on old data.
+  const traffic = useQuery({
+    queryKey: ["crm-traffic", range],
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_crm_traffic_stats", { _days: days });
+      if (error) throw error;
+      return data as unknown as Traffic;
+    },
+  });
+  const metrics = useMemo(() => query.data && traffic.data ? calculate({ ...query.data, traffic: traffic.data }, days) : null, [query.data, traffic.data, days]);
 
-  if (query.isLoading) return <div className="surface-card grid min-h-72 place-items-center"><Loader2 className="size-7 animate-spin text-primary" /></div>;
-  if (!metrics) return <div className="surface-card p-8 text-center text-sm text-destructive">تعذّر تحميل مركز تحليلات CRM.</div>;
+  if (query.isLoading || traffic.isLoading) return <div className="surface-card grid min-h-72 place-items-center"><Loader2 className="size-7 animate-spin text-primary" /></div>;
+  const loadError = query.error ?? traffic.error;
+  if (!metrics) return <div className="surface-card space-y-3 p-8 text-center text-sm text-destructive"><p>تعذّر تحميل مركز تحليلات CRM{loadError ? `: ${(loadError as { message?: string }).message ?? ""}` : ""}</p><Button size="sm" variant="outline" onClick={() => { void query.refetch(); void traffic.refetch(); }}>إعادة المحاولة</Button></div>;
+  const live = traffic.data!;
 
   return <section className="space-y-5">
     <header className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
@@ -118,6 +135,8 @@ export function CrmIntelligence() {
       </div>
     </header>
 
+    <LiveVisitors traffic={live} updatedAt={traffic.dataUpdatedAt} />
+
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
       {metrics.cards.map((card) => <MetricCard key={card.label} {...card} />)}
     </div>
@@ -127,7 +146,7 @@ export function CrmIntelligence() {
       <Panel title="الملخص التنفيذي" sub="قراءة سريعة لما يحتاج قرارك الآن" icon={CircleGauge}><ExecutiveSummary items={metrics.summary} /></Panel>
       <Panel title="مسار الفرص" sub="توزيع الفرص الحالية من البداية حتى الإغلاق" icon={Target}><SimpleBars data={metrics.pipeline} valueKey="value" /></Panel>
       <Panel title="مصادر العملاء" sub="القنوات التي جاءت منها جهات الاتصال" icon={Users}><SimpleBars data={metrics.sources} valueKey="value" /></Panel>
-      <Panel title="أكثر صفحات الموقع زيارة" sub="زيارات حقيقية مسجلة بدون بيانات شخصية" icon={MousePointerClick}><RankList rows={metrics.topPages} /></Panel>
+      <Panel title="أكثر صفحات الموقع زيارة" sub="زيارات الجمهور (غير المسجّلين) خلال الفترة" icon={MousePointerClick}><RankList rows={metrics.topPages} /></Panel>
       <Panel title="أداء الفريق" sub="النشاط والوقت والإنجاز خلال الفترة" icon={UserRoundCheck}><RankList rows={metrics.teamRows} /></Panel>
       <Panel title="جودة المتابعة" sub="الأنشطة والمتابعات والرسائل والطلبات" icon={Activity}><QualityGrid rows={metrics.quality} /></Panel>
       <Panel title="الفواتير والتحصيل" sub="حالة المستحقات ونسبة السداد" icon={ReceiptText}><CollectionBlock due={metrics.due} paid={metrics.allPaid} overdue={metrics.overdue} /></Panel>
@@ -146,7 +165,7 @@ function calculate(data: NonNullable<ReturnType<typeof useCrmData>>, days: numbe
   const margin = revenue ? Math.round(net / revenue * 100) : 0, previousMargin = previousRevenue ? Math.round(previousNet / previousRevenue * 100) : 0;
   const opportunities = data.opportunities.filter((row) => current(row.created_at));
   const won = opportunities.filter((row) => row.stage === "won").length, lost = opportunities.filter((row) => row.stage === "lost").length;
-  const views = data.views.filter((row) => current(row.visited_at)), visitors = new Set(views.map((row) => row.visitor_id)).size;
+  const visitors = data.traffic.visitors, viewCount = data.traffic.views;
   const tasks = data.tasks.filter((row) => current(row.created_at)), completedTasks = tasks.filter((row) => ["approved", "completed"].includes(row.status)).length;
   const requests = [...data.supply, ...data.listing].filter((row) => current(row.created_at));
   const convertedRequests = requests.filter((row) => ["approved", "published", "completed", "converted"].includes(row.status)).length;
@@ -156,7 +175,7 @@ function calculate(data: NonNullable<ReturnType<typeof useCrmData>>, days: numbe
   const overdue = sum(data.payments.filter((row) => row.status !== "paid" && new Date(row.due_date) < now).map((row) => Math.max(0, Number(row.amount_due) - Number(row.amount_paid))));
   const activeSessions = data.sessions.filter((row) => !row.ended_at && now.getTime() - new Date(row.last_seen_at).getTime() < 130000).length;
   const hours = Math.round(sum(data.sessions.map((row) => row.duration_seconds)) / 3600 * 10) / 10;
-  const pageMap = new Map<string, number>(); views.forEach((row) => pageMap.set(row.path, (pageMap.get(row.path) ?? 0) + 1));
+  const pagesSource = data.traffic.top_pages.length ? data.traffic.top_pages : data.traffic.top_pages_all;
   const sourceMap = new Map<string, number>(); data.contacts.filter((row) => current(row.created_at)).forEach((row) => sourceMap.set(row.source || "غير محدد", (sourceMap.get(row.source || "غير محدد") ?? 0) + 1));
   const pipelineOrder = ["new", "qualified", "viewing", "negotiation", "contract", "won", "lost"];
   const pipeline = pipelineOrder.map((key) => ({ label: stageLabels[key] ?? key, value: data.opportunities.filter((row) => row.stage === key).length }));
@@ -171,7 +190,7 @@ function calculate(data: NonNullable<ReturnType<typeof useCrmData>>, days: numbe
   const followupsDue = data.activities.filter((row) => row.next_follow_up && new Date(row.next_follow_up) <= now).length;
   const avgResponse = requests.length ? Math.round(sum(requests.map((row) => Math.max(0, new Date(row.updated_at).getTime() - new Date(row.created_at).getTime()) / 3600000)) / requests.length * 10) / 10 : 0;
   const cards = [
-    { label: "زوار الموقع", value: visitors.toLocaleString("ar-SA"), hint: `${views.length} مشاهدة`, icon: Eye, tone: "primary" },
+    { label: "زوار الموقع", value: visitors.toLocaleString("ar-SA"), hint: `${viewCount} مشاهدة · ${delta(visitors, data.traffic.previous_visitors)}% عن السابق`, icon: Eye, tone: "primary" },
     { label: "عملاء جدد", value: String(data.contacts.filter((row) => current(row.created_at)).length), hint: `${delta(data.contacts.filter((row) => current(row.created_at)).length, data.contacts.filter((row) => previous(row.created_at)).length)}% عن السابق`, icon: Users, tone: "gold" },
     { label: "نسبة كسب الفرص", value: `${ratio(won, won + lost)}%`, hint: `${won} ناجحة من ${won + lost} مغلقة`, icon: Target, tone: "success" },
     { label: "قيمة المسار المرجّحة", value: formatCurrency(weightedPipeline), hint: "حسب احتمال الإغلاق", icon: BriefcaseBusiness, tone: "primary" },
@@ -184,14 +203,14 @@ function calculate(data: NonNullable<ReturnType<typeof useCrmData>>, days: numbe
   ];
   const summary = [
     net >= 0 ? `حققت الفترة صافيًا موجبًا بقيمة ${formatCurrency(net)} وهامش ${margin}%.` : `سجلت الفترة عجزًا بقيمة ${formatCurrency(Math.abs(net))} ويحتاج مراجعة المصروفات.`,
-    `${visitors} زائرًا شاهدوا ${views.length} صفحة، بمتوسط ${visitors ? (views.length / visitors).toFixed(1) : "0"} صفحة لكل زائر.`,
+    `${visitors} زائرًا شاهدوا ${viewCount} صفحة، بمتوسط ${visitors ? (viewCount / visitors).toFixed(1) : "0"} صفحة لكل زائر، منهم ${data.traffic.public_visitors} من الجمهور.`,
     `قيمة الفرص المرجّحة حاليًا ${formatCurrency(weightedPipeline)}، ونسبة كسب الفرص المغلقة ${ratio(won, won + lost)}%.`,
     followupsDue ? `هناك ${followupsDue} متابعة مستحقة تحتاج إجراءً.` : "لا توجد متابعات متأخرة مسجلة حاليًا.",
   ];
-  return { revenue, expenses, net, margin, previousMargin, revenueChange: delta(revenue, previousRevenue), expenseChange: delta(expenses, previousExpenses), netChange: delta(net, previousNet), cards, trend, pipeline, sources: [...sourceMap].map(([label, value]) => ({ label, value })).sort((a,b) => b.value-a.value).slice(0,7), topPages: [...pageMap].map(([label, value]) => ({ label, value, hint: "مشاهدة" })).sort((a,b) => b.value-a.value).slice(0,7), teamRows: [{ label: "ساعات الاستخدام", value: hours, hint: "ساعة" }, { label: "العمليات المسجلة", value: data.events.filter((row) => current(row.created_at)).length, hint: "عملية" }, { label: "المتصلون الآن", value: activeSessions, hint: "موظف" }, { label: "المهام المنجزة", value: completedTasks, hint: "مهمة" }], quality: [{ label: "أنشطة العملاء", value: data.activities.filter((row) => current(row.created_at)).length }, { label: "متابعات مستحقة", value: followupsDue }, { label: "متوسط الاستجابة", value: `${avgResponse} س` }, { label: "رسائل ناجحة", value: sentMessages }], due: allDue, allPaid, overdue, summary };
+  return { revenue, expenses, net, margin, previousMargin, revenueChange: delta(revenue, previousRevenue), expenseChange: delta(expenses, previousExpenses), netChange: delta(net, previousNet), cards, trend, pipeline, sources: [...sourceMap].map(([label, value]) => ({ label, value })).sort((a,b) => b.value-a.value).slice(0,7), topPages: pagesSource.map((row) => ({ label: row.path, value: Number(row.views), hint: "مشاهدة" })), teamRows: [{ label: "ساعات الاستخدام", value: hours, hint: "ساعة" }, { label: "العمليات المسجلة", value: Number(data.traffic.events), hint: "عملية" }, { label: "المتصلون الآن", value: activeSessions, hint: "موظف" }, { label: "المهام المنجزة", value: completedTasks, hint: "مهمة" }], quality: [{ label: "أنشطة العملاء", value: data.activities.filter((row) => current(row.created_at)).length }, { label: "متابعات مستحقة", value: followupsDue }, { label: "متوسط الاستجابة", value: `${avgResponse} س` }, { label: "رسائل ناجحة", value: sentMessages }], due: allDue, allPaid, overdue, summary };
 }
 
-function useCrmData() { return null as unknown as { views: PageView[]; contacts: Contact[]; opportunities: Opportunity[]; activities: { activity_type: string; happened_at: string; next_follow_up: string | null; created_at: string }[]; payments: Payment[]; expenses: Expense[]; invoices: (Dated & { total: number; status: string; issue_date: string })[]; supply: (Dated & { status: string; updated_at: string })[]; listing: (Dated & { status: string; updated_at: string })[]; reservations: (Dated & { status: string; converted_at: string | null })[]; tasks: (Dated & { status: string; started_at: string | null; approved_at: string | null })[]; sessions: Session[]; events: (Dated & { actor_id: string | null })[]; messages: (Dated & { result: string })[] } }
+function useCrmData() { return null as unknown as { traffic: Traffic; contacts: Contact[]; opportunities: Opportunity[]; activities: { activity_type: string; happened_at: string; next_follow_up: string | null; created_at: string }[]; payments: Payment[]; expenses: Expense[]; invoices: (Dated & { total: number; status: string; issue_date: string })[]; supply: (Dated & { status: string; updated_at: string })[]; listing: (Dated & { status: string; updated_at: string })[]; reservations: (Dated & { status: string; converted_at: string | null })[]; tasks: (Dated & { status: string; started_at: string | null; approved_at: string | null })[]; sessions: Session[]; messages: (Dated & { result: string })[] } }
 
 function HeroMetric({ icon: Icon, label, value, change, good }: { icon: typeof TrendingUp; label: string; value: string; change: number; good: boolean }) { const positive = good ? change >= 0 : change <= 0; return <div className="flex items-center gap-4 border-border p-5 sm:border-l last:border-l-0"><span className="grid size-11 shrink-0 place-items-center rounded-lg bg-muted text-primary"><Icon className="size-5" /></span><div className="min-w-0"><p className="text-xs text-muted-foreground">{label}</p><b className="mt-1 block truncate text-xl">{value}</b><span className={cn("mt-1 flex items-center gap-1 text-xs font-bold", positive ? "text-success" : "text-destructive")}>{change >= 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}{change >= 0 ? "+" : ""}{change}% عن الفترة السابقة</span></div></div> }
 function MetricCard({ icon: Icon, label, value, hint, tone }: { icon: typeof Eye; label: string; value: string; hint: string; tone: string }) { return <article className="surface-card p-4"><span className={cn("grid size-9 place-items-center rounded-lg", tone === "success" ? "bg-success/15 text-success" : tone === "gold" ? "bg-gold/15 text-gold" : "bg-accent text-primary")}><Icon className="size-4.5" /></span><b className="mt-4 block text-xl">{value}</b><p className="mt-1 text-xs font-bold">{label}</p><p className="mt-1 text-[11px] text-muted-foreground">{hint}</p></article> }
@@ -202,3 +221,15 @@ function RankList({ rows }: { rows: { label: string; value: number; hint: string
 function QualityGrid({ rows }: { rows: { label: string; value: string | number }[] }) { return <div className="grid grid-cols-2 gap-3">{rows.map((row) => <div key={row.label} className="rounded-lg border border-border bg-muted/40 p-4 text-center"><b className="block text-xl">{row.value}</b><span className="text-xs text-muted-foreground">{row.label}</span></div>)}</div> }
 function CollectionBlock({ due, paid, overdue }: { due: number; paid: number; overdue: number }) { const value = ratio(paid, due); return <div><div className="flex items-end justify-between"><div><b className="text-3xl">{value}%</b><p className="text-xs text-muted-foreground">من إجمالي المستحقات</p></div><span className="text-xs font-bold text-destructive">متأخر: {formatCurrency(overdue)}</span></div><div className="mt-5 h-3 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-success" style={{ width: `${Math.min(value, 100)}%` }}/></div><div className="mt-4 grid grid-cols-2 gap-2 text-xs"><span className="rounded-md bg-muted p-3">مستحق <b className="block mt-1">{formatCurrency(due)}</b></span><span className="rounded-md bg-muted p-3">محصل <b className="block mt-1 text-success">{formatCurrency(paid)}</b></span></div></div> }
 function ExecutiveSummary({ items }: { items: string[] }) { return <div className="space-y-3">{items.map((item, index) => <p key={item} className="rounded-lg border border-border bg-muted/35 p-3 text-xs leading-6"><b className="me-2 text-primary">{index + 1}.</b>{item}</p>)}</div> }
+function LiveVisitors({ traffic, updatedAt }: { traffic: Traffic; updatedAt: number }) {
+  const ago = (iso: string) => { const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)); return m < 1 ? "الآن" : m < 60 ? `منذ ${m} د` : `منذ ${Math.round(m / 60)} س`; };
+  return <section className="surface-card grid gap-5 p-5 lg:grid-cols-[260px_1fr]">
+    <div className="flex items-center gap-4">
+      <span className="relative grid size-14 shrink-0 place-items-center rounded-xl bg-success/15 text-success"><Eye className="size-6" /><span className="absolute -top-1 -end-1 size-3 animate-pulse rounded-full bg-success" /></span>
+      <div><p className="text-xs font-bold text-muted-foreground">على الموقع الآن (آخر 5 دقائق)</p><b className="block text-3xl">{traffic.live_visitors}</b><p className="text-[11px] text-muted-foreground">{traffic.live_public_visitors} زائر من الجمهور · يتحدّث كل 15 ثانية</p><p className="text-[11px] text-muted-foreground">آخر تحديث {new Date(updatedAt).toLocaleTimeString("ar-SA")}</p></div>
+    </div>
+    <div className="min-w-0"><p className="mb-2 text-xs font-bold">آخر الزيارات</p>
+      {traffic.recent.length ? <div className="grid gap-1.5 sm:grid-cols-2">{traffic.recent.map((row, index) => <div key={`${row.at}-${index}`} className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-1.5 text-xs"><span className={cn("size-2 shrink-0 rounded-full", row.signed_in ? "bg-primary" : "bg-gold")} /><span className="min-w-0 flex-1 truncate font-semibold" dir="ltr">{row.path}</span><span className="text-muted-foreground">{row.signed_in ? "فريق" : "زائر"} · {ago(row.at)}</span></div>)}</div> : <p className="text-xs text-muted-foreground">لا توجد زيارات بعد.</p>}
+    </div>
+  </section>;
+}
