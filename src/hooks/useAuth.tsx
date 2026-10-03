@@ -39,6 +39,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    if (
+      window.localStorage.getItem("rashoudi_ephemeral") === "1" &&
+      !window.sessionStorage.getItem("rashoudi_alive")
+    ) {
+      window.localStorage.removeItem("rashoudi_ephemeral");
+      void supabase.auth.signOut();
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
       setSession(data.session);
@@ -119,4 +127,14 @@ export async function signOut() {
     window.sessionStorage.removeItem("rashoudi_employee_session");
   }
   await supabase.auth.signOut();
+}
+
+/** "البقاء متصلاً": إن لم يُختر، تنتهي الجلسة عند إغلاق المتصفح. */
+export function markSessionPersistence(remember: boolean) {
+  if (remember) {
+    window.localStorage.removeItem("rashoudi_ephemeral");
+  } else {
+    window.localStorage.setItem("rashoudi_ephemeral", "1");
+    window.sessionStorage.setItem("rashoudi_alive", "1");
+  }
 }
