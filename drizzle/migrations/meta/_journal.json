@@ -309,6 +309,13 @@
       "when": 1790918328912,
       "tag": "0043_invoice_item_vat_and_attachments",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1791023867814,
+      "tag": "0044_invoice_multiple_attachments",
+      "breakpoints": true
     }
   ]
 }

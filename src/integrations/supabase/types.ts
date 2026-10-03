@@ -1445,6 +1445,7 @@ export type Database = {
         Row: {
           attachment_name: string | null
           attachment_path: string | null
+          attachments: Json
           contact_id: string | null
           contract_id: string | null
           created_at: string
@@ -1463,6 +1464,7 @@ export type Database = {
         Insert: {
           attachment_name?: string | null
           attachment_path?: string | null
+          attachments?: Json
           contact_id?: string | null
           contract_id?: string | null
           created_at?: string
@@ -1481,6 +1483,7 @@ export type Database = {
         Update: {
           attachment_name?: string | null
           attachment_path?: string | null
+          attachments?: Json
           contact_id?: string | null
           contract_id?: string | null
           created_at?: string
