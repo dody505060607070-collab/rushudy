@@ -341,10 +341,16 @@ function ContractViewPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           to="/contracts"
+          onClick={(e) => {
+            if (typeof window !== "undefined" && window.history.length > 1) {
+              e.preventDefault();
+              window.history.back();
+            }
+          }}
           className="inline-flex items-center gap-2 text-[13px] font-semibold text-primary"
         >
           <ArrowRight className="size-4" />
-          رجوع لإدارة العقود
+          رجوع
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">

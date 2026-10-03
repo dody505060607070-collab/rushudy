@@ -94,7 +94,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "الرشودي للعقارات" },
       {
         name: "description",
-        content: "الرشودي للعقارات في بريدة: عقارات للإيجار والبيع وإدارة أملاك وخدمة مباشرة عبر واتساب.",
+        content: "الرشودي للعقارات في بريدة — خبرة موثوقة في بيع وتأجير الفلل والشقق والأراضي والعمائر وإدارة الأملاك بالقصيم. عروض مختارة بعناية وخدمة راقية تليق بك.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

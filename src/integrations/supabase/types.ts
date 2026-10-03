@@ -1445,6 +1445,7 @@ export type Database = {
         Row: {
           attachment_name: string | null
           attachment_path: string | null
+          attachments: Json
           contact_id: string | null
           contract_id: string | null
           created_at: string
@@ -1463,6 +1464,7 @@ export type Database = {
         Insert: {
           attachment_name?: string | null
           attachment_path?: string | null
+          attachments?: Json
           contact_id?: string | null
           contract_id?: string | null
           created_at?: string
@@ -1481,6 +1483,7 @@ export type Database = {
         Update: {
           attachment_name?: string | null
           attachment_path?: string | null
+          attachments?: Json
           contact_id?: string | null
           contract_id?: string | null
           created_at?: string
@@ -1616,6 +1619,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      login_otps: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed: boolean
+          created_at: string
+          expires_at: string
+          id: string
+          phone_key: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed?: boolean
+          created_at?: string
+          expires_at: string
+          id?: string
+          phone_key: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed?: boolean
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone_key?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       maintenance_requests: {
         Row: {

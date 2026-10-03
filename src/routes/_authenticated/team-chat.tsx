@@ -47,7 +47,7 @@ type Msg = {
 
 const EMOJIS = ["👍", "🙏", "🔥", "✅", "❤️", "😀", "😅", "🎉", "📌", "📞", "🏠", "💰", "⏰", "📄"];
 
-function TeamChatPage() {
+export function TeamChatPage() {
   const qc = useQueryClient();
   const { userId, isSuperAdmin, profile } = useCurrentUser();
   const { mithraaUser, ready } = useMithraaSession();

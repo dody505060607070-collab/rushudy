@@ -1,0 +1,2 @@
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS attachments jsonb NOT NULL DEFAULT '[]'::jsonb;
+UPDATE public.invoices SET attachments = jsonb_build_array(jsonb_build_object('path', attachment_path, 'name', coalesce(attachment_name, 'مرفق'))) WHERE attachment_path IS NOT NULL AND attachments = '[]'::jsonb;

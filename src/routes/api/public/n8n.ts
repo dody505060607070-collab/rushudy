@@ -21,6 +21,14 @@ export const Route = createFileRoute("/api/public/n8n")({
         const { runHourlyAutomation } = await import("@/lib/automation-runner.server");
         try {
           const result = await runHourlyAutomation();
+          let ownerBiweekly: unknown = null;
+          try {
+            const { runOwnerBiweekly } = await import("@/lib/owner-biweekly.server");
+            ownerBiweekly = await runOwnerBiweekly();
+          } catch (err) {
+            ownerBiweekly = { error: (err as Error).message };
+          }
+          Object.assign(result as object, { ownerBiweekly });
           return new Response(JSON.stringify(result), {
             status: 200,
             headers: { "Content-Type": "application/json" },

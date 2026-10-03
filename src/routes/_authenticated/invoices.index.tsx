@@ -112,7 +112,7 @@ function InvoicesPage() {
       <nav className="text-[12.5px] text-muted-foreground">الفواتير &nbsp; / &nbsp; القائمة</nav>
     </div>
     {list.isLoading ? <div className="surface-card grid place-items-center py-20"><Loader2 className="size-6 animate-spin text-primary" /></div> :
-      <div className="space-y-3"><StatusLegend /><DataTable<Row> rows={rows} rowClassName={(r) => toneRowClass[rowTone(r.status, r.due_date)]} onRowClick={(r) => navigate({ to: "/invoices/$invoiceId", params: { invoiceId: r.id } })} showColumnsButton selectable dragLabel="فاتورة" exportFileName="قائمة الفواتير" searchPlaceholder="بحث برقم الفاتورة أو المالك" emptyState={<EmptyState text="لا توجد فواتير" hint="أنشئ فاتورة جديدة لتظهر هنا مع حالة السداد." />} columns={[
+      <div className="space-y-3"><StatusLegend /><DataTable<Row> rows={rows} rowClassName={(r) => toneRowClass[rowTone(r.status, r.due_date)]} onRowClick={(r) => navigate({ to: "/invoices/$invoiceId", params: { invoiceId: r.id } })} showColumnsButton selectable dragLabel="فاتورة" exportFileName="قائمة الفواتير" searchPlaceholder="بحث بالاسم (مثل عبدالله) أو رقم الفاتورة" emptyState={<EmptyState text="لا توجد فواتير" hint="أنشئ فاتورة جديدة لتظهر هنا مع حالة السداد." />} columns={[
         { header: "رقم الفاتورة", sortable: true, value: (r) => r.invoice_number, cell: (r) => <Link to="/invoices/$invoiceId" params={{ invoiceId: r.id }} dir="ltr" className="font-bold text-primary hover:underline">{r.invoice_number}</Link> },
         { header: "المالك", value: (r) => r.contact?.full_name, cell: (r) => r.contact?.full_name ?? "—" },
         { header: "التاريخ", sortable: true, value: (r) => r.issue_date, cell: (r) => formatDate(r.issue_date) },
