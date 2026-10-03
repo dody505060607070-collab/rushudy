@@ -65,5 +65,10 @@ export async function runOwnerBiweekly(now = new Date()) {
       failed++;
     }
   }
+  // If WhatsApp was down and nothing went out, release the 13-day lock so the
+  // message is retried next Friday at 4pm instead of being skipped for 2 weeks.
+  if (sent === 0 && failed > 0) {
+    await supabaseAdmin.rpc("finish_automation_lease", { _job_name: JOB, _error: `all ${failed} sends failed` });
+  }
   return { ran: true, sent, failed };
 }
