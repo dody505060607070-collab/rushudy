@@ -5041,6 +5041,7 @@ export type Database = {
         Args: { _error?: string; _job_name: string }
         Returns: undefined
       }
+      get_crm_traffic_stats: { Args: { _days: number }; Returns: Json }
       get_public_buildings: {
         Args: { _code?: string; _limit?: number; _purpose?: string }
         Returns: Json
