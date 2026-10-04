@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, RotateCcw, RotateCw, X, ZoomIn } from "lucide-react";
+import { FlipHorizontal, Loader2, Minus, Plus, RotateCcw, RotateCw, X, ZoomIn } from "lucide-react";
 
 type Props = {
   url: string;
@@ -10,6 +10,7 @@ type Props = {
 
 const RATIOS: { label: string; value: number | null }[] = [
   { label: "الصورة كاملة", value: null },
+  { label: "شكل كرت الموقع", value: 16 / 10 },
   { label: "4:3", value: 4 / 3 },
   { label: "16:9", value: 16 / 9 },
   { label: "1:1", value: 1 },
@@ -29,12 +30,29 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [flip, setFlip] = useState(false);
+  const [bg, setBg] = useState<"#ffffff" | "#000000">("#ffffff");
+  const clampZoom = (v: number) => Math.min(5, Math.max(0.2, v));
+
+  // تكبير/تصغير بعجلة الماوس أو لمس لوحة التتبع
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!open || !el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      setZoom((z) => clampZoom(z * Math.exp(-dy * 0.0015)));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [open, ratio]);
 
   useEffect(() => {
     if (!open) return;
     setZoom(1);
     setRotation(0);
     setOffset({ x: 0, y: 0 });
+    setFlip(false);
     setLoaded(false);
     setError(null);
   }, [open, url]);
@@ -83,9 +101,12 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
       const drawW = img.naturalWidth * baseScale * zoom * scale;
       const drawH = img.naturalHeight * baseScale * zoom * scale;
 
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, outW, outH);
       ctx.save();
       ctx.translate(outW / 2 + offset.x * scale, outH / 2 + offset.y * scale);
       ctx.rotate((rotation * Math.PI) / 180);
+      if (flip) ctx.scale(-1, 1);
       ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
       ctx.restore();
 
@@ -124,8 +145,8 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            style={{ aspectRatio: String(frameRatio) }}
-            className="relative w-full cursor-grab touch-none overflow-hidden rounded-xl border border-border bg-muted"
+            style={{ aspectRatio: String(frameRatio), background: bg, maxWidth: `calc(55vh * ${frameRatio})` }}
+            className="relative mx-auto max-h-[55vh] w-full cursor-grab touch-none overflow-hidden rounded-xl border-2 border-primary"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -144,7 +165,7 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
               onError={() => setError("تعذّر تحميل الصورة للتعديل")}
               className="absolute left-1/2 top-1/2 max-w-none select-none"
               style={{
-                transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) rotate(${rotation}deg) scale(${zoom})`,
+                transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) rotate(${rotation}deg) scale(${flip ? -zoom : zoom}, ${zoom})`,
                 width: "100%",
                 height: "100%",
                 objectFit: fitMode,
@@ -174,19 +195,29 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
             ))}
           </div>
 
-          <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+          <p className="text-[11.5px] text-muted-foreground">
+            اسحب الصورة لتحديد الجزء الظاهر، واستخدم عجلة الماوس أو الشريط للتكبير والتصغير. ما داخل الإطار هو ما سيظهر في الموقع.
+          </p>
+          <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
             <ZoomIn className="size-4" />
-            تكبير
-            <input
-              type="range"
-              min="1"
-              max="4"
-              step="0.01"
-              value={zoom}
-              onChange={(event) => setZoom(Number(event.target.value))}
-              className="min-w-0 flex-1 accent-primary"
-            />
-          </label>
+            <span className="w-12">تكبير</span>
+            <button type="button" aria-label="تصغير" onClick={() => setZoom((z) => clampZoom(z - 0.1))} className="grid size-7 place-items-center rounded-md border border-border"><Minus className="size-3.5" /></button>
+            <input type="range" min="0.2" max="5" step="0.01" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="min-w-0 flex-1 accent-primary" />
+            <button type="button" aria-label="تكبير" onClick={() => setZoom((z) => clampZoom(z + 0.1))} className="grid size-7 place-items-center rounded-md border border-border"><Plus className="size-3.5" /></button>
+            <span className="w-10 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
+          </div>
+          <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+            <RotateCw className="size-4" />
+            <span className="w-12">ميلان</span>
+            <input type="range" min="-45" max="45" step="0.5" value={((rotation % 90) + 135) % 90 - 45} onChange={(e) => setRotation(Math.round(rotation / 90) * 90 + Number(e.target.value))} className="min-w-0 flex-1 accent-primary" />
+            <span className="w-10 text-center tabular-nums">{Math.round(rotation)}°</span>
+          </div>
+          <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+            <span>لون الفراغ عند التصغير:</span>
+            {(["#ffffff", "#000000"] as const).map((c) => (
+              <button key={c} type="button" onClick={() => setBg(c)} className={`rounded-md border px-2 py-0.5 ${bg === c ? "border-primary text-primary" : "border-border"}`}>{c === "#ffffff" ? "أبيض" : "أسود"}</button>
+            ))}
+          </div>
 
           <div className="flex items-center gap-2">
             <button
@@ -203,12 +234,19 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
             >
               <RotateCw className="size-4" /> يمين
             </button>
+            <button type="button" onClick={() => setFlip((f) => !f)} className="inline-flex h-9 items-center gap-1 rounded-lg border border-border px-3 text-[12px] font-semibold">
+              <FlipHorizontal className="size-4" /> قلب
+            </button>
+            <button type="button" onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }} className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-[12px] font-semibold">
+              توسيط
+            </button>
             <button
               type="button"
               onClick={() => {
                 setZoom(1);
                 setRotation(0);
                 setOffset({ x: 0, y: 0 });
+                setFlip(false);
               }}
               className="text-[12px] font-semibold text-muted-foreground"
             >
