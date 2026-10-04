@@ -160,7 +160,7 @@ function ReservationsPage() {
         supabase
           .from("properties")
           .select(
-            "id,name,code,city,district,purpose,price_text,price_value,property_images(url,is_cover,sort_order)",
+            "id,name,code,city,district,purpose,price_text,price_value,property_images(url,display_url,is_cover,sort_order)",
           )
           .eq("status", "available")
           .order("name")
@@ -601,7 +601,7 @@ function ReservationsPage() {
             {gallery.data.map((property) => {
               const image = [...(property.property_images ?? [])].sort(
                 (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order,
-              )[0]?.url;
+              ).map((i) => i.display_url ?? i.url)[0];
               const price =
                 property.price_text ??
                 (property.price_value

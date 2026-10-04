@@ -34,6 +34,7 @@ export type PublicProperty = {
   building_name?: string | null;
   property_images: {
     url: string;
+    display_url?: string | null;
     is_cover: boolean;
     sort_order: number;
     focal_x?: number;
@@ -42,7 +43,7 @@ export type PublicProperty = {
 };
 
 const PROPERTY_FIELDS =
-  "id, code, name, status, purpose, rent_period, property_type, city, district, price_text, price_value, description, is_featured, map_url, latitude, longitude, whatsapp_number, link_youtube, link_tiktok, link_instagram, link_snapchat, link_x, link_facebook, link_tour, created_at, property_images(url, is_cover, sort_order)";
+  "id, code, name, status, purpose, rent_period, property_type, city, district, price_text, price_value, description, is_featured, map_url, latitude, longitude, whatsapp_number, link_youtube, link_tiktok, link_instagram, link_snapchat, link_x, link_facebook, link_tour, created_at, property_images(url, display_url, is_cover, sort_order)";
 
 export const DEFAULT_WHATSAPP = "966550818020";
 export const COMPANY_PHONE = "0550818020";
@@ -90,7 +91,7 @@ export function coverImage(property: Pick<PublicProperty, "property_images">) {
   const images = [...(property.property_images ?? [])].sort(
     (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order,
   );
-  return images[0]?.url ?? null;
+  return images[0] ? (images[0].display_url ?? images[0].url) : null;
 }
 
 export function galleryImages(property: Pick<PublicProperty, "property_images">) {
@@ -146,7 +147,7 @@ export type PublicBuildingUnit = {
   link_tour: string | null;
   latitude: number | null;
   longitude: number | null;
-  images: { url: string; is_cover: boolean; sort_order: number }[];
+  images: { url: string; display_url?: string | null; is_cover: boolean; sort_order: number }[];
 };
 
 export type PublicBuilding = {

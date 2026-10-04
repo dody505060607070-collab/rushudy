@@ -47,7 +47,7 @@ function unitCover(unit: PublicBuildingUnit) {
   return (
     [...(unit.images ?? [])].sort(
       (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order,
-    )[0]?.url ?? null
+    ).map((i) => i.display_url ?? i.url)[0] ?? null
   );
 }
 
