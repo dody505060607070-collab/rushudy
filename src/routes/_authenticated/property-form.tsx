@@ -68,6 +68,7 @@ export const Route = createFileRoute("/_authenticated/property-form")({
 type MediaRow = {
   id: string;
   url: string;
+  display_url?: string | null;
   sort_order: number;
   is_cover?: boolean;
   title?: string | null;
@@ -333,7 +334,7 @@ function PropertyFormPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("property_images")
-        .select("id, url, sort_order, is_cover, focal_x, focal_y")
+        .select("id, url, display_url, sort_order, is_cover, focal_x, focal_y")
         .eq("property_id", id)
         .order("sort_order");
       if (error) throw error;
@@ -704,7 +705,7 @@ function PropertyFormPage() {
       const { url } = await uploadMedia("property-media", path, file);
       const { error } = await supabase
         .from("property_images")
-        .update({ url, focal_x: 50, focal_y: 50 })
+        .update({ display_url: url, focal_x: 50, focal_y: 50 })
         .eq("id", rowId);
       if (error) throw error;
     },
@@ -713,6 +714,18 @@ function PropertyFormPage() {
       toast.success("تم حفظ تعديل الصورة");
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر حفظ الصورة"),
+  });
+
+  const restoreImage = useMutation({
+    mutationFn: async (rowId: string) => {
+      const { error } = await supabase.from("property_images").update({ display_url: null }).eq("id", rowId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["property-images", id] });
+      toast.success("تم إرجاع الصورة الأصلية");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر إرجاع الصورة"),
   });
 
   const quickAddLookup = useMutation({
@@ -1427,7 +1440,7 @@ function PropertyFormPage() {
                         className="group relative block w-full cursor-zoom-in"
                       >
                         <img
-                          src={img.url}
+                          src={img.display_url ?? img.url}
                           alt="صورة العقار"
                           className="h-32 w-full object-cover"
                           style={{ objectPosition: `${img.focal_x ?? 50}% ${img.focal_y ?? 50}%` }}
@@ -1478,6 +1491,15 @@ function PropertyFormPage() {
                         >
                           <Crop className="size-3.5" /> قص وتكبير
                         </button>
+                        {img.display_url ? (
+                          <button
+                            type="button"
+                            onClick={() => restoreImage.mutate(img.id)}
+                            className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-border py-1 text-[11px] font-semibold text-muted-foreground"
+                          >
+                            إرجاع الصورة الأصلية
+                          </button>
+                        ) : null}
                       </div>
                       <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-[12px]">
                         <GripVertical
