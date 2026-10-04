@@ -222,7 +222,7 @@ export function ImageEditorDialog({ url, open, onClose, onSave }: Props) {
               <div
                 ref={stageRef}
                 className="relative touch-none select-none"
-                style={{ aspectRatio: `${work.w} / ${work.h}`, maxHeight: "55vh", maxWidth: "100%", height: "55vh" }}
+                style={{ aspectRatio: `${work.w} / ${work.h}`, width: `min(100%, calc(55vh * ${work.w / work.h}))` }}
                 onPointerMove={onMove}
                 onPointerUp={onUp}
                 onPointerCancel={onUp}
