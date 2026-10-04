@@ -3509,6 +3509,7 @@ export type Database = {
       property_images: {
         Row: {
           created_at: string
+          display_url: string | null
           focal_x: number
           focal_y: number
           id: string
@@ -3519,6 +3520,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_url?: string | null
           focal_x?: number
           focal_y?: number
           id?: string
@@ -3529,6 +3531,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_url?: string | null
           focal_x?: number
           focal_y?: number
           id?: string
