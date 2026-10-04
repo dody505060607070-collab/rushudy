@@ -50,7 +50,7 @@ function InvoiceFormPage() {
   const set = (patch: Partial<typeof form>) => setForm((previous) => ({ ...previous, ...patch }));
   const options = useQuery({ queryKey: ["invoice-form-options"], queryFn: async () => {
     const [contacts, contracts, settings] = await Promise.all([
-      supabase.from("contacts").select("id, full_name").order("full_name").limit(500),
+      supabase.from("contacts").select("id, full_name, phone").order("full_name").limit(5000),
       supabase.from("contracts").select("id, contract_number, owner_id").order("created_at", { ascending: false }).limit(500),
       supabase.from("app_settings").select("vat_rate, company_name, address").eq("id", true).maybeSingle(),
     ]);
@@ -109,7 +109,7 @@ function InvoiceFormPage() {
     <PageHero title={id ? "تعديل الفاتورة" : "الفواتير"} subtitle="إدارة الفواتير وحالات إصدارها وسدادها" icon={ReceiptText} />
     <div className="flex items-center justify-between"><Link to="/invoices" className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold"><ArrowRight className="size-4" />رجوع للفواتير</Link><span className="text-[12px] text-muted-foreground">الفواتير / {id ? "تعديل" : "إضافة"}</span></div>
     <Section title="بيانات الفاتورة" icon={ReceiptText}><div className="grid gap-4 sm:grid-cols-2">
-      <Field label="المالك / العميل"><select className={inputClass} value={form.contact_id} onChange={(event) => set({ contact_id: event.target.value })}><option value="">اختر</option>{(options.data?.contacts ?? []).map((contact) => <option key={contact.id} value={contact.id}>{contact.full_name}</option>)}</select></Field>
+      <Field label="المالك / العميل"><ContactSearch contacts={options.data?.contacts ?? []} value={form.contact_id} onChange={(contact_id) => set({ contact_id })} /></Field>
       <Field label="الحالة"><select className={inputClass} value={form.status} onChange={(event) => set({ status: event.target.value })}>{Object.entries(invoiceStatusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></Field>
       <Field label="رقم الفاتورة" hint="يُنشأ تلقائيًا إذا تُرك فارغًا"><input className={inputClass} dir="ltr" value={form.invoice_number} onChange={(event) => set({ invoice_number: event.target.value })} /></Field>
       <Field label="العقد المرتبط"><select className={inputClass} value={form.contract_id} onChange={(event) => set({ contract_id: event.target.value })}><option value="">بدون عقد</option>{(options.data?.contracts ?? []).filter((contract) => !form.contact_id || contract.owner_id === form.contact_id).map((contract) => <option key={contract.id} value={contract.id}>{contract.contract_number}</option>)}</select></Field>
@@ -126,3 +126,37 @@ function InvoiceFormPage() {
 
 function Section({ title, icon: Icon, children }: { title: string; icon: typeof ReceiptText; children: ReactNode }) { return <section className="surface-card overflow-hidden"><header className="flex items-center gap-2 border-b border-border px-5 py-4"><Icon className="size-4 text-primary" /><h2 className="text-[14px] font-bold">{title}</h2></header><div className="p-5">{children}</div></section>; }
 function Total({ label, value, strong }: { label: string; value: number; strong?: boolean }) { return <div className="rounded-lg border border-border p-3"><p className="text-[11.5px] text-muted-foreground">{label}</p><p className={strong ? "mt-2 text-lg font-bold text-primary" : "mt-2 font-semibold"}>{new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(value)} ر.س</p></div>; }
+const normalizeAr = (v: string) =>
+  v.toLowerCase().replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/[\u064B-\u0652]/g, "").replace(/\s+/g, " ").trim();
+
+function ContactSearch({ contacts, value, onChange }: { contacts: { id: string; full_name: string | null; phone?: string | null }[]; value: string; onChange: (id: string) => void }) {
+  const selected = contacts.find((c) => c.id === value);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const q = normalizeAr(query);
+  const matches = (q ? contacts.filter((c) => normalizeAr(c.full_name ?? "").includes(q) || (c.phone ?? "").includes(q)) : contacts).slice(0, 50);
+  return (
+    <div className="relative">
+      <input
+        className={inputClass}
+        placeholder="اكتب اسم المالك أو العميل للبحث"
+        value={open ? query : selected?.full_name ?? ""}
+        onFocus={() => { setOpen(true); setQuery(""); }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+      />
+      {open ? (
+        <ul className="absolute inset-x-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
+          {matches.length ? matches.map((c) => (
+            <li key={c.id}>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onChange(c.id); setOpen(false); }} className={`flex w-full items-center justify-between px-3 py-2 text-start text-[13px] hover:bg-muted ${c.id === value ? "font-bold text-primary" : ""}`}>
+                <span>{c.full_name ?? "—"}</span>
+                {c.phone ? <span dir="ltr" className="text-[11px] text-muted-foreground">{c.phone}</span> : null}
+              </button>
+            </li>
+          )) : <li className="px-3 py-2 text-[12.5px] text-muted-foreground">لا توجد أسماء مطابقة</li>}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
