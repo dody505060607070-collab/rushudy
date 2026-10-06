@@ -20,8 +20,6 @@ import { Pills } from "@/components/kit/Pills";
 import { StatusLegend } from "@/components/kit/StatusLegend";
 import { supabase } from "@/integrations/supabase/client";
 import { priorityLabels, taskStatusLabels } from "@/lib/labels";
-import { ActivitiesPage } from "./activities";
-import { TeamChatPage } from "./team-chat";
 import { rowTone, toneBadgeClass, toneRowClass } from "@/lib/status-tone";
 
 type Row = {
@@ -487,21 +485,7 @@ function TasksPage() {
   );
 }
 
-// The three sections are stacked one under the other on the same page (no tabs).
+// Tasks, follow-ups and team chat each have their own page, linked under "المهام" in the side menu.
 function TasksHub() {
-  const sections = [
-    { key: "tasks", label: "المهام", node: <TasksPage /> },
-    { key: "activities", label: "المتابعات والأنشطة", node: <ActivitiesPage /> },
-    { key: "chat", label: "شات الموظفين", node: <TeamChatPage /> },
-  ];
-  return (
-    <div className="space-y-10">
-      {sections.map((s) => (
-        <section key={s.key} id={s.key} className="space-y-4">
-          <h2 className="border-b border-border pb-2 text-lg font-black text-foreground">{s.label}</h2>
-          {s.node}
-        </section>
-      ))}
-    </div>
-  );
+  return <TasksPage />;
 }
