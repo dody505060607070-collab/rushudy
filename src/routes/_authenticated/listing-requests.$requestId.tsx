@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
+import { useStaffList } from "@/components/requests/RequestStaff";
 import { requestStatusLabels } from "@/lib/labels";
 import { prepareListingRequestProperty } from "@/lib/requests.functions";
 
@@ -33,6 +34,7 @@ type Attachment = { path?: string; name?: string };
 function ListingRequestDetail() {
   const { requestId } = useParams({ from: "/_authenticated/listing-requests/$requestId" });
   const queryClient = useQueryClient();
+  const staffList = useStaffList();
 
   const query = useQuery({
     queryKey: ["listing_request", requestId],
@@ -76,6 +78,7 @@ function ListingRequestDetail() {
     description: string;
     admin_notes: string;
     status: string;
+    assigned_to: string;
   };
 
   const [form, setForm] = useState<ListingForm>({
@@ -92,6 +95,7 @@ function ListingRequestDetail() {
     description: "",
     admin_notes: "",
     status: "new",
+    assigned_to: "",
   });
   const [saved, setSaved] = useState(false);
 
@@ -112,6 +116,7 @@ function ListingRequestDetail() {
       description: row.description ?? "",
       admin_notes: row.admin_notes ?? "",
       status: row.status ?? "new",
+      assigned_to: row.assigned_to ?? "",
     });
   }, [query.data]);
 
@@ -133,6 +138,7 @@ function ListingRequestDetail() {
           description: form.description || null,
           admin_notes: form.admin_notes || null,
           status: form.status,
+          assigned_to: form.assigned_to || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", requestId)
@@ -235,6 +241,12 @@ function ListingRequestDetail() {
           </Field>
           <Field label="السعر المطلوب">
             <input className={fieldClass} value={form.asking_price} onChange={(e) => setForm((f) => ({ ...f, asking_price: e.target.value }))} />
+          </Field>
+          <Field label="الموظف المسؤول">
+            <select className={fieldClass} value={form.assigned_to} onChange={(e) => setForm((f) => ({ ...f, assigned_to: e.target.value }))}>
+              <option value="">غير محدد</option>
+              {(staffList.data ?? []).map((s) => <option key={s.id} value={s.id}>{s.full_name ?? "—"}</option>)}
+            </select>
           </Field>
           <Field label="الحالة">
             <select className={fieldClass} value={form.status ?? "new"} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
