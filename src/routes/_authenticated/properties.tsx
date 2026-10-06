@@ -431,7 +431,7 @@ function PropertiesPage() {
               ),
             },
             {
-              header: "مميز",
+              header: "مميز (يظهر أولًا دائمًا)",
               cell: (r) => (
                 <Toggle
                   label="عقار مميز"
@@ -442,7 +442,7 @@ function PropertiesPage() {
               ),
             },
             {
-              header: "الترتيب",
+              header: "ترتيب المميز",
               sortable: true,
               value: (r) => r.sort_order ?? 0,
               cell: (r) => r.sort_order ?? 0,
@@ -613,7 +613,7 @@ function PropertiesPage() {
               dir="ltr"
             />
           </Field>
-          <Field label="ترتيب الظهور">
+          <Field label="ترتيب الظهور (للعقارات المميزة فقط — الأصغر أولًا)">
             <input
               className={inputClass}
               value={form.sort_order}
