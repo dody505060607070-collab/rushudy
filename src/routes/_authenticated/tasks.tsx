@@ -57,7 +57,7 @@ export const Route = createFileRoute("/_authenticated/tasks")({
 });
 
 const SELECT =
-  "id, title, details, task_type, priority, status, due_date, due_time, property_id, created_at, location_text, location_lat, location_lng, property:property_id(name)";
+  "id, title, details, task_type, priority, status, due_date, due_time, property_id, created_at, location_text, location_lat, location_lng, assigned_by, property:property_id(name)";
 
 const statusOrder = ["new", "in_progress", "submitted", "approved", "rejected", "done", "cancelled"];
 
@@ -122,14 +122,19 @@ function TasksPage() {
         .select("task_id, user_id")
         .in("task_id", rows.map((r) => r.id));
       if (error) throw error;
-      const ids = [...new Set((links ?? []).map((l) => l.user_id))];
+      const ids = [...new Set([...(links ?? []).map((l) => l.user_id), ...rows.map((r) => (r as { assigned_by?: string | null }).assigned_by).filter((v): v is string => Boolean(v))])];
       const { data: profs } = ids.length
         ? await supabase.from("profiles").select("id, full_name").in("id", ids)
         : { data: [] as { id: string; full_name: string | null }[] };
       const nameOf = new Map((profs ?? []).map((p) => [p.id, p.full_name ?? "موظف"]));
       const map: Record<string, string[]> = {};
       for (const l of links ?? []) (map[l.task_id] ??= []).push(nameOf.get(l.user_id) ?? "موظف");
-      return map;
+      const by: Record<string, string> = {};
+      for (const r of rows) {
+        const a = (r as { assigned_by?: string | null }).assigned_by;
+        if (a) by[r.id] = nameOf.get(a) ?? "موظف";
+      }
+      return { map, by };
     },
   });
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
@@ -326,7 +331,11 @@ function TasksPage() {
             },
             {
               header: "الموظف",
-              cell: (r) => assigneeNames.data?.[r.id]?.join("، ") || "—",
+              cell: (r) => assigneeNames.data?.map[r.id]?.join("، ") || "—",
+            },
+            {
+              header: "أسندها",
+              cell: (r) => assigneeNames.data?.by[r.id] ?? "—",
             },
             {
               header: "الموقع",

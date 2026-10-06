@@ -1,0 +1,1 @@
+ALTER TABLE public.tasks ALTER COLUMN assigned_by SET DEFAULT auth.uid();
