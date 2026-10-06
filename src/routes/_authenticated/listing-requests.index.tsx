@@ -8,6 +8,7 @@ import { EmptyState, formatDate, useTableRows } from "@/components/kit/LiveTable
 import { PageHero } from "@/components/kit/PageHero";
 import { Pills } from "@/components/kit/Pills";
 import { requestStatusLabels } from "@/lib/labels";
+import { DeleteRequestButton, useStaffList, useStaffName } from "@/components/requests/RequestStaff";
 
 type ListingRow = {
   id: string;
@@ -19,6 +20,7 @@ type ListingRow = {
   district: string | null;
   asking_price: string | null;
   status: string;
+  assigned_to: string | null;
   created_at: string;
   attachments: { path?: string; name?: string }[];
 };
@@ -43,11 +45,12 @@ export const Route = createFileRoute("/_authenticated/listing-requests/")({
 function ListingRequestsPage() {
   const [tab, setTab] = useState("all");
   const navigate = useNavigate();
+  const staffName = useStaffName();
 
   const listing = useTableRows<ListingRow>({
     table: "listing_requests",
     select:
-      "id, full_name, phone, purpose, property_type, city, district, asking_price, status, attachments, created_at",
+      "id, full_name, phone, purpose, property_type, city, district, asking_price, status, attachments, assigned_to, created_at",
     orderBy: { column: "created_at" },
     queryKey: ["listing_requests"],
   });
@@ -126,6 +129,8 @@ function ListingRequestsPage() {
             />
           }
           columns={[
+            { header: "الموظف", cell: (r) => staffName(r.assigned_to) },
+            { header: "", cell: (r) => <DeleteRequestButton table="listing_requests" id={r.id} queryKey={["listing_requests"]} /> },
             { header: "المالك", sortable: true, cell: (r) => r.full_name, className: "font-semibold" },
             { header: "الجوال", cell: (r) => <span dir="ltr">{r.phone}</span> },
             { header: "الغرض", cell: (r) => (r.purpose === "sale" ? "بيع" : "إيجار") },

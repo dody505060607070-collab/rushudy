@@ -8,6 +8,7 @@ import { EmptyState, formatCurrency, formatDate, useTableRows } from "@/componen
 import { PageHero } from "@/components/kit/PageHero";
 import { Pills } from "@/components/kit/Pills";
 import { requestStatusLabels } from "@/lib/labels";
+import { DeleteRequestButton, useStaffList, useStaffName } from "@/components/requests/RequestStaff";
 
 type SupplyRow = {
   id: string;
@@ -20,6 +21,7 @@ type SupplyRow = {
   budget_min: number | null;
   budget_max: number | null;
   requester_type: string | null;
+  assigned_to: string | null;
   broker_name: string | null;
   admin_notes: string | null;
   status: string;
@@ -46,11 +48,12 @@ export const Route = createFileRoute("/_authenticated/supply-requests/")({
 function SupplyRequestsPage() {
   const [tab, setTab] = useState("all");
   const navigate = useNavigate();
+  const staffName = useStaffName();
 
   const supply = useTableRows<SupplyRow>({
     table: "supply_requests",
     select:
-      "id, full_name, phone, request_type, city, districts, property_type, budget_min, budget_max, requester_type, broker_name, admin_notes, status, created_at",
+      "id, full_name, phone, request_type, city, districts, property_type, budget_min, budget_max, requester_type, broker_name, admin_notes, status, assigned_to, created_at",
     orderBy: { column: "created_at" },
     queryKey: ["supply_requests"],
   });
@@ -149,8 +152,10 @@ function SupplyRequestsPage() {
                 </Chip>
               ),
             },
+            { header: "الموظف", cell: (r) => staffName(r.assigned_to) },
             { header: "الحالة", cell: (r) => <Chip>{requestStatusLabels[r.status] ?? r.status}</Chip> },
             { header: "التاريخ", sortable: true, value: (r) => r.created_at, cell: (r) => formatDate(r.created_at) },
+            { header: "", cell: (r) => <DeleteRequestButton table="supply_requests" id={r.id} queryKey={["supply_requests"]} /> },
           ]}
         />
       )}

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
+import { useStaffList } from "@/components/requests/RequestStaff";
 import { requestStatusLabels } from "@/lib/labels";
 
 export const Route = createFileRoute("/_authenticated/supply-requests/$requestId")({
@@ -30,6 +31,7 @@ const fieldClass =
 function SupplyRequestDetail() {
   const { requestId } = useParams({ from: "/_authenticated/supply-requests/$requestId" });
   const queryClient = useQueryClient();
+  const staffList = useStaffList();
 
   const query = useQuery({
     queryKey: ["supply_request", requestId],
@@ -59,6 +61,7 @@ function SupplyRequestDetail() {
     requester_notes: string;
     admin_notes: string;
     status: string;
+    assigned_to: string;
   };
 
   const [form, setForm] = useState<SupplyForm>({
@@ -76,6 +79,7 @@ function SupplyRequestDetail() {
     requester_notes: "",
     admin_notes: "",
     status: "new",
+    assigned_to: "",
   });
 
   useEffect(() => {
@@ -96,6 +100,7 @@ function SupplyRequestDetail() {
       requester_notes: row.requester_notes ?? "",
       admin_notes: row.admin_notes ?? "",
       status: row.status ?? "new",
+      assigned_to: row.assigned_to ?? "",
     });
   }, [query.data]);
 
@@ -118,6 +123,7 @@ function SupplyRequestDetail() {
           requester_notes: form.requester_notes || null,
           admin_notes: form.admin_notes || null,
           status: form.status,
+          assigned_to: form.assigned_to || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", requestId)
@@ -231,6 +237,12 @@ function SupplyRequestDetail() {
           </Field>
           <Field label="الأحياء المطلوبة">
             <input className={fieldClass} value={form.districts} onChange={(e) => setForm((f) => ({ ...f, districts: e.target.value }))} />
+          </Field>
+          <Field label="الموظف المسؤول">
+            <select className={fieldClass} value={form.assigned_to} onChange={(e) => setForm((f) => ({ ...f, assigned_to: e.target.value }))}>
+              <option value="">غير محدد</option>
+              {(staffList.data ?? []).map((s) => <option key={s.id} value={s.id}>{s.full_name ?? "—"}</option>)}
+            </select>
           </Field>
           <Field label="الحالة">
             <select className={fieldClass} value={form.status ?? "new"} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
