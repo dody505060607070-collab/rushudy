@@ -9,6 +9,7 @@ import { Field, GhostButton, Modal, PrimaryButton, inputClass, textareaClass } f
 import { PageHero } from "@/components/kit/PageHero";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { sendWhatsAppMessage } from "@/lib/whatsapp.functions";
 import { sendPushToUsers } from "@/lib/push.functions";
 import { cn } from "@/lib/utils";
 
@@ -140,10 +141,36 @@ export function ActivitiesPage() {
         body: form.subject.trim(),
         link: "/activities",
       });
-      return data;
+      // إرسال النشاط للموظف على واتساب (بفعل صريح من المستخدم عند الإسناد)
+      let whatsapp: "sent" | "no-phone" | "failed" = "no-phone";
+      const { data: emp } = await supabase
+        .from("profiles")
+        .select("full_name, phone, whatsapp")
+        .eq("id", form.employee_id)
+        .maybeSingle();
+      const to = (emp?.whatsapp || emp?.phone || "").trim();
+      if (to) {
+        const lines = [
+          `مرحبًا ${emp?.full_name ?? ""}، تم إسناد متابعة جديدة لك:`,
+          `الموضوع: ${form.subject.trim()}`,
+          form.details ? `التفاصيل: ${form.details}` : "",
+          `أسندها: ${(employees.data ?? []).find((e) => e.id === userId)?.full_name ?? "الإدارة"}`,
+          `${window.location.origin}/activities`,
+        ].filter(Boolean);
+        try {
+          const res = await sendWhatsAppMessage({ data: { to, body: lines.join("\n") } });
+          whatsapp = res.ok ? "sent" : "failed";
+        } catch {
+          whatsapp = "failed";
+        }
+      }
+      return { ...data, whatsapp };
     },
     onSuccess: (d) => {
       toast.success("تم إسناد النشاط للموظف");
+      if (d?.whatsapp === "sent") toast.success("تم إرسال المتابعة للموظف على واتساب");
+      else if (d?.whatsapp === "no-phone") toast.warning("لم يُرسل واتساب: لا يوجد رقم جوال لهذا الموظف");
+      else toast.error("تعذّر إرسال المتابعة على واتساب");
       setOpen(false);
       setSelected(d?.id ?? null);
       qc.invalidateQueries({ queryKey: ["employee-activities"] });
