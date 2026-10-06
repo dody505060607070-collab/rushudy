@@ -344,6 +344,13 @@
       "when": 1791321433106,
       "tag": "0048_tasks_assigned_by_default",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1791321470708,
+      "tag": "0049_public_properties_newest_first",
+      "breakpoints": true
     }
   ]
 }
