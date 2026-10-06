@@ -227,7 +227,7 @@ export function ActivitiesPage() {
                   <span className="truncate text-[13.5px] font-bold text-foreground">{a.subject}</span>
                 </div>
                 <p className="mt-1 text-end text-[12px] text-muted-foreground">
-                  {a.employee?.full_name ?? "—"} • {typeLabels[a.activity_type] ?? a.activity_type}
+                  المكلَّف: {a.employee?.full_name ?? "—"} • أسندها: {(employees.data ?? []).find((e) => e.id === a.created_by)?.full_name ?? "—"} • {typeLabels[a.activity_type] ?? a.activity_type}
                 </p>
               </button>
             ))
