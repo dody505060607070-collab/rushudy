@@ -75,8 +75,10 @@ export function CrmIntelligence() {
   const since = new Date(Date.now() - days * 2 * 86400000).toISOString();
   const query = useQuery({
     queryKey: ["crm-intelligence", range],
-    staleTime: 20_000,
-    refetchInterval: 60_000,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const results = await Promise.all([
         supabase.from("contacts").select("id, source, roles, created_at").gte("created_at", since),
@@ -91,6 +93,8 @@ export function CrmIntelligence() {
         supabase.from("tasks").select("status, created_at, started_at, approved_at").gte("created_at", since),
         supabase.from("employee_sessions").select("user_id, duration_seconds, last_seen_at, ended_at").gte("started_at", since),
         supabase.from("message_log").select("result, created_at").gte("created_at", since),
+        supabase.from("payment_transactions").select("amount, paid_at").gte("paid_at", since),
+        supabase.from("invoice_payments").select("amount, paid_at, payment_transaction_id").is("payment_transaction_id", null).gte("paid_at", since),
       ]);
       const failure = results.find((result) => result.error);
       if (failure?.error) throw failure.error;
@@ -99,6 +103,8 @@ export function CrmIntelligence() {
         activities: (results[2].data ?? []) as { activity_type: string; happened_at: string; next_follow_up: string | null; created_at: string }[], payments: (results[3].data ?? []) as Payment[], expenses: (results[4].data ?? []) as Expense[],
         invoices: (results[5].data ?? []) as (Dated & { total: number; status: string; issue_date: string })[], supply: (results[6].data ?? []) as (Dated & { status: string; updated_at: string })[], listing: (results[7].data ?? []) as (Dated & { status: string; updated_at: string })[],
         reservations: (results[8].data ?? []) as (Dated & { status: string; converted_at: string | null })[], tasks: (results[9].data ?? []) as (Dated & { status: string; started_at: string | null; approved_at: string | null })[], sessions: (results[10].data ?? []) as Session[], messages: (results[11].data ?? []) as (Dated & { result: string })[],
+        // Collected money is counted by the actual payment date, not the due date.
+        receipts: ([...(results[12].data ?? []), ...(results[13].data ?? [])] as { amount: number; paid_at: string }[]),
       };
     },
   });
@@ -157,8 +163,8 @@ export function CrmIntelligence() {
 function calculate(data: NonNullable<ReturnType<typeof useCrmData>>, days: number) {
   const now = new Date(), currentStart = new Date(now.getTime() - days * 86400000), previousStart = new Date(now.getTime() - days * 2 * 86400000);
   const current = (value: string) => within(value, currentStart, now), previous = (value: string) => within(value, previousStart, currentStart);
-  const revenue = sum(data.payments.filter((row) => current(row.due_date)).map((row) => Number(row.amount_paid)));
-  const previousRevenue = sum(data.payments.filter((row) => previous(row.due_date)).map((row) => Number(row.amount_paid)));
+  const revenue = sum(data.receipts.filter((row) => current(row.paid_at)).map((row) => Number(row.amount)));
+  const previousRevenue = sum(data.receipts.filter((row) => previous(row.paid_at)).map((row) => Number(row.amount)));
   const expenses = sum(data.expenses.filter((row) => current(row.spent_on)).map((row) => Number(row.amount)));
   const previousExpenses = sum(data.expenses.filter((row) => previous(row.spent_on)).map((row) => Number(row.amount)));
   const net = revenue - expenses, previousNet = previousRevenue - previousExpenses;
@@ -183,7 +189,7 @@ function calculate(data: NonNullable<ReturnType<typeof useCrmData>>, days: numbe
   const bucketCount = days <= 7 ? 7 : days <= 30 ? 10 : 12, bucketDays = Math.ceil(days / bucketCount);
   const trend = Array.from({ length: bucketCount }, (_, index) => {
     const start = new Date(currentStart.getTime() + index * bucketDays * 86400000), end = new Date(Math.min(now.getTime(), start.getTime() + bucketDays * 86400000));
-    const incoming = sum(data.payments.filter((row) => within(row.due_date, start, end)).map((row) => Number(row.amount_paid)));
+    const incoming = sum(data.receipts.filter((row) => within(row.paid_at, start, end)).map((row) => Number(row.amount)));
     const outgoing = sum(data.expenses.filter((row) => within(row.spent_on, start, end)).map((row) => Number(row.amount)));
     return { label: start.toLocaleDateString("ar-SA", { day: "numeric", month: "short" }), revenue: incoming, expenses: outgoing, net: incoming - outgoing };
   });
@@ -210,7 +216,7 @@ function calculate(data: NonNullable<ReturnType<typeof useCrmData>>, days: numbe
   return { revenue, expenses, net, margin, previousMargin, revenueChange: delta(revenue, previousRevenue), expenseChange: delta(expenses, previousExpenses), netChange: delta(net, previousNet), cards, trend, pipeline, sources: [...sourceMap].map(([label, value]) => ({ label, value })).sort((a,b) => b.value-a.value).slice(0,7), topPages: pagesSource.map((row) => ({ label: row.path, value: Number(row.views), hint: "مشاهدة" })), teamRows: [{ label: "ساعات الاستخدام", value: hours, hint: "ساعة" }, { label: "العمليات المسجلة", value: Number(data.traffic.events), hint: "عملية" }, { label: "المتصلون الآن", value: activeSessions, hint: "موظف" }, { label: "المهام المنجزة", value: completedTasks, hint: "مهمة" }], quality: [{ label: "أنشطة العملاء", value: data.activities.filter((row) => current(row.created_at)).length }, { label: "متابعات مستحقة", value: followupsDue }, { label: "متوسط الاستجابة", value: `${avgResponse} س` }, { label: "رسائل ناجحة", value: sentMessages }], due: allDue, allPaid, overdue, summary };
 }
 
-function useCrmData() { return null as unknown as { traffic: Traffic; contacts: Contact[]; opportunities: Opportunity[]; activities: { activity_type: string; happened_at: string; next_follow_up: string | null; created_at: string }[]; payments: Payment[]; expenses: Expense[]; invoices: (Dated & { total: number; status: string; issue_date: string })[]; supply: (Dated & { status: string; updated_at: string })[]; listing: (Dated & { status: string; updated_at: string })[]; reservations: (Dated & { status: string; converted_at: string | null })[]; tasks: (Dated & { status: string; started_at: string | null; approved_at: string | null })[]; sessions: Session[]; messages: (Dated & { result: string })[] } }
+function useCrmData() { return null as unknown as { traffic: Traffic; contacts: Contact[]; opportunities: Opportunity[]; activities: { activity_type: string; happened_at: string; next_follow_up: string | null; created_at: string }[]; payments: Payment[]; expenses: Expense[]; invoices: (Dated & { total: number; status: string; issue_date: string })[]; supply: (Dated & { status: string; updated_at: string })[]; listing: (Dated & { status: string; updated_at: string })[]; reservations: (Dated & { status: string; converted_at: string | null })[]; tasks: (Dated & { status: string; started_at: string | null; approved_at: string | null })[]; sessions: Session[]; messages: (Dated & { result: string })[]; receipts: { amount: number; paid_at: string }[] } }
 
 function HeroMetric({ icon: Icon, label, value, change, good }: { icon: typeof TrendingUp; label: string; value: string; change: number; good: boolean }) { const positive = good ? change >= 0 : change <= 0; return <div className="flex items-center gap-4 border-border p-5 sm:border-l last:border-l-0"><span className="grid size-11 shrink-0 place-items-center rounded-lg bg-muted text-primary"><Icon className="size-5" /></span><div className="min-w-0"><p className="text-xs text-muted-foreground">{label}</p><b className="mt-1 block truncate text-xl">{value}</b><span className={cn("mt-1 flex items-center gap-1 text-xs font-bold", positive ? "text-success" : "text-destructive")}>{change >= 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}{change >= 0 ? "+" : ""}{change}% عن الفترة السابقة</span></div></div> }
 function MetricCard({ icon: Icon, label, value, hint, tone }: { icon: typeof Eye; label: string; value: string; hint: string; tone: string }) { return <article className="surface-card p-4"><span className={cn("grid size-9 place-items-center rounded-lg", tone === "success" ? "bg-success/15 text-success" : tone === "gold" ? "bg-gold/15 text-gold" : "bg-accent text-primary")}><Icon className="size-4.5" /></span><b className="mt-4 block text-xl">{value}</b><p className="mt-1 text-xs font-bold">{label}</p><p className="mt-1 text-[11px] text-muted-foreground">{hint}</p></article> }
