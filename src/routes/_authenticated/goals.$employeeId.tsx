@@ -107,16 +107,34 @@ function EmployeeGoalsPage() {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!form.target_value) throw new Error("اكتب القيمة المستهدفة");
+      // Accept Arabic/Persian digits and separators; reject anything that is not a valid non-negative number.
+      const toNum = (v: string | number) => {
+        const s = String(v ?? "")
+          .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+          .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+          .replace(/[٬,\s]/g, "")
+          .replace("٫", ".");
+        const n = s === "" ? 0 : Number(s);
+        return Number.isFinite(n) ? n : NaN;
+      };
+      const target = toNum(form.target_value);
+      const achievedValue = toNum(form.achieved_value);
+      const points = toNum(form.points_per_unit);
+      if (!form.target_value || !Number.isFinite(target) || target <= 0)
+        throw new Error("اكتب القيمة المستهدفة رقمًا أكبر من صفر");
+      if (!Number.isFinite(achievedValue) || achievedValue < 0)
+        throw new Error("المنجز اليدوي يجب أن يكون صفرًا أو أكثر");
+      if (!Number.isFinite(points) || points < 0)
+        throw new Error("نقاط الهدف يجب أن تكون صفرًا أو أكثر");
       const { error } = await supabase.from("employee_goals").upsert(
         {
           employee_id: employeeId,
           period_month: period,
           goal_type: form.goal_type,
-          target_value: Number(form.target_value || 0),
-          achieved_value: Number(form.achieved_value || 0),
+          target_value: target,
+          achieved_value: achievedValue,
           auto_track: form.auto_track,
-          points_per_unit: Number(form.points_per_unit || 0),
+          points_per_unit: points,
           notes: form.notes || null,
         },
         { onConflict: "employee_id,period_month,goal_type" },
@@ -292,6 +310,8 @@ function EmployeeGoalsPage() {
                   {!goal.auto_track ? (
                     <input
                       type="number"
+              min={0}
+              inputMode="decimal"
                       defaultValue={Number(goal.achieved_value)}
                       onBlur={(e) => {
                         const value = Number(e.target.value || 0);
@@ -356,6 +376,8 @@ function EmployeeGoalsPage() {
           <Field label="القيمة المستهدفة" required>
             <input
               type="number"
+              min={0}
+              inputMode="decimal"
               value={form.target_value}
               onChange={(e) => setForm({ ...form, target_value: e.target.value })}
               className={inputClass}
@@ -364,6 +386,8 @@ function EmployeeGoalsPage() {
           <Field label="نقاط الهدف عند اكتماله">
             <input
               type="number"
+              min={0}
+              inputMode="decimal"
               value={form.points_per_unit}
               onChange={(e) => setForm({ ...form, points_per_unit: e.target.value })}
               className={inputClass}
@@ -372,6 +396,8 @@ function EmployeeGoalsPage() {
           <Field label="المنجز اليدوي">
             <input
               type="number"
+              min={0}
+              inputMode="decimal"
               value={form.achieved_value}
               onChange={(e) => setForm({ ...form, achieved_value: e.target.value })}
               className={inputClass}
