@@ -310,6 +310,8 @@ function EmployeeGoalsPage() {
                   {!goal.auto_track ? (
                     <input
                       type="number"
+              min={0}
+              inputMode="decimal"
                       defaultValue={Number(goal.achieved_value)}
                       onBlur={(e) => {
                         const value = Number(e.target.value || 0);
@@ -374,6 +376,8 @@ function EmployeeGoalsPage() {
           <Field label="القيمة المستهدفة" required>
             <input
               type="number"
+              min={0}
+              inputMode="decimal"
               value={form.target_value}
               onChange={(e) => setForm({ ...form, target_value: e.target.value })}
               className={inputClass}
@@ -382,6 +386,8 @@ function EmployeeGoalsPage() {
           <Field label="نقاط الهدف عند اكتماله">
             <input
               type="number"
+              min={0}
+              inputMode="decimal"
               value={form.points_per_unit}
               onChange={(e) => setForm({ ...form, points_per_unit: e.target.value })}
               className={inputClass}
@@ -390,6 +396,8 @@ function EmployeeGoalsPage() {
           <Field label="المنجز اليدوي">
             <input
               type="number"
+              min={0}
+              inputMode="decimal"
               value={form.achieved_value}
               onChange={(e) => setForm({ ...form, achieved_value: e.target.value })}
               className={inputClass}
