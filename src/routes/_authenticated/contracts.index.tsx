@@ -502,7 +502,7 @@ function ContractsPage() {
                       {r.owner?.full_name ?? "تعديل المالك"}
                     </Link>
                   ) : (
-                    "—"
+                    <AddOwnerButton contractId={r.id} />
                   ),
               },
               {
@@ -1125,5 +1125,47 @@ export function ImportDialog({
         </button>
       )}
     </Modal>
+  );
+}
+
+/** Adds an owner by hand to a contract that came without one (e.g. imported from the platform). */
+function AddOwnerButton({ contractId }: { contractId: string }) {
+  const qc = useQueryClient();
+  const add = useMutation({
+    mutationFn: async () => {
+      const name = window.prompt("اسم المالك")?.trim();
+      if (!name) return false;
+      const phone = window.prompt("جوال المالك (اختياري)")?.trim() || null;
+      const { data: contact, error } = await supabase
+        .from("contacts")
+        .insert({ full_name: name, phone, whatsapp: phone, roles: ["owner"] })
+        .select("id")
+        .single();
+      if (error) throw new Error(describeDbError(error));
+      const { data: updated, error: e2 } = await supabase
+        .from("contracts")
+        .update({ owner_id: contact.id })
+        .eq("id", contractId)
+        .select("id");
+      if (e2) throw new Error(describeDbError(e2));
+      if (!updated?.length) throw new Error("لم يتم ربط المالك بالعقد");
+      return true;
+    },
+    onSuccess: (done) => {
+      if (!done) return;
+      toast.success("تمت إضافة المالك للعقد");
+      qc.invalidateQueries({ queryKey: ["contracts"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <button
+      type="button"
+      onClick={() => add.mutate()}
+      disabled={add.isPending}
+      className="inline-flex items-center gap-1 rounded-md border border-dashed border-primary/40 px-2 py-1 text-[12px] font-semibold text-primary hover:bg-primary/5"
+    >
+      <Plus className="size-3.5" /> إضافة مالك
+    </button>
   );
 }

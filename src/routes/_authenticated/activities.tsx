@@ -221,11 +221,9 @@ export function ActivitiesPage() {
             </button>
           ))}
         </div>
-        {isSuperAdmin ? (
-          <PrimaryButton onClick={() => setOpen(true)}>
-            <Plus className="size-4" /> تسجيل نشاط
-          </PrimaryButton>
-        ) : null}
+        <PrimaryButton onClick={() => setOpen(true)}>
+          <Plus className="size-4" /> تسجيل نشاط
+        </PrimaryButton>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[380px_minmax(0,1fr)]">
