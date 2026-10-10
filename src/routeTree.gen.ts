@@ -52,6 +52,7 @@ import { Route as AuthenticatedRenewalsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReservationsRouteImport } from './routes/_authenticated/reservations'
 import { Route as AuthenticatedReserveRouteImport } from './routes/_authenticated/reserve'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
+import { Route as AuthenticatedSaleOwnersRouteImport } from './routes/_authenticated/sale-owners'
 import { Route as AuthenticatedServicePartnersRouteImport } from './routes/_authenticated/service-partners'
 import { Route as AuthenticatedServicesRouteImport } from './routes/_authenticated/services'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -314,6 +315,11 @@ const AuthenticatedReserveRoute = AuthenticatedReserveRouteImport.update({
 const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSaleOwnersRoute = AuthenticatedSaleOwnersRouteImport.update({
+  id: '/sale-owners',
+  path: '/sale-owners',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedServicePartnersRoute =
@@ -588,6 +594,7 @@ export interface FileRoutesByFullPath {
   '/reservations': typeof AuthenticatedReservationsRoute
   '/reserve': typeof AuthenticatedReserveRoute
   '/roles': typeof AuthenticatedRolesRoute
+  '/sale-owners': typeof AuthenticatedSaleOwnersRoute
   '/service-partners': typeof AuthenticatedServicePartnersRoute
   '/services': typeof AuthenticatedServicesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -672,6 +679,7 @@ export interface FileRoutesByTo {
   '/reservations': typeof AuthenticatedReservationsRoute
   '/reserve': typeof AuthenticatedReserveRoute
   '/roles': typeof AuthenticatedRolesRoute
+  '/sale-owners': typeof AuthenticatedSaleOwnersRoute
   '/service-partners': typeof AuthenticatedServicePartnersRoute
   '/services': typeof AuthenticatedServicesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -760,6 +768,7 @@ export interface FileRoutesById {
   '/_authenticated/reservations': typeof AuthenticatedReservationsRoute
   '/_authenticated/reserve': typeof AuthenticatedReserveRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
+  '/_authenticated/sale-owners': typeof AuthenticatedSaleOwnersRoute
   '/_authenticated/service-partners': typeof AuthenticatedServicePartnersRoute
   '/_authenticated/services': typeof AuthenticatedServicesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -848,6 +857,7 @@ export interface FileRouteTypes {
     | '/reservations'
     | '/reserve'
     | '/roles'
+    | '/sale-owners'
     | '/service-partners'
     | '/services'
     | '/settings'
@@ -932,6 +942,7 @@ export interface FileRouteTypes {
     | '/reservations'
     | '/reserve'
     | '/roles'
+    | '/sale-owners'
     | '/service-partners'
     | '/services'
     | '/settings'
@@ -1019,6 +1030,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reservations'
     | '/_authenticated/reserve'
     | '/_authenticated/roles'
+    | '/_authenticated/sale-owners'
     | '/_authenticated/service-partners'
     | '/_authenticated/services'
     | '/_authenticated/settings'
@@ -1393,6 +1405,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRolesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/sale-owners': {
+      id: '/_authenticated/sale-owners'
+      path: '/sale-owners'
+      fullPath: '/sale-owners'
+      preLoaderRoute: typeof AuthenticatedSaleOwnersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/service-partners': {
       id: '/_authenticated/service-partners'
       path: '/service-partners'
@@ -1730,6 +1749,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReservationsRoute: typeof AuthenticatedReservationsRoute
   AuthenticatedReserveRoute: typeof AuthenticatedReserveRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
+  AuthenticatedSaleOwnersRoute: typeof AuthenticatedSaleOwnersRoute
   AuthenticatedServicePartnersRoute: typeof AuthenticatedServicePartnersRoute
   AuthenticatedServicesRoute: typeof AuthenticatedServicesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -1778,6 +1798,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReservationsRoute: AuthenticatedReservationsRoute,
   AuthenticatedReserveRoute: AuthenticatedReserveRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
+  AuthenticatedSaleOwnersRoute: AuthenticatedSaleOwnersRoute,
   AuthenticatedServicePartnersRoute: AuthenticatedServicePartnersRoute,
   AuthenticatedServicesRoute: AuthenticatedServicesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
