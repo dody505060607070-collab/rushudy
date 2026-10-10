@@ -1,0 +1,2 @@
+CREATE POLICY "staff create activities for colleagues" ON public.employee_activities FOR INSERT TO authenticated WITH CHECK (public.is_staff(auth.uid()) AND created_by = auth.uid());
+CREATE POLICY "creator updates own activities" ON public.employee_activities FOR UPDATE TO authenticated USING (created_by = auth.uid()) WITH CHECK (created_by = auth.uid());
