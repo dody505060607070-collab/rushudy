@@ -26,6 +26,7 @@ import { lazy, Suspense } from "react";
 import { Chip } from "@/components/kit/Chip";
 import { formatCurrency, formatDate } from "@/components/kit/LiveTable";
 import { PageHero } from "@/components/kit/PageHero";
+import { CrmOverview } from "@/components/crm/CrmOverview";
 import { supabase } from "@/integrations/supabase/client";
 
 const DashboardInsights = lazy(() =>
@@ -37,7 +38,7 @@ const DashboardInsights = lazy(() =>
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "لوحة التحكم | الرشودي للعقارات" },
+      { title: "CRM — لوحة التحكم | الرشودي للعقارات" },
       {
         name: "description",
         content: "ملخص موحد لأداء المحفظة العقارية والأولويات التي تحتاج متابعة.",
@@ -254,8 +255,8 @@ function DashboardPage() {
   return (
     <>
       <PageHero
-        title="لوحة التحكم"
-        subtitle="ملخص موحد لأداء المحفظة العقارية والأولويات التي تحتاج متابعة."
+        title="CRM — لوحة التحكم"
+        subtitle="مركز واحد لأداء المحفظة العقارية والعملاء والفرص والأولويات اليومية."
         icon={LayoutDashboard}
         stats={[
           { value: String(s?.activeContracts ?? 0), label: "عقد نشط" },
@@ -623,6 +624,8 @@ function DashboardPage() {
       </div>
 
 
+
+      <CrmOverview />
 
       <Suspense fallback={<div className="surface-card p-10 text-center text-sm text-muted-foreground">جاري إعداد التحليلات المتقدمة…</div>}>
         <DashboardInsights />
