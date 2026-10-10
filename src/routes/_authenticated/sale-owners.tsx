@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Link2, Pencil, Plus, Trash2, Unlink } from "lucide-react";
+import { BadgeDollarSign, Link2, Pencil, Plus, Trash2, Unlink } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -167,7 +167,7 @@ function SaleOwnersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHero title="ملاك البيع" subtitle="كل ملاك عقارات البيع في صفحة مستقلة — أضف المالك واربط عقاراته المعروضة للبيع." />
+      <PageHero title="ملاك البيع" subtitle="كل ملاك عقارات البيع في صفحة مستقلة — أضف المالك واربط عقاراته المعروضة للبيع." icon={BadgeDollarSign} />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat label="عدد ملاك البيع" value={owners.data?.length ?? 0} />
@@ -201,9 +201,9 @@ function SaleOwnersPage() {
                     {o.notes && <div className="text-xs text-muted-foreground mt-1">{o.notes}</div>}
                   </div>
                   <div className="flex gap-1">
-                    <GhostButton onClick={() => openEdit(o)} aria-label="تعديل"><Pencil className="h-4 w-4" /></GhostButton>
+                    <GhostButton onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></GhostButton>
                     <GhostButton
-                      aria-label="حذف"
+                      
                       onClick={() => window.confirm(`حذف ${o.full_name} من ملاك البيع؟`) && remove.mutate(o)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
@@ -215,7 +215,7 @@ function SaleOwnersPage() {
                   {ps.length === 0 && <div className="text-xs text-muted-foreground">لا توجد عقارات مربوطة.</div>}
                   {ps.map((p) => (
                     <div key={p.id} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-1.5 text-sm">
-                      <Link to="/properties/$propertyId" params={{ propertyId: p.id }} className="hover:underline">
+                      <Link to="/properties" className="hover:underline">
                         {p.code ? `${p.code} — ` : ""}{p.name ?? "عقار"}
                         {p.price_value ? ` • ${p.price_value.toLocaleString("ar-SA")} ر.س` : ""}
                         {p.status ? ` • ${p.status}` : ""}
