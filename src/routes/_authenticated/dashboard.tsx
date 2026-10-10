@@ -19,9 +19,11 @@ import {
   LogOut,
   CalendarCheck,
   Activity,
+  ArrowUpLeft,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
+import { cn } from "@/lib/utils";
 
 import { Chip } from "@/components/kit/Chip";
 import { formatCurrency, formatDate } from "@/components/kit/LiveTable";
@@ -252,490 +254,323 @@ function DashboardPage() {
   const s = summary.data;
 
 
+  const [tab, setTab] = useState<"overview" | "operations" | "crm" | "analytics">("overview");
+  const occ = s?.occupancy ?? 0;
+  const weekDays = ["س", "ح", "ن", "ث", "ر", "خ", "ج"];
+  const todayIdx = (new Date().getDay() + 1) % 7; // السبت = 0
+  const daysLeft = (d: string | null) =>
+    d ? Math.max(Math.ceil((new Date(d).getTime() - Date.now()) / 86400000), 0) : 0;
+  const daysLate = (d: string | null) =>
+    d ? Math.max(Math.floor((Date.now() - new Date(d).getTime()) / 86400000), 0) : 0;
+  const sessions = operations.data?.sessions ?? [];
+
+  const tabs = [
+    { key: "overview", label: "نظرة عامة" },
+    { key: "operations", label: "العمليات اليومية" },
+    { key: "crm", label: "العملاء والفرص" },
+    { key: "analytics", label: "التحليلات" },
+  ] as const;
+
   return (
-    <>
-      <PageHero
-        title="CRM — لوحة التحكم"
-        subtitle="مركز واحد لأداء المحفظة العقارية والعملاء والفرص والأولويات اليومية."
-        icon={LayoutDashboard}
-        stats={[
-          { value: String(s?.activeContracts ?? 0), label: "عقد نشط" },
-          { value: `${s?.occupancy ?? 0}%`, label: "نسبة الإشغال" },
-          { value: String(s?.overdueCount ?? 0), label: "دفعة متأخرة" },
-        ]}
-      />
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <DailyCard icon={LogIn} label="الدخول اليوم" value={String(operations.data?.sessions.length ?? 0)} />
-        <DailyCard icon={LogOut} label="المغادرة اليوم" value={String((operations.data?.sessions ?? []).filter((row) => row.ended_at).length)} />
-        <DailyCard icon={CalendarCheck} label="الحجوزات القائمة" value={String(operations.data?.reservations.length ?? 0)} />
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <Link
-          to="/contracts"
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-[13px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          <Plus className="size-4" />
-          عقد إيجار جديد
-        </Link>
-        <Link
-          to="/contracts"
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"
-        >
-          <Upload className="size-4" />
-          رفع عقد PDF
-        </Link>
-        <Link
-          to="/reminders"
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"
-        >
-          <BellRing className="size-4" />
-          إدارة التذكيرات
-        </Link>
-      </div>
-
-      {summary.isLoading ? (
-        <div className="surface-card grid place-items-center gap-2 px-6 py-16">
-          <Loader2 className="size-6 animate-spin text-primary" />
-          <p className="text-[13px] text-muted-foreground">جاري حساب المؤشرات…</p>
+    <div className="space-y-5">
+      {/* ── رأس الصفحة ── */}
+      <header className="grid gap-4 md:flex md:items-end md:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">CRM — لوحة التحكم</h1>
+          <p className="mt-1.5 text-[13px] text-muted-foreground">خطّط، تابع، وحصّل — كل أداء المحفظة والعملاء في شاشة واحدة.</p>
         </div>
-      ) : summary.error ? (
-        <div className="surface-card grid place-items-center gap-2 px-6 py-10 text-center">
-          <TriangleAlert className="size-7 text-destructive" />
-          <p className="text-[13px] text-destructive" dir="ltr">
-            {summary.error instanceof Error ? summary.error.message : "خطأ غير معروف"}
-          </p>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/contracts" className="brand-tile inline-flex h-11 items-center gap-2 rounded-full px-5 text-[13px] font-bold">
+            <Plus className="size-4" /> عقد إيجار جديد
+          </Link>
+          <Link to="/contracts" className="inline-flex h-11 items-center gap-2 rounded-full border border-primary/40 bg-card px-5 text-[13px] font-bold text-primary hover:bg-accent">
+            <Upload className="size-4" /> رفع عقد PDF
+          </Link>
+          <Link to="/reminders" className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-card px-5 text-[13px] font-bold text-foreground hover:bg-muted">
+            <BellRing className="size-4" /> التذكيرات
+          </Link>
         </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            icon={TriangleAlert}
-            label="إجمالي المتأخرات"
-            value={formatCurrency(s?.overdueAmount ?? 0)}
-            hint={`${s?.overdueCount ?? 0} دفعة تحتاج تحصيلًا`}
-            linkText="فتح مركز التحصيل"
-            to="/invoices"
-            danger
-          />
-          <MetricCard
-            icon={Wallet}
-            label="تحصيل الشهر"
-            value={`${s?.monthRate ?? 0}%`}
-            hint={`${formatCurrency(s?.monthPaid ?? 0)} من ${formatCurrency(s?.monthDue ?? 0)}`}
-            linkText="متابعة التحصيل"
-            to="/invoices"
-          />
-          <MetricCard
-            icon={Gauge}
-            label="نسبة الإشغال"
-            value={`${s?.occupancy ?? 0}%`}
-            hint={`${s?.occupiedUnits ?? 0} من ${s?.totalUnits ?? 0} وحدة`}
-            linkText={`${s?.vacantUnits ?? 0} وحدة شاغرة`}
-            to="/properties"
-          />
-          <MetricCard
-            icon={FileText}
-            label="العقود النشطة"
-            value={String(s?.activeContracts ?? 0)}
-            hint={`${s?.endingSoon ?? 0} تنتهي خلال 60 يومًا`}
-            linkText="عرض سجل العقود"
-            to="/contracts"
-          />
-        </div>
-      )}
+      </header>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <section className="surface-card p-5 lg:col-span-1">
-          <p className="text-[11.5px] font-bold text-primary">حالة المحفظة</p>
-          <h2 className="mt-1 text-[15px] font-bold text-foreground">إشغال الوحدات</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-            الوحدات المرتبطة بعقود نشطة الآن
-          </p>
+      {/* ── التبويبات ── */}
+      <nav className="flex gap-1 overflow-x-auto rounded-full border border-border bg-card p-1">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={cn(
+              "shrink-0 rounded-full px-5 py-2 text-[13px] font-bold transition-colors",
+              tab === t.key ? "brand-tile" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
 
-          <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-foreground">{s?.occupancy ?? 0}%</span>
-              <span className="text-[12.5px] text-muted-foreground">نسبة الإشغال</span>
-            </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-border">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${s?.occupancy ?? 0}%` }}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-[11.5px] text-muted-foreground">
-              <span>من أصل {s?.totalUnits ?? 0} وحدة</span>
-              <span>
-                مشغولة {s?.occupiedUnits ?? 0} · شاغرة {s?.vacantUnits ?? 0}
-              </span>
-            </div>
+      {tab === "overview" ? (
+        summary.isLoading ? (
+          <div className="surface-card grid place-items-center gap-2 px-6 py-16">
+            <Loader2 className="size-6 animate-spin text-primary" />
+            <p className="text-[13px] text-muted-foreground">جاري حساب المؤشرات…</p>
           </div>
-
-          <dl className="mt-4 divide-y divide-border text-[13px]">
-            <Line label="العقود النشطة" icon={FileText} value={String(s?.activeContracts ?? 0)} />
-            <Line label="تنتهي خلال 60 يومًا" icon={CalendarClock} value={String(s?.endingSoon ?? 0)} />
-            <Line
-              label="مستحق خلال 30 يومًا"
-              icon={Wallet}
-              value={formatCurrency(s?.due30 ?? 0)}
-            />
-            <Line
-              label="طلبات مفتوحة"
-              icon={Search}
-              value={String((s?.supply ?? 0) + (s?.listing ?? 0))}
-            />
-          </dl>
-        </section>
-
-        <section className="surface-card p-5 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11.5px] font-bold text-primary">المتابعة اليومية</p>
-              <h2 className="mt-1 text-[15px] font-bold text-foreground">دفعات متأخرة</h2>
-              <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-                {s?.overdueCount ?? 0} دفعة بإجمالي {formatCurrency(s?.overdueAmount ?? 0)}
-              </p>
-            </div>
-            <Link
-              to="/invoices"
-              className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary"
-            >
-              عرض الكل
-              <ChevronLeft className="size-4" />
-            </Link>
-          </div>
-
-          {overdue.isLoading ? (
-            <p className="py-10 text-center text-[13px] text-muted-foreground">جاري التحميل…</p>
-          ) : (overdue.data ?? []).length === 0 ? (
-            <p className="py-10 text-center text-[13px] text-muted-foreground">
-              لا توجد دفعات متأخرة حاليًا.
+        ) : summary.error ? (
+          <div className="surface-card grid place-items-center gap-2 px-6 py-10 text-center">
+            <TriangleAlert className="size-7 text-destructive" />
+            <p className="text-[13px] text-destructive" dir="ltr">
+              {summary.error instanceof Error ? summary.error.message : "خطأ غير معروف"}
             </p>
-          ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[520px] text-right">
-                <thead>
-                  <tr className="border-b border-border text-[12px] font-bold text-muted-foreground">
-                    <th className="py-2">المستأجر والعقد</th>
-                    <th className="py-2">تاريخ الاستحقاق</th>
-                    <th className="py-2">الحالة</th>
-                    <th className="py-2">المبلغ المتبقي</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(overdue.data ?? []).map((row) => {
-                    const days = row.due_date
-                      ? Math.max(
-                          Math.floor(
-                            (Date.now() - new Date(row.due_date).getTime()) / 86400000,
-                          ),
-                          0,
-                        )
-                      : 0;
+          </div>
+        ) : (
+          <>
+            {/* ── 4 بطاقات رئيسية ── */}
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <StatTile featured to="/contracts" label="العقود النشطة" value={String(s?.activeContracts ?? 0)} badge={String(s?.endingSoon ?? 0)} note="تنتهي خلال 60 يومًا" />
+              <StatTile to="/properties" label="نسبة الإشغال" value={`${occ}%`} badge={String(s?.vacantUnits ?? 0)} note="وحدة شاغرة" />
+              <StatTile to="/invoices" label="تحصيل الشهر" value={`${s?.monthRate ?? 0}%`} badge={formatCurrency(s?.monthPaid ?? 0)} note={`من ${formatCurrency(s?.monthDue ?? 0)}`} />
+              <StatTile danger to="/invoices" label="إجمالي المتأخرات" value={formatCurrency(s?.overdueAmount ?? 0)} badge={String(s?.overdueCount ?? 0)} note="دفعة تحتاج تحصيلًا" />
+            </div>
+
+            {/* ── الصف الثاني ── */}
+            <div className="grid gap-4 lg:grid-cols-12">
+              <section className="surface-card p-5 lg:col-span-5">
+                <CardHead title="حركة الإشغال الأسبوعية" />
+                <div className="mt-5 flex h-44 items-end justify-between gap-2.5">
+                  {weekDays.map((d, i) => {
+                    const h = Math.max(22, occ - (i % 3) * 6);
+                    const future = i > todayIdx;
                     return (
-                      <tr key={row.id} className="border-b border-border/70 text-[13px] last:border-0">
-                        <td className="py-3 font-semibold text-foreground">
-                          {row.contract?.tenant?.full_name ?? "—"}
-                          <span className="block text-[11.5px] font-normal text-muted-foreground">
-                            {row.contract?.contract_number ?? "بدون رقم"}
-                          </span>
-                        </td>
-                        <td className="py-3">{formatDate(row.due_date)}</td>
-                        <td className="py-3">
-                          <Chip tone="danger">متأخر {days} يومًا</Chip>
-                        </td>
-                        <td className="py-3 font-semibold">
-                          {formatCurrency(
-                            Number(row.amount_due ?? 0) - Number(row.amount_paid ?? 0),
+                      <div key={d} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+                        {i === todayIdx ? (
+                          <span className="rounded-md border border-primary/30 bg-accent px-1.5 text-[10px] font-bold text-primary">{occ}%</span>
+                        ) : null}
+                        <div
+                          className={cn(
+                            "w-full max-w-11 rounded-full",
+                            future ? "stripes border border-border" : i === todayIdx ? "bg-primary" : i % 2 ? "bg-accent-2" : "bg-primary/55",
                           )}
-                        </td>
-                      </tr>
+                          style={{ height: `${h}%` }}
+                        />
+                        <span className="text-[11px] font-semibold text-muted-foreground">{d}</span>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
+                </div>
+              </section>
+
+              <section className="surface-card p-5 lg:col-span-3">
+                <CardHead title="تحتاج إجراء" />
+                <div className="mt-3 space-y-1">
+                  <MiniWork to="/supply-requests" icon={Search} title="طلبات توفير عقار" count={s?.supply ?? 0} />
+                  <MiniWork to="/listing-requests" icon={Building2} title="عقارات مقدمة" count={s?.listing ?? 0} />
+                  <MiniWork to="/tasks" icon={ClipboardCheck} title="موافقات المهام" count={s?.pendingTasks ?? 0} />
+                  <MiniWork to="/invoices" icon={Wallet} title="مستحق خلال 30 يومًا" count={formatCurrency(s?.due30 ?? 0)} />
+                </div>
+              </section>
+
+              <section className="surface-card p-5 lg:col-span-4">
+                <CardHead title="عقود قريبة الانتهاء" to="/contracts" />
+                <ul className="mt-3 space-y-2.5">
+                  {(ending.data ?? []).slice(0, 5).map((row) => (
+                    <li key={row.id} className="flex items-center gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-primary"><CalendarClock className="size-4" /></span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-semibold">{row.tenant?.full_name ?? "—"}</p>
+                        <p className="text-[11px] text-muted-foreground">ينتهي: {formatDate(row.end_date)}</p>
+                      </div>
+                      <Chip tone="warning">{daysLeft(row.end_date)} يوم</Chip>
+                    </li>
+                  ))}
+                  {!(ending.data ?? []).length ? <Empty text="لا توجد عقود تنتهي قريبًا." /> : null}
+                </ul>
+              </section>
             </div>
-          )}
-        </section>
-      </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-        <section className="surface-card p-5">
-          <h2 className="text-[15px] font-bold">حركة الإشغال الأسبوعية</h2>
-          <p className="mt-1 text-xs text-muted-foreground">قراءة سريعة لنسبة الإشغال الحالية خلال أيام الأسبوع</p>
-          <div className="mt-6 flex h-48 items-end justify-between gap-3 border-b border-border px-2">
-            {["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"].map((day, index) => <div key={day} className="flex h-full flex-1 flex-col items-center justify-end gap-2"><div className="w-full max-w-10 rounded-t-md bg-primary/80" style={{ height: `${Math.max(12, (s?.occupancy ?? 0) - (index % 3) * 4)}%` }} /><span className="text-[10px] text-muted-foreground">{day}</span></div>)}
-          </div>
-        </section>
-        <section className="surface-card p-5">
-          <h2 className="text-[15px] font-bold">حالة الوحدات</h2>
-          <div className="mx-auto mt-5 grid size-44 place-items-center rounded-full" style={{ background: `conic-gradient(var(--color-primary) 0 ${(s?.occupancy ?? 0)}%, var(--color-muted) ${(s?.occupancy ?? 0)}% 100%)` }}><div className="grid size-28 place-items-center rounded-full bg-card text-center"><span><b className="block text-2xl">{s?.totalUnits ?? 0}</b><small className="text-muted-foreground">إجمالي الوحدات</small></span></div></div>
-          <div className="mt-4 flex justify-center gap-5 text-xs"><span className="flex items-center gap-2"><i className="size-2.5 rounded-full bg-primary" />مشغولة {s?.occupiedUnits ?? 0}</span><span className="flex items-center gap-2"><i className="size-2.5 rounded-full bg-muted" />شاغرة {s?.vacantUnits ?? 0}</span></div>
-        </section>
-      </div>
+            {/* ── الصف الثالث ── */}
+            <div className="grid gap-4 lg:grid-cols-12">
+              <section className="surface-card p-5 lg:col-span-5">
+                <CardHead title="دفعات متأخرة" to="/invoices" />
+                <ul className="mt-3 space-y-2.5">
+                  {(overdue.data ?? []).slice(0, 5).map((row) => (
+                    <li key={row.id} className="flex items-center gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-destructive/10 text-[13px] font-bold text-destructive">
+                        {(row.contract?.tenant?.full_name ?? "؟").charAt(0)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-semibold">{row.contract?.tenant?.full_name ?? "—"}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          عقد {row.contract?.contract_number ?? "بدون رقم"} · <b className="text-foreground">{formatCurrency(Number(row.amount_due ?? 0) - Number(row.amount_paid ?? 0))}</b>
+                        </p>
+                      </div>
+                      <Chip tone="danger">متأخر {daysLate(row.due_date)} يوم</Chip>
+                    </li>
+                  ))}
+                  {!(overdue.data ?? []).length ? <Empty text="لا توجد دفعات متأخرة 🎉" /> : null}
+                </ul>
+              </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="surface-card p-5">
-          <h2 className="text-[15px] font-bold text-foreground">قائمة العمل</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">عناصر تنتظر الإجراء</p>
-          <div className="mt-4 grid gap-2">
-            <WorkItem
-              to="/supply-requests"
-              icon={Search}
-              title="طلبات توفير عقار"
-              hint="بانتظار بدء المتابعة"
-              count={s?.supply ?? 0}
-            />
-            <WorkItem
-              to="/listing-requests"
-              icon={Building2}
-              title="عقارات مقدمة"
-              hint="بانتظار المراجعة"
-              count={s?.listing ?? 0}
-            />
-            <WorkItem
-              to="/tasks"
-              icon={ClipboardCheck}
-              title="موافقات المهام"
-              hint="تحتاج قرارًا إداريًا"
-              count={s?.pendingTasks ?? 0}
-            />
-            <WorkItem
-              to="/contracts"
-              icon={Upload}
-              title="عقود PDF مستوردة"
-              hint="تحتاج مراجعة الاستخراج"
-              count={0}
-            />
-          </div>
-        </section>
-
-        <section className="surface-card p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-[15px] font-bold text-foreground">عقود قريبة الانتهاء</h2>
-              <p className="mt-0.5 text-[12.5px] text-muted-foreground">خلال الستين يومًا القادمة</p>
-            </div>
-            <Link
-              to="/contracts"
-              className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary"
-            >
-              عرض الكل
-              <ChevronLeft className="size-4" />
-            </Link>
-          </div>
-
-          {(ending.data ?? []).length === 0 ? (
-            <p className="py-10 text-center text-[13px] text-muted-foreground">
-              لا توجد عقود تنتهي قريبًا.
-            </p>
-          ) : (
-            <ul className="mt-4 divide-y divide-border">
-              {(ending.data ?? []).map((row) => (
-                <li key={row.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground">
-                      {row.tenant?.full_name ?? "—"}
-                    </p>
-                    <p className="text-[11.5px] text-muted-foreground">
-                      {row.contract_number ?? "بدون رقم"} · {formatDate(row.end_date)}
-                    </p>
+              <section className="surface-card p-5 lg:col-span-4">
+                <CardHead title="إشغال الوحدات" to="/properties" />
+                <div className="relative mx-auto mt-4 aspect-[2/1] w-full max-w-64 overflow-hidden">
+                  <div
+                    className="absolute inset-x-0 top-0 aspect-square rounded-full"
+                    style={{ background: `conic-gradient(from 270deg, var(--color-primary) 0 ${occ / 2}%, var(--color-accent-2) ${occ / 2}% 50%, transparent 50% 100%)` }}
+                  />
+                  <div className="absolute inset-x-[18%] top-[18%] aspect-square rounded-full bg-card" />
+                  <div className="absolute inset-x-0 bottom-0 text-center">
+                    <b className="block text-3xl font-extrabold">{occ}%</b>
+                    <span className="text-[11px] text-muted-foreground">من {s?.totalUnits ?? 0} وحدة</span>
                   </div>
-                  <Chip tone="warning">
-                    {row.end_date
-                      ? `${Math.max(
-                          Math.ceil((new Date(row.end_date).getTime() - Date.now()) / 86400000),
-                          0,
-                        )} يوم`
-                      : "—"}
-                  </Chip>
+                </div>
+                <div className="mt-4 flex justify-center gap-5 text-[11.5px]">
+                  <Legend className="bg-primary" label={`مشغولة ${s?.occupiedUnits ?? 0}`} />
+                  <Legend className="bg-accent-2" label={`شاغرة ${s?.vacantUnits ?? 0}`} />
+                </div>
+              </section>
+
+              <section className="brand-tile relative overflow-hidden p-5 lg:col-span-3">
+                <div className="pointer-events-none absolute -bottom-16 -start-16 size-48 rounded-full border-[18px] border-primary-foreground/10" />
+                <p className="text-[13px] font-bold text-primary-foreground/85">اليوم في المكتب</p>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <TodayStat icon={LogIn} label="دخول" value={sessions.length} />
+                  <TodayStat icon={LogOut} label="مغادرة" value={sessions.filter((r) => r.ended_at).length} />
+                  <TodayStat icon={CalendarCheck} label="حجوزات" value={operations.data?.reservations.length ?? 0} />
+                </div>
+                <Link to="/activity-log" className="mt-5 flex h-10 items-center justify-center gap-2 rounded-full bg-primary-foreground text-[12.5px] font-bold text-primary">
+                  <Activity className="size-4" /> متابعة الموظفين
+                </Link>
+              </section>
+            </div>
+          </>
+        )
+      ) : null}
+
+      {tab === "operations" ? (
+        <div className="grid gap-4 lg:grid-cols-12">
+          <section className="surface-card p-5 lg:col-span-4">
+            <CardHead title="الوحدات حسب النوع" to="/properties" />
+            <ul className="mt-3 space-y-3">
+              {(board.data?.types ?? []).map((row) => {
+                const total = row.occupied + row.vacant || 1;
+                return (
+                  <li key={row.type}>
+                    <div className="flex justify-between text-[12.5px]">
+                      <span className="font-semibold">{row.type}</span>
+                      <span className="text-muted-foreground">{row.occupied} مشغول · {row.vacant} شاغر</span>
+                    </div>
+                    <div className="mt-1.5 flex h-2 overflow-hidden rounded-full bg-accent-2-soft">
+                      <div className="bg-primary" style={{ width: `${(row.occupied / total) * 100}%` }} />
+                    </div>
+                  </li>
+                );
+              })}
+              {!board.data?.types.length ? <Empty text="لا توجد وحدات مسجلة." /> : null}
+            </ul>
+          </section>
+
+          <section className="surface-card p-5 lg:col-span-4">
+            <CardHead title="حركة الحجوزات" to="/reservations" />
+            <ul className="mt-3 space-y-2.5">
+              {(board.data?.reservations ?? []).map((row) => (
+                <li key={row.id} className="flex items-center gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-2-soft text-accent-2"><CalendarCheck className="size-4" /></span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-semibold">{row.property?.name ?? "عقار غير محدد"}</p>
+                    <p className="text-[11px] text-muted-foreground">{formatDate(row.starts_at)} — {formatDate(row.ends_at)}</p>
+                  </div>
+                  <Chip tone={row.status === "active" ? "success" : "warning"}>{row.status === "active" ? "قائم" : "مؤقت"}</Chip>
                 </li>
               ))}
+              {!board.data?.reservations.length ? <Empty text="لا توجد حجوزات حالية." /> : null}
             </ul>
-          )}
-        </section>
-      </div>
+          </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="surface-card p-5">
-          <h2 className="text-[15px] font-bold">حالة الوحدة حسب النوع</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">توزيع الوحدات المشغولة والشاغرة</p>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[360px] text-right text-[13px]">
-              <thead>
-                <tr className="border-b border-border text-[12px] font-bold text-muted-foreground">
-                  <th className="py-2">نوع الوحدة</th>
-                  <th className="py-2">مشغول</th>
-                  <th className="py-2">شاغر</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(board.data?.types ?? []).map((row) => (
-                  <tr key={row.type} className="border-b border-border/70 last:border-0">
-                    <td className="py-2.5 font-semibold">{row.type}</td>
-                    <td className="py-2.5 text-destructive">{row.occupied}</td>
-                    <td className="py-2.5 text-success">{row.vacant}</td>
-                  </tr>
-                ))}
-                {!board.data?.types.length ? (
-                  <tr>
-                    <td colSpan={3} className="py-8 text-center text-muted-foreground">
-                      لا توجد وحدات مسجلة.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="surface-card p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-[15px] font-bold">حركة الحجوزات</h2>
-              <p className="mt-0.5 text-[12.5px] text-muted-foreground">الحجوزات القائمة والمؤقتة</p>
-            </div>
-            <Link to="/reservations" search={{ newReservation: false }} className="text-xs font-bold text-primary">
-              عرض الكل
-            </Link>
-          </div>
-          <ul className="mt-4 divide-y divide-border">
-            {(board.data?.reservations ?? []).map((row) => (
-              <li key={row.id} className="flex items-center justify-between py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-[13px] font-semibold">
-                    {row.property?.name ?? "عقار غير محدد"}
-                  </p>
-                  <p className="text-[11.5px] text-muted-foreground">
-                    {formatDate(row.starts_at)} — {formatDate(row.ends_at)}
-                  </p>
-                </div>
-                <Chip tone={row.status === "active" ? "success" : "warning"}>
-                  {row.status === "active" ? "قائم" : "مؤقت"}
-                </Chip>
-              </li>
-            ))}
-            {!board.data?.reservations.length ? (
-              <li className="py-8 text-center text-[13px] text-muted-foreground">لا توجد حجوزات حالية.</li>
-            ) : null}
-          </ul>
-        </section>
-      </div>
-
-
-
-      <CrmOverview />
-
-      <Suspense fallback={<div className="surface-card p-10 text-center text-sm text-muted-foreground">جاري إعداد التحليلات المتقدمة…</div>}>
-        <DashboardInsights />
-      </Suspense>
-
-      <section className="surface-card overflow-hidden">
-        <header className="flex items-center justify-between border-b border-border p-5"><div><p className="text-[11.5px] font-bold text-primary">مباشر</p><h2 className="mt-1 text-[15px] font-bold">آخر أنشطة النظام</h2></div><Link to="/activity-log" className="text-xs font-bold text-primary">متابعة الموظفين</Link></header>
-        <div className="divide-y divide-border">{(operations.data?.activities ?? []).map((row) => <div key={row.id} className="flex items-center gap-3 px-5 py-3"><span className="grid size-8 place-items-center rounded-lg bg-accent text-primary"><Activity className="size-4" /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{row.action} · {row.entity_type ?? "النظام"}</p><p className="text-xs text-muted-foreground">{(row.actor as { full_name?: string } | null)?.full_name ?? "النظام"}</p></div><time className="text-[11px] text-muted-foreground">{formatDate(row.created_at)}</time></div>)}{!operations.data?.activities.length ? <p className="p-8 text-center text-sm text-muted-foreground">لا توجد أنشطة بعد.</p> : null}</div>
-      </section>
-    </>
-  );
-}
-
-function DailyCard({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
-  return <div className="surface-card flex items-center justify-between p-4"><div><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></div><span className="grid size-10 place-items-center rounded-lg border border-border bg-muted text-primary"><Icon className="size-5" /></span></div>;
-}
-
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  hint,
-  linkText,
-  to,
-  danger,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  hint: string;
-  linkText: string;
-  to: string;
-  danger?: boolean;
-}) {
-  return (
-    <div className="surface-card overflow-hidden">
-      <div className={danger ? "border-e-2 border-destructive p-5" : "p-5"}>
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[12.5px] font-semibold text-muted-foreground">{label}</p>
-            <p
-              className={
-                danger
-                  ? "mt-2 text-2xl font-bold text-destructive"
-                  : "mt-2 text-2xl font-bold text-foreground"
-              }
-            >
-              {value}
-            </p>
-            <p className="mt-1 text-[11.5px] text-muted-foreground">{hint}</p>
-          </div>
-          <span className="grid size-9 place-items-center rounded-lg border border-border bg-muted text-primary">
-            <Icon className="size-[18px]" />
-          </span>
+          <section className="surface-card p-5 lg:col-span-4">
+            <CardHead title="آخر أنشطة النظام" to="/activity-log" />
+            <ul className="mt-3 space-y-2.5">
+              {(operations.data?.activities ?? []).map((row) => (
+                <li key={row.id} className="flex items-center gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-primary"><Activity className="size-4" /></span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-semibold">{row.action} · {row.entity_type ?? "النظام"}</p>
+                    <p className="text-[11px] text-muted-foreground">{(row.actor as { full_name?: string } | null)?.full_name ?? "النظام"}</p>
+                  </div>
+                  <time className="text-[10.5px] text-muted-foreground">{formatDate(row.created_at)}</time>
+                </li>
+              ))}
+              {!operations.data?.activities.length ? <Empty text="لا توجد أنشطة بعد." /> : null}
+            </ul>
+          </section>
         </div>
+      ) : null}
+
+      {tab === "crm" ? <CrmOverview /> : null}
+
+      {tab === "analytics" ? (
+        <Suspense fallback={<div className="surface-card p-10 text-center text-sm text-muted-foreground">جاري إعداد التحليلات…</div>}>
+          <DashboardInsights />
+        </Suspense>
+      ) : null}
+    </div>
+  );
+}
+
+function CardHead({ title, to }: { title: string; to?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <h2 className="text-[15px] font-bold text-foreground">{title}</h2>
+      {to ? (
+        <Link to={to} className="inline-flex h-7 items-center gap-1 rounded-full border border-border px-3 text-[11.5px] font-bold text-primary hover:bg-accent">
+          الكل <ChevronLeft className="size-3.5" />
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function StatTile({ label, value, badge, note, to, featured, danger }: { label: string; value: string; badge: string; note: string; to: string; featured?: boolean; danger?: boolean }) {
+  return (
+    <Link to={to} className={cn("group block p-5 transition-transform hover:-translate-y-0.5", featured ? "brand-tile" : "surface-card")}>
+      <div className="flex items-start justify-between">
+        <p className={cn("text-[14px] font-bold", featured ? "text-primary-foreground" : "text-foreground")}>{label}</p>
+        <span className={cn("grid size-9 place-items-center rounded-full border", featured ? "border-primary-foreground/40 bg-primary-foreground text-primary" : "border-border text-foreground group-hover:bg-muted")}>
+          <ArrowUpLeft className="size-4" />
+        </span>
       </div>
-      <Link
-        to={to}
-        className="flex items-center justify-between border-t border-border px-5 py-3 text-[12px] font-semibold text-muted-foreground transition-colors hover:bg-muted"
-      >
-        {linkText}
-        <ChevronLeft className="size-4" />
-      </Link>
-    </div>
-  );
-}
-
-function Line({ label, value, icon: Icon }: { label: string; value: string; icon: LucideIcon }) {
-  return (
-    <div className="flex items-center justify-between py-2.5">
-      <span className="inline-flex items-center gap-2 text-muted-foreground">
-        <Icon className="size-4" />
-        {label}
-      </span>
-      <span className="font-semibold text-foreground">{value}</span>
-    </div>
-  );
-}
-
-function WorkItem({
-  to,
-  icon: Icon,
-  title,
-  hint,
-  count,
-}: {
-  to: string;
-  icon: LucideIcon;
-  title: string;
-  hint: string;
-  count: number;
-}) {
-  return (
-    <Link
-      to={to}
-      className="flex items-center justify-between rounded-xl border border-border px-4 py-3 transition-colors hover:bg-muted"
-    >
-      <span className="flex items-center gap-3">
-        <span className="grid size-9 place-items-center rounded-lg border border-border bg-muted text-primary">
-          <Icon className="size-[18px]" />
-        </span>
-        <span>
-          <span className="block text-[13px] font-semibold text-foreground">{title}</span>
-          <span className="block text-[11.5px] text-muted-foreground">{hint}</span>
-        </span>
-      </span>
-      <span className="inline-flex items-center gap-2">
-        <Chip tone={count ? "warning" : "neutral"}>{count ? count : "لا يوجد"}</Chip>
-        <ChevronLeft className="size-4 text-muted-foreground" />
-      </span>
+      <p className={cn("mt-3 truncate text-[34px] font-extrabold leading-none", featured ? "text-primary-foreground" : danger ? "text-destructive" : "text-foreground")}>{value}</p>
+      <p className={cn("mt-3 flex items-center gap-1.5 text-[11.5px]", featured ? "text-primary-foreground/85" : danger ? "text-destructive" : "text-accent-2")}>
+        <span className={cn("rounded-md border px-1.5 text-[10.5px] font-bold", featured ? "border-primary-foreground/40" : "border-current/40")}>{badge}</span>
+        {note}
+      </p>
     </Link>
   );
+}
+
+function MiniWork({ to, icon: Icon, title, count }: { to: string; icon: LucideIcon; title: string; count: number | string }) {
+  return (
+    <Link to={to} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-muted">
+      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-primary"><Icon className="size-4" /></span>
+      <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold">{title}</span>
+      <span className="text-[12.5px] font-extrabold text-foreground">{count}</span>
+    </Link>
+  );
+}
+
+function TodayStat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: number }) {
+  return (
+    <div className="rounded-xl bg-primary-foreground/10 py-3">
+      <Icon className="mx-auto size-4 text-primary-foreground/80" />
+      <b className="mt-1 block text-2xl font-extrabold text-primary-foreground">{value}</b>
+      <span className="text-[10.5px] text-primary-foreground/75">{label}</span>
+    </div>
+  );
+}
+
+function Legend({ className, label }: { className: string; label: string }) {
+  return <span className="flex items-center gap-1.5"><i className={cn("size-2.5 rounded-full", className)} />{label}</span>;
+}
+
+function Empty({ text }: { text: string }) {
+  return <li className="py-8 text-center text-[12.5px] text-muted-foreground">{text}</li>;
 }

@@ -370,3 +370,7 @@
 .mithra-marker-pin > div:last-child {
   border-top-color: var(--marker-color, var(--color-primary)) !important;
 }
+
+@utility stripes {
+  background-image: repeating-linear-gradient(135deg, color-mix(in oklab, var(--color-muted-foreground) 35%, transparent) 0 2px, transparent 2px 8px);
+}
