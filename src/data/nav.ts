@@ -29,7 +29,7 @@ export const navGroups: NavGroup[] = [
   {
     icon: Home,
     items: [
-      { label: "لوحة التحكم", to: "/dashboard" },
+      { label: "CRM — لوحة التحكم", to: "/dashboard" },
       { label: "المساعد الذكي", to: "/ai" },
     ],
   },
@@ -72,7 +72,6 @@ export const navGroups: NavGroup[] = [
     label: "CRM",
     icon: Users,
     items: [
-      { label: "نظام CRM", to: "/crm", module: "crm" },
       { label: "العملاء", to: "/clients", countKey: "contacts", module: "contacts" },
     ],
   },

@@ -63,9 +63,9 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                         to={item.to}
                         onClick={onNavigate}
                         className={cn(
-                          "group flex items-center justify-between rounded-lg py-2 pe-2 ps-3 text-[13.5px] transition-colors",
+                          "group flex items-center justify-between rounded-xl py-2.5 pe-2 ps-3 text-[13.5px] transition-colors",
                           active
-                            ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
+                            ? "brand-tile font-semibold"
                             : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60",
                         )}
                       >
@@ -74,7 +74,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                             <span
                               className={cn(
                                 "size-1.5 shrink-0 rounded-full",
-                                active ? "bg-primary" : "bg-border",
+                                active ? "bg-primary-foreground" : "bg-border",
                               )}
                             />
                           ) : null}
@@ -119,8 +119,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-primary-foreground/15 bg-primary px-3 text-primary-foreground shadow-sm md:h-24 md:px-6">
+    <div className="min-h-screen bg-background md:p-3">
+      <header className="brand-tile sticky top-0 z-30 flex h-16 items-center justify-between rounded-none px-3 md:top-3 md:h-20 md:rounded-3xl md:px-6">
         <div className="relative z-10 flex items-center gap-1 md:gap-2">
           <button
             type="button"
@@ -178,8 +178,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <div className="flex">
-        <aside className="sticky top-24 hidden h-[calc(100vh-6rem)] w-[268px] shrink-0 overflow-y-auto border-s border-sidebar-border bg-sidebar lg:block">
+      <div className="flex gap-3 md:pt-3">
+        <aside className="surface-card sticky top-[6.5rem] hidden h-[calc(100vh-7.5rem)] w-[268px] shrink-0 overflow-y-auto bg-sidebar lg:block">
           <SidebarNav />
         </aside>
 
@@ -197,7 +197,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         ) : null}
 
-        <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
+        <main className="min-w-0 flex-1 px-4 py-6 md:surface-card md:px-8 md:py-8">
           <div className="mx-auto max-w-6xl space-y-6">{children}</div>
         </main>
 
