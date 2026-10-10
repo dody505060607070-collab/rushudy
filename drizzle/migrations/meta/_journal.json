@@ -351,6 +351,13 @@
       "when": 1791321470708,
       "tag": "0049_public_properties_newest_first",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1791645564990,
+      "tag": "0050_staff_assign_activities",
+      "breakpoints": true
     }
   ]
 }
