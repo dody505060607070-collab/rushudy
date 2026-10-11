@@ -5,4 +5,5 @@
 - [x] Public property order: new first, featured pinned, quick control
 - [x] Delete button for supply requests / requests
 - [x] Check notifications + automation health
-- [ ] UI redesign: rework pages that differ from designs (team-chat 3 columns, activities details panel, clients details panel, marketing layout, reservations details panel, owners cards order, tasks filters)
+- [x] UI redesign: all 29 pages reviewed against designs and reworked where different
+- [ ] Reminders: «إرسال تذكير جديد» compose panel from design (needs user approval — new feature)
