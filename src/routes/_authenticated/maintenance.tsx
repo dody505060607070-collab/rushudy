@@ -362,8 +362,25 @@ function MaintenancePage() {
           hint="سجّل بلاغًا جديدًا أو جرّب تبويبًا آخر."
         />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {visible.map((row) => {
+        <div className="grid items-start gap-4 xl:grid-cols-3">
+          {([
+            { key: "new", label: "جديد", match: ["new"], cls: "bg-primary/10 text-primary" },
+            { key: "progress", label: "قيد التنفيذ", match: ["assigned", "in_progress"], cls: "bg-accent-2/15 text-accent-2" },
+            { key: "done", label: "مكتمل", match: ["done"], cls: "bg-success/15 text-success" },
+            { key: "cancelled", label: "ملغي", match: ["cancelled"], cls: "bg-muted text-muted-foreground" },
+          ] as const).map((col) => {
+            const list = visible.filter((r) => (col.match as readonly string[]).includes(r.status));
+            if (!list.length && col.key === "cancelled") return null;
+            return (
+              <section key={col.key} className="surface-card space-y-3 p-3">
+                <header className={`flex items-center justify-between rounded-xl px-4 py-2.5 ${col.cls}`}>
+                  <h2 className="text-[15px] font-bold">{col.label}</h2>
+                  <span className="grid size-8 place-items-center rounded-full bg-card text-[13px] font-bold">{list.length}</span>
+                </header>
+                {list.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-border py-8 text-center text-[12px] text-muted-foreground">لا توجد بلاغات</p>
+                ) : null}
+          {list.map((row) => {
             const info = statuses[row.status] ?? statuses["new"]!;
             return (
               <article
@@ -496,6 +513,9 @@ function MaintenancePage() {
                   </button>
                 </div>
               </article>
+            );
+          })}
+              </section>
             );
           })}
         </div>
