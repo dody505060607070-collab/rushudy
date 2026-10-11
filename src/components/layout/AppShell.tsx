@@ -85,7 +85,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                         </span>
                         <span className="flex shrink-0 items-center gap-2">
                           {badge ? (
-                            <span className="rounded-md bg-warning/15 px-1.5 py-0.5 text-[11px] font-bold text-warning-foreground">
+                            <span className="grid min-w-7 place-items-center rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-bold text-warning-foreground">
                               {badge}
                             </span>
                           ) : null}
