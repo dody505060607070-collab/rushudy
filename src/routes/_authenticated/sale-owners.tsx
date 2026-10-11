@@ -45,8 +45,31 @@ const norm = (v: string) => v.toLowerCase().replace(/[أإآ]/g, "ا").replace(/
 const ROLE = "sale_owner";
 const empty = { full_name: "", phone: "", whatsapp: "", national_id: "", notes: "", email: "", address: "" };
 
+function useCountdown(target: string | null) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  if (!target) return null;
+  const diff = new Date(target).getTime() - Date.now();
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, passed: true };
+  const minutes = Math.floor(diff / 60_000) % 60;
+  const hours = Math.floor(diff / 3_600_000) % 24;
+  const days = Math.floor(diff / 86_400_000);
+  return { days, hours, minutes, passed: false };
+}
+
+function fmtDateTime(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("ar-SA", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", hour12: true });
+}
+
 function SaleOwnersPage() {
   const qc = useQueryClient();
+  const fetchFollowup = useServerFn(getOwnerFollowupStatus);
+  const saveFollowup = useServerFn(saveOwnerFollowupConfig);
+  const sendFollowupNow = useServerFn(sendOwnerFollowupNow);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Owner | null>(null);
   const [form, setForm] = useState(empty);
@@ -114,6 +137,53 @@ function SaleOwnersPage() {
     qc.invalidateQueries({ queryKey: ["sale-owners"] });
     qc.invalidateQueries({ queryKey: ["sale-owner-props"] });
   };
+
+  const followup = useQuery({
+    queryKey: ["owner-followup-status"],
+    queryFn: () => fetchFollowup(),
+  });
+  const [templateDraft, setTemplateDraft] = useState<string | null>(null);
+  const template = templateDraft ?? followup.data?.template ?? "";
+  const countdown = useCountdown(followup.data?.enabled ? followup.data?.nextRun ?? null : null);
+
+  const toggleEnabled = useMutation({
+    mutationFn: (enabled: boolean) => saveFollowup({ data: { enabled } }),
+    onSuccess: () => {
+      toast.success("تم تحديث حالة التفعيل");
+      qc.invalidateQueries({ queryKey: ["owner-followup-status"] });
+    },
+    onError: (e) => toast.error(describeDbError(e)),
+  });
+
+  const saveTemplate = useMutation({
+    mutationFn: (tpl: string) => saveFollowup({ data: { template: tpl } }),
+    onSuccess: () => {
+      toast.success("تم حفظ القالب");
+      setTemplateDraft(null);
+      qc.invalidateQueries({ queryKey: ["owner-followup-status"] });
+    },
+    onError: (e) => toast.error(describeDbError(e)),
+  });
+
+  const sendAll = useMutation({
+    mutationFn: () => sendFollowupNow({ data: {} }),
+    onSuccess: (res) => {
+      const sent = res?.sent ?? 0;
+      const failed = res?.failed ?? 0;
+      toast.success(`تم الإرسال: ${sent} ناجحة${failed ? ` • ${failed} فاشلة` : ""}`);
+      qc.invalidateQueries({ queryKey: ["owner-followup-status"] });
+    },
+    onError: (e) => toast.error(describeDbError(e)),
+  });
+
+  const sendOne = useMutation({
+    mutationFn: (contactId: string) => sendFollowupNow({ data: { contactId } }),
+    onSuccess: () => {
+      toast.success("تم إرسال الرسالة");
+      qc.invalidateQueries({ queryKey: ["owner-followup-status"] });
+    },
+    onError: (e) => toast.error(describeDbError(e)),
+  });
 
   const save = useMutation({
     mutationFn: async () => {
