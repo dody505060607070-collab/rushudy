@@ -150,6 +150,8 @@ function ReservationsPage() {
   });
 
   const [picker, setPicker] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // معرض الإعلانات: نفس شكل الموقع العام لاختيار العقار المراد حجزه.
   const gallery = useQuery({
@@ -348,6 +350,8 @@ function ReservationsPage() {
 
   const rows = query.data ?? [];
   const active = rows.filter((row) => ["hold", "active"].includes(row.status));
+  const shownRows = statusFilter === "all" ? rows : rows.filter((r) => r.status === statusFilter);
+  const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   return (
     <>
@@ -378,14 +382,35 @@ function ReservationsPage() {
         ) : null}
       </div>
 
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        {([
+          ["all", "الكل", rows.length],
+          ...(["hold", "active", "converted", "expired", "cancelled"] as const).map(
+            (k) => [k, reservationStatusLabels[k] ?? k, rows.filter((r) => r.status === k).length] as const,
+          ),
+        ] as const).map(([key, label, count]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setStatusFilter(key)}
+            className={`flex items-center justify-between rounded-2xl border bg-card px-4 py-3 text-[13.5px] font-bold transition ${statusFilter === key ? "border-primary shadow-sm ring-1 ring-primary/30" : "border-border hover:bg-muted/50"}`}
+          >
+            <span>{label}</span>
+            <span className="rounded-full bg-primary/10 px-3 py-0.5 text-primary">{count}</span>
+          </button>
+        ))}
+      </div>
+
       {query.isLoading ? (
         <div className="surface-card grid place-items-center gap-2 px-6 py-16 text-center">
           <Loader2 className="size-6 animate-spin text-primary" />
           <p className="text-[13px] text-muted-foreground">جاري تحميل الحجوزات…</p>
         </div>
       ) : (
+        <div className={`grid items-start gap-4 ${selected ? "xl:grid-cols-[minmax(0,1fr)_340px]" : ""}`}>
         <DataTable<Row>
-          rows={rows}
+          rows={shownRows}
+          onRowClick={(row) => setSelectedId(row.id)}
           rowClassName={(row) => toneRowClass[reservationTone(row.status)]}
           exportFileName="قائمة الحجوزات"
           searchPlaceholder="بحث بالعقار أو الموظف أو العميل"
