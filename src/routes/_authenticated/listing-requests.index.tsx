@@ -43,7 +43,8 @@ export const Route = createFileRoute("/_authenticated/listing-requests/")({
   component: ListingRequestsPage,
 });
 
-function ListingRequestsPage() {
+  const [tab, setTab] = useState("all");
+  const [view, setView] = useState<"board" | "table">("board");
   const [tab, setTab] = useState("all");
   const navigate = useNavigate();
   const staffName = useStaffName();
