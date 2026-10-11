@@ -52,7 +52,11 @@ type Row = {
   created_by: string | null;
   created_at: string;
   creator: { full_name: string } | null;
-  properties: { name: string; code: string | null } | null;
+  properties: {
+    name: string;
+    code: string | null;
+    property_images: { url: string; display_url: string | null; is_cover: boolean; sort_order: number }[] | null;
+  } | null;
   employee: { full_name: string } | null;
   contact: { full_name: string } | null;
 };
@@ -100,6 +104,14 @@ function errorMessage(error: unknown, fallback: string) {
   return message;
 }
 
+function coverImage(row: Row): string | null {
+  const images = row.properties?.property_images ?? [];
+  const sorted = [...images].sort(
+    (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order,
+  );
+  return sorted[0] ? (sorted[0].display_url ?? sorted[0].url) : null;
+}
+
 function ReservationsPage() {
   const { newReservation, propertyId } = Route.useSearch();
   const { userId, roles, isSuperAdmin, loading: authLoading } = useCurrentUser();
@@ -125,7 +137,7 @@ function ReservationsPage() {
       const { data, error } = await supabase
         .from("reservations")
         .select(
-          "id,status,starts_at,ends_at,extended_count,notes,property_id,employee_id,contact_id,created_by,created_at,properties:property_id(name,code),employee:employee_id(full_name),contact:contact_id(full_name)",
+          "id,status,starts_at,ends_at,extended_count,notes,property_id,employee_id,contact_id,created_by,created_at,properties:property_id(name,code,property_images(url,display_url,is_cover,sort_order)),employee:employee_id(full_name),contact:contact_id(full_name)",
         )
         .order("created_at", { ascending: false })
         .limit(300);

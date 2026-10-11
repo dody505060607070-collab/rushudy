@@ -1270,23 +1270,28 @@ function Panel({
   subtitle,
   children,
   className = "",
+  actions,
 }: {
   icon: typeof Eye;
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   className?: string;
+  actions?: React.ReactNode;
 }) {
   return (
     <section className={`surface-card p-5 ${className}`}>
-      <div className="mb-4 flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="size-5" />
-        </span>
-        <div>
-          <h2 className="text-base font-bold text-foreground">{title}</h2>
-          {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
+            <Icon className="size-5" />
+          </span>
+          <div>
+            <h2 className="text-base font-bold text-foreground">{title}</h2>
+            {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
+          </div>
         </div>
+        {actions ?? null}
       </div>
       {children}
     </section>
