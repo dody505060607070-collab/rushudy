@@ -224,7 +224,7 @@ function RenewalsPage() {
                             params={{ contractId: row.id }}
                             className={`inline-flex h-9 items-center justify-center rounded-lg text-[12.5px] font-semibold ${btn} ${reminderId ? "" : "col-span-2"}`}
                           >
-                            بدء المتابعة — فتح العقد
+                            بدء المتابعة
                           </Link>
                           {reminderId ? (
                             <Link
