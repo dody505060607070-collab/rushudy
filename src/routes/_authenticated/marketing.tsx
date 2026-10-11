@@ -622,7 +622,40 @@ function MarketingPage() {
       {tab === "overview" ? (
         <div className="space-y-6">
           <div className="grid gap-4 xl:grid-cols-3">
-            <Panel className="xl:col-span-2" icon={TrendingUp} title="حركة الزيارات والعملاء والصفقات" subtitle="اتجاه الأداء التسويقي خلال الفترة المختارة.">
+            <Panel icon={Target} title="مراحل التحويل البيعي" subtitle="من الزيارة حتى إغلاق الصفقة.">
+              <div className="flex flex-col items-center gap-1 py-2">
+                {funnel.map((stage, index) => {
+                  const base = (funnel[0]?.value ?? 1) || 1;
+                  const topWidth = Math.max(16, (stage.value / base) * 100);
+                  const nextValue = funnel[index + 1]?.value ?? stage.value * 0.7;
+                  const bottomWidth = Math.max(12, (nextValue / base) * 100);
+                  const tone = funnel.length > 1 ? index / (funnel.length - 1) : 0;
+                  const pct =
+                    index > 0 && (funnel[index - 1]?.value ?? 0)
+                      ? `${((stage.value / (funnel[index - 1]?.value ?? 0)) * 100).toFixed(0)}%`
+                      : "100%";
+                  return (
+                    <div key={stage.label} className="flex w-full items-center justify-between gap-4">
+                      <div
+                        className="h-11 shrink-0"
+                        style={{
+                          width: `${topWidth}%`,
+                          maxWidth: "100%",
+                          clipPath: `polygon(0 0, 100% 0, ${50 + bottomWidth / 2}% 100%, ${50 - bottomWidth / 2}% 100%)`,
+                          backgroundColor: `color-mix(in srgb, var(--color-primary), var(--color-gold) ${(tone * 100).toFixed(0)}%)`,
+                        }}
+                      />
+                      <div className="shrink-0 text-left">
+                        <p className="text-sm font-extrabold tabular-nums text-foreground">{stage.value.toLocaleString("ar-EG")}</p>
+                        <p className="text-[11px] text-muted-foreground">{stage.label} · {pct}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Panel>
+
+            <Panel className="xl:col-span-2" icon={TrendingUp} title="الزيارات والعملاء المحتملون" subtitle="اتجاه الأداء التسويقي خلال الفترة المختارة.">
               <div className="h-72" dir="ltr">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={trend}>
@@ -643,35 +676,20 @@ function MarketingPage() {
                 </ResponsiveContainer>
               </div>
             </Panel>
-
-            <Panel icon={Target} title="قمع التسويق" subtitle="من الزيارة حتى إغلاق الصفقة.">
-              <div className="space-y-3">
-                {funnel.map((stage, index) => {
-                  const base = (funnel[0]?.value ?? 1) || 1;
-                  const width = Math.max(4, (stage.value / base) * 100);
-                  return (
-                    <div key={stage.label}>
-                      <div className="flex items-center justify-between text-xs font-semibold">
-                        <span className="text-foreground">{stage.label}</span>
-                        <span className="text-muted-foreground">
-                          {stage.value.toLocaleString("ar-EG")}
-                          {index > 0 && (funnel[index - 1]?.value ?? 0)
-                            ? ` · ${((stage.value / (funnel[index - 1]?.value ?? 0)) * 100).toFixed(0)}%`
-                            : ""}
-                        </span>
-                      </div>
-                      <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Panel>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-3">
-            <Panel className="xl:col-span-2" icon={Crown} title="ترتيب المسوقين" subtitle="مؤشر أداء مركّب من الزيارات والعملاء والصفقات.">
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Panel
+              icon={Crown}
+              title="أفضل المسوقين أداءً"
+              subtitle="مؤشر أداء مركّب من الزيارات والعملاء والصفقات."
+              actions={
+                <button type="button" onClick={() => setTab("marketers")} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-[12px] font-bold text-foreground hover:bg-muted">
+                  <Eye className="size-3.5" />
+                  عرض الكل
+                </button>
+              }
+            >
               {leaderboard.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">لا توجد بيانات كافية بعد.</p>
               ) : (
@@ -680,20 +698,19 @@ function MarketingPage() {
                     <thead className="text-[11.5px] text-muted-foreground">
                       <tr>
                         <th className="px-2 py-2 font-semibold">#</th>
-                        <th className="px-2 py-2 font-semibold">المسوق</th>
+                        <th className="px-2 py-2 font-semibold">اسم المسوق</th>
                         <th className="px-2 py-2 font-semibold">زيارات</th>
-                        <th className="px-2 py-2 font-semibold">عملاء</th>
-                        <th className="px-2 py-2 font-semibold">صفقات</th>
-                        <th className="px-2 py-2 font-semibold">تحويل</th>
-                        <th className="px-2 py-2 font-semibold">إغلاق</th>
-                        <th className="px-2 py-2 font-semibold">عمولات</th>
-                        <th className="px-2 py-2 font-semibold">النقاط</th>
+                        <th className="px-2 py-2 font-semibold">العملاء المحتملون</th>
+                        <th className="px-2 py-2 font-semibold">الصفقات المغلقة</th>
+                        <th className="px-2 py-2 font-semibold">قيمة الصفقات</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {leaderboard.map((row, index) => (
+                      {leaderboard.slice(0, 5).map((row, index) => (
                         <tr key={row.marketer.id} className="border-t border-border/70">
-                          <td className="px-2 py-2 font-bold text-muted-foreground">{index + 1}</td>
+                          <td className="px-2 py-2">
+                            <Chip tone={index === 0 ? "gold" : "neutral"}>{index + 1}</Chip>
+                          </td>
                           <td className="px-2 py-2">
                             <Link
                               to="/marketing/$marketerId"
@@ -706,12 +723,7 @@ function MarketingPage() {
                           <td className="px-2 py-2 tabular-nums">{row.visits}</td>
                           <td className="px-2 py-2 tabular-nums">{row.leads}</td>
                           <td className="px-2 py-2 tabular-nums font-bold text-success">{row.won}</td>
-                          <td className="px-2 py-2 tabular-nums">{row.conversion.toFixed(1)}%</td>
-                          <td className="px-2 py-2 tabular-nums">{row.closeRate.toFixed(0)}%</td>
-                          <td className="px-2 py-2 tabular-nums">{money(row.earned)}</td>
-                          <td className="px-2 py-2">
-                            <Chip tone={index === 0 ? "gold" : "neutral"}>{row.score}</Chip>
-                          </td>
+                          <td className="px-2 py-2 tabular-nums">{money(row.dealValue)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -720,25 +732,83 @@ function MarketingPage() {
               )}
             </Panel>
 
-            <Panel icon={Users} title="توزيع حالات العملاء" subtitle="أين يقف العملاء المنسوبون الآن.">
-              {leadMix.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">لا يوجد عملاء منسوبون بعد.</p>
+            <Panel
+              icon={Banknote}
+              title="العمولات المستحقة"
+              subtitle="العمولات التي تنتظر الاعتماد أو الصرف."
+              actions={
+                <button type="button" onClick={() => setTab("commissions")} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-[12px] font-bold text-foreground hover:bg-muted">
+                  <Eye className="size-3.5" />
+                  عرض الكل
+                </button>
+              }
+            >
+              {leaderboard.filter((row) => row.earned - row.paid > 0).length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">لا توجد عمولات مستحقة حاليًا.</p>
               ) : (
-                <div className="h-64" dir="ltr">
-                  <ResponsiveContainer>
-                    <PieChart>
-                      <Pie data={leadMix} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={2}>
-                        {leadMix.map((entry, index) => (
-                          <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right text-sm">
+                    <thead className="text-[11.5px] text-muted-foreground">
+                      <tr>
+                        <th className="px-2 py-2 font-semibold">اسم المسوق</th>
+                        <th className="px-2 py-2 font-semibold">الصفقات</th>
+                        <th className="px-2 py-2 font-semibold">قيمة المبيعات</th>
+                        <th className="px-2 py-2 font-semibold">العمولة المستحقة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboard
+                        .filter((row) => row.earned - row.paid > 0)
+                        .sort((a, b) => b.earned - b.paid - (a.earned - a.paid))
+                        .slice(0, 5)
+                        .map((row) => (
+                          <tr key={row.marketer.id} className="border-t border-border/70">
+                            <td className="px-2 py-2 font-semibold text-foreground">
+                              <Link to="/marketing/$marketerId" params={{ marketerId: row.marketer.id }} className="font-bold text-primary hover:underline">
+                                {row.marketer.full_name}
+                              </Link>
+                            </td>
+                            <td className="px-2 py-2 tabular-nums">{row.won}</td>
+                            <td className="px-2 py-2 tabular-nums">{money(row.dealValue)}</td>
+                            <td className="px-2 py-2 tabular-nums font-bold text-warning">{money(row.earned - row.paid)}</td>
+                          </tr>
                         ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                    </tbody>
+                  </table>
                 </div>
               )}
             </Panel>
           </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="زيارات روابط المسوقين" value={metrics.visits} icon={Activity} hint={`${metrics.uniqueVisitors.toLocaleString("ar-EG")} زائر مختلف`} />
+            <StatCard label="نسبة التحويل إلى عميل" value={metrics.conversion} suffix="%" icon={Target} hint="العملاء ÷ الزيارات" />
+            <StatCard label="خط الأنابيب المفتوح" value={metrics.pipelineValue} suffix="ر.س" icon={Flame} hint={`${metrics.open} عميل قيد المتابعة`} />
+            <StatCard label="مشاركات عقارات للمسوقين" value={metrics.shares} icon={Link2} hint="إرسال يدوي فقط" />
+            <StatCard label="عمولات متوقعة" value={metrics.expected} suffix="ر.س" icon={BarChart3} />
+            <StatCard label="عمولات مستحقة/معتمدة" value={metrics.due} suffix="ر.س" icon={Banknote} />
+            <StatCard label="عمولات مدفوعة" value={metrics.paid} suffix="ر.س" icon={BadgeCheck} />
+            <StatCard label="نسبة إغلاق الصفقات" value={metrics.closeRate} suffix="%" icon={TrendingUp} hint={`${metrics.won} صفقة من ${metrics.leads} عميل`} />
+          </div>
+
+          <Panel icon={Users} title="توزيع حالات العملاء" subtitle="أين يقف العملاء المنسوبون الآن.">
+            {leadMix.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">لا يوجد عملاء منسوبون بعد.</p>
+            ) : (
+              <div className="h-64" dir="ltr">
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie data={leadMix} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={2}>
+                      {leadMix.map((entry, index) => (
+                        <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </Panel>
         </div>
       ) : null}
 

@@ -14,7 +14,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/kit/Chip";
@@ -693,7 +693,7 @@ function DetailRow({
 }: {
   icon: typeof Hash;
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="space-y-1.5">

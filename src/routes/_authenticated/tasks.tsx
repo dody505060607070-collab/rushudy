@@ -87,6 +87,8 @@ function TasksPage() {
   const navigate = useNavigate();
   const [type, setType] = useState("all");
   const [status, setStatus] = useState("all");
+  const [propertyFilter, setPropertyFilter] = useState("all");
+  const [employeeFilter, setEmployeeFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"board" | "table">("board");
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -112,6 +114,19 @@ function TasksPage() {
     },
   });
 
+  const employeesPicker = useQuery({
+    queryKey: ["profiles", "picker"],
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .order("full_name")
+        .limit(500);
+      if (error) throw error;
+      return rows ?? [];
+    },
+  });
+
   const rows = data ?? [];
 
   const assigneeNames = useQuery({
@@ -129,13 +144,17 @@ function TasksPage() {
         : { data: [] as { id: string; full_name: string | null }[] };
       const nameOf = new Map((profs ?? []).map((p) => [p.id, p.full_name ?? "موظف"]));
       const map: Record<string, string[]> = {};
-      for (const l of links ?? []) (map[l.task_id] ??= []).push(nameOf.get(l.user_id) ?? "موظف");
+      const idsByTask: Record<string, string[]> = {};
+      for (const l of links ?? []) {
+        (map[l.task_id] ??= []).push(nameOf.get(l.user_id) ?? "موظف");
+        (idsByTask[l.task_id] ??= []).push(l.user_id);
+      }
       const by: Record<string, string> = {};
       for (const r of rows) {
         const a = (r as { assigned_by?: string | null }).assigned_by;
         if (a) by[r.id] = nameOf.get(a) ?? "موظف";
       }
-      return { map, by };
+      return { map, by, idsByTask };
     },
   });
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
@@ -217,17 +236,20 @@ function TasksPage() {
     };
   }, [rows, byType]);
 
-  const filtered = byType.filter((r) => {
-    if (status === "all") return true;
-    if (status === "in_progress") return r.status === "in_progress";
-    if (status === "submitted") return r.status === "submitted";
-    if (status === "done") return r.status === "approved" || r.status === "done";
-    return (
-      r.due_date != null &&
-      new Date(r.due_date) < new Date() &&
-      !["approved", "done", "cancelled"].includes(r.status)
-    );
-  });
+  const filtered = byType
+    .filter((r) => {
+      if (status === "all") return true;
+      if (status === "in_progress") return r.status === "in_progress";
+      if (status === "submitted") return r.status === "submitted";
+      if (status === "done") return r.status === "approved" || r.status === "done";
+      return (
+        r.due_date != null &&
+        new Date(r.due_date) < new Date() &&
+        !["approved", "done", "cancelled"].includes(r.status)
+      );
+    })
+    .filter((r) => propertyFilter === "all" || r.property_id === propertyFilter)
+    .filter((r) => employeeFilter === "all" || (assigneeNames.data?.idsByTask[r.id] ?? []).includes(employeeFilter));
 
   return (
     <>
@@ -289,12 +311,38 @@ function TasksPage() {
         ]}
       />
 
-      <div className="flex justify-end gap-1">
-        {([["board", "لوحة", LayoutGrid], ["table", "جدول", List]] as const).map(([k, l, I]) => (
-          <button key={k} type="button" onClick={() => setView(k)} className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-semibold ${view === k ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}>
-            <I className="size-4" />{l}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={propertyFilter}
+            onChange={(e) => setPropertyFilter(e.target.value)}
+            aria-label="تصفية حسب العقار"
+            className="h-10 rounded-lg border border-border bg-card px-3 text-[12.5px] font-semibold text-foreground"
+          >
+            <option value="all">جميع العقارات</option>
+            {(properties.data ?? []).map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <select
+            value={employeeFilter}
+            onChange={(e) => setEmployeeFilter(e.target.value)}
+            aria-label="تصفية حسب المسؤول"
+            className="h-10 rounded-lg border border-border bg-card px-3 text-[12.5px] font-semibold text-foreground"
+          >
+            <option value="all">جميع المسؤولين</option>
+            {(employeesPicker.data ?? []).map((p) => (
+              <option key={p.id} value={p.id}>{p.full_name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex gap-1">
+          {([["board", "لوحة", LayoutGrid], ["table", "جدول", List]] as const).map(([k, l, I]) => (
+            <button key={k} type="button" onClick={() => setView(k)} className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-semibold ${view === k ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}>
+              <I className="size-4" />{l}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (

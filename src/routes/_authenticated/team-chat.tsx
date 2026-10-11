@@ -362,7 +362,7 @@ export function TeamChatPage() {
               <div className="flex items-start gap-2 border-b border-border bg-warning/10 px-4 py-2 text-[12.5px]">
                 <Pin className="mt-0.5 size-3.5 shrink-0 text-warning" />
                 <p className="truncate">
-                  <span className="font-bold">{pinned[pinned.length - 1].sender?.full_name}</span>: {pinned[pinned.length - 1].body}
+                  <span className="font-bold">{pinned.at(-1)?.sender?.full_name}</span>: {pinned.at(-1)?.body}
                 </p>
               </div>
             ) : null}
