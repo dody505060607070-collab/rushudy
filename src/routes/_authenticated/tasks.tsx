@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Camera, MapPin, CircleCheck, ClipboardList, Loader2, Plus, Trash2 } from "lucide-react";
+import { Camera, MapPin, CircleCheck, ClipboardList, LayoutGrid, List, Loader2, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -88,6 +88,7 @@ function TasksPage() {
   const [type, setType] = useState("all");
   const [status, setStatus] = useState("all");
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"board" | "table">("board");
   const [form, setForm] = useState<FormState>(emptyForm);
   const queryClient = useQueryClient();
 
@@ -288,10 +289,58 @@ function TasksPage() {
         ]}
       />
 
+      <div className="flex justify-end gap-1">
+        {([["board", "لوحة", LayoutGrid], ["table", "جدول", List]] as const).map(([k, l, I]) => (
+          <button key={k} type="button" onClick={() => setView(k)} className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-semibold ${view === k ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}>
+            <I className="size-4" />{l}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <div className="surface-card grid place-items-center gap-2 px-6 py-16 text-center">
           <Loader2 className="size-6 animate-spin text-primary" />
           <p className="text-[13px] text-muted-foreground">جاري تحميل المهام…</p>
+        </div>
+      ) : view === "board" ? (
+        <div className="grid gap-4 lg:grid-cols-3">
+          {([
+            ["قيد التنفيذ", "المهام التي يتم العمل عليها حاليًا", ["new", "in_progress", "rejected"], "text-accent-2 bg-accent-2/10"],
+            ["تنتظر الموافقة", "المهام بانتظار مراجعة واعتماد الإدارة", ["submitted"], "text-warning bg-warning/10"],
+            ["مكتملة", "المهام المنجزة والمغلقة", ["approved", "done"], "text-success bg-success/10"],
+          ] as const).map(([title, sub, sts, tone]) => {
+            const list = filtered.filter((r) => (sts as readonly string[]).includes(r.status));
+            return (
+              <section key={title} className="surface-card space-y-3 bg-muted/30 p-3">
+                <header className="flex items-start justify-between gap-2 px-1">
+                  <div>
+                    <h3 className={`text-[15px] font-bold ${tone.split(" ")[0]}`}>{title}</h3>
+                    <p className="text-[11.5px] text-muted-foreground">{sub}</p>
+                  </div>
+                  <span className={`grid size-8 place-items-center rounded-full text-[13px] font-bold ${tone}`}>{list.length}</span>
+                </header>
+                {list.length === 0 ? <p className="py-8 text-center text-[12px] text-muted-foreground">لا توجد مهام</p> : null}
+                {list.map((r) => (
+                  <article key={r.id} onClick={() => navigate({ to: "/task-form", search: { id: r.id } })} className="cursor-pointer space-y-2 rounded-xl border border-border bg-card p-3 transition-shadow hover:shadow-md">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-[14px] font-bold">{r.title}</h4>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${toneBadgeClass[rowTone(r.status, r.due_date)]}`}>{taskStatusLabels[r.status] ?? r.status}</span>
+                    </div>
+                    {r.property?.name ? <p className="text-[12px] text-muted-foreground">🏠 {r.property.name}</p> : null}
+                    {r.details ? <p className="line-clamp-2 text-[12px] text-muted-foreground">{r.details}</p> : null}
+                    <div className="flex items-center justify-between gap-2 border-t border-border pt-2 text-[11.5px]">
+                      <span className="flex items-center gap-1.5">
+                        <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">{(assigneeNames.data?.map[r.id]?.[0] ?? "—").slice(0, 1)}</span>
+                        {assigneeNames.data?.map[r.id]?.join("، ") || "غير مسندة"}
+                      </span>
+                      <Chip tone={r.task_type === "photography" ? "gold" : "neutral"}>{r.task_type === "photography" ? "تصوير" : "عادية"}</Chip>
+                    </div>
+                    {r.due_date ? <p className="text-[11.5px] font-semibold text-warning">📅 {formatDate(r.due_date)}{r.due_time ? ` · ${r.due_time}` : ""}</p> : null}
+                  </article>
+                ))}
+              </section>
+            );
+          })}
         </div>
       ) : (
         <div className="space-y-3">
