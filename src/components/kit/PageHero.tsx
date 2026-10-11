@@ -36,7 +36,7 @@ export function PageHero({
       {stats.length ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {stats.map((stat, i) => {
-            const tone = tones[i % tones.length];
+            const tone = tones[i % tones.length] ?? tones[0]!;
             const StatIcon = stat.icon ?? (i === 0 ? Icon : tone.fallback);
             return (
               <div
