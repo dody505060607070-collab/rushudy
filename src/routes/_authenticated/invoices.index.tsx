@@ -46,6 +46,8 @@ function InvoicesPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [payFor, setPayFor] = useState<Row | null>(null);
+  const [statusTab, setStatusTab] = useState("all");
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [payment, setPayment] = useState({ amount: "", paid_at: new Date().toISOString().slice(0, 10), method: "bank_transfer", reference: "" });
   const list = useQuery({
     queryKey: ["invoices", "full-list"],
@@ -75,6 +77,8 @@ function InvoicesPage() {
     outstanding: rows.filter((row) => !["paid", "cancelled"].includes(row.status)).reduce((sum, row) => sum + row.remaining, 0),
   }), [rows]);
 
+  const shown = statusTab === "all" ? rows : rows.filter((r) => (statusTab === "unpaid" ? ["unpaid", "overdue"].includes(r.status) : r.status === statusTab));
+  const preview = rows.find((r) => r.id === previewId) ?? shown[0] ?? null;
   const openPayment = (row: Row) => {
     setPayment({ amount: String(row.remaining), paid_at: new Date().toISOString().slice(0, 10), method: "bank_transfer", reference: "" });
     setPayFor(row);
@@ -112,7 +116,7 @@ function InvoicesPage() {
       <nav className="text-[12.5px] text-muted-foreground">الفواتير &nbsp; / &nbsp; القائمة</nav>
     </div>
     {list.isLoading ? <div className="surface-card grid place-items-center py-20"><Loader2 className="size-6 animate-spin text-primary" /></div> :
-      <div className="space-y-3"><StatusLegend /><DataTable<Row> rows={rows} rowClassName={(r) => toneRowClass[rowTone(r.status, r.due_date)]} onRowClick={(r) => navigate({ to: "/invoices/$invoiceId", params: { invoiceId: r.id } })} showColumnsButton selectable dragLabel="فاتورة" exportFileName="قائمة الفواتير" searchPlaceholder="بحث بالاسم (مثل عبدالله) أو رقم الفاتورة" emptyState={<EmptyState text="لا توجد فواتير" hint="أنشئ فاتورة جديدة لتظهر هنا مع حالة السداد." />} columns={[
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]"><div className="min-w-0 space-y-3"><div className="flex flex-wrap items-center gap-2">{([["all","الكل"],["unpaid","غير مدفوعة"],["partial","مدفوعة جزئيًا"],["paid","مدفوعة"]] as const).map(([k,l]) => <button key={k} type="button" onClick={() => setStatusTab(k)} className={`h-9 rounded-full border px-4 text-[12.5px] font-semibold ${statusTab === k ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted"}`}>{l}</button>)}</div><StatusLegend /><DataTable<Row> rows={shown} rowClassName={(r) => toneRowClass[rowTone(r.status, r.due_date)]} onRowClick={(r) => navigate({ to: "/invoices/$invoiceId", params: { invoiceId: r.id } })} showColumnsButton selectable dragLabel="فاتورة" exportFileName="قائمة الفواتير" searchPlaceholder="بحث بالاسم (مثل عبدالله) أو رقم الفاتورة" emptyState={<EmptyState text="لا توجد فواتير" hint="أنشئ فاتورة جديدة لتظهر هنا مع حالة السداد." />} columns={[
         { header: "رقم الفاتورة", sortable: true, value: (r) => r.invoice_number, cell: (r) => <Link to="/invoices/$invoiceId" params={{ invoiceId: r.id }} dir="ltr" className="font-bold text-primary hover:underline">{r.invoice_number}</Link> },
         { header: "المالك", value: (r) => r.contact?.full_name, cell: (r) => r.contact?.full_name ?? "—" },
         { header: "التاريخ", sortable: true, value: (r) => r.issue_date, cell: (r) => formatDate(r.issue_date) },
@@ -123,8 +127,21 @@ function InvoicesPage() {
         { header: "الإجمالي", sortable: true, value: (r) => r.total, cell: (r) => <strong>{formatCurrency(r.total)}</strong> },
         { header: "المدفوع", sortable: true, value: (r) => r.paid, cell: (r) => <span className="font-semibold text-emerald-600">{formatCurrency(r.paid)}</span> },
         { header: "المتبقي", sortable: true, value: (r) => r.remaining, cell: (r) => r.remaining > 0 ? <span className="font-bold text-destructive">{formatCurrency(r.remaining)}</span> : <span className="font-semibold text-muted-foreground">مسدّدة</span> },
-        { header: "إجراءات", cell: (r) => <div className="flex items-center gap-1">{r.remaining > 0 ? <button type="button" onClick={(event) => { event.stopPropagation(); openPayment(r); }} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary" aria-label="تسجيل دفعة" title="تسجيل المدفوع والمتبقي"><Banknote className="size-4" /></button> : null}<Link to="/invoices/$invoiceId" params={{ invoiceId: r.id }} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary" aria-label="عرض الفاتورة" title="عرض وتسجيل دفعة"><Eye className="size-4" /></Link><Link to="/invoice-form" search={{ id: r.id, ownerId: "" }} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary" aria-label="تعديل الفاتورة" title="تعديل"><Pencil className="size-4" /></Link></div> },
-      ]} /></div>}
+        { header: "إجراءات", cell: (r) => <div className="flex items-center gap-1">{r.remaining > 0 ? <button type="button" onClick={(event) => { event.stopPropagation(); openPayment(r); }} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary" aria-label="تسجيل دفعة" title="تسجيل المدفوع والمتبقي"><Banknote className="size-4" /></button> : null}<button type="button" onClick={(event) => { event.stopPropagation(); setPreviewId(r.id); }} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary" aria-label="معاينة الفاتورة" title="معاينة"><ReceiptText className="size-4" /></button><Link to="/invoices/$invoiceId" params={{ invoiceId: r.id }} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary" aria-label="عرض الفاتورة" title="عرض وتسجيل دفعة"><Eye className="size-4" /></Link><Link to="/invoice-form" search={{ id: r.id, ownerId: "" }} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary" aria-label="تعديل الفاتورة" title="تعديل"><Pencil className="size-4" /></Link></div> },
+      ]} /></div>
+      {preview ? <aside className="surface-card sticky top-4 space-y-4 p-4">
+        <h3 className="flex items-center gap-2 text-[15px] font-bold"><Eye className="size-4 text-primary" />معاينة الفاتورة</h3>
+        <div className="space-y-3 rounded-xl border border-dashed border-border bg-card p-4">
+          <div className="flex items-start justify-between gap-2"><div><p className="text-[15px] font-bold">فاتورة</p><p className="text-[12px] text-muted-foreground">رقم الفاتورة: <span dir="ltr">{preview.invoice_number}</span></p><p className="text-[12px] text-muted-foreground">تاريخ الإصدار: {formatDate(preview.issue_date)}</p></div><Chip tone={rowTone(preview.status, preview.due_date)}>{invoiceStatusLabels[preview.status] ?? preview.status}</Chip></div>
+          <div className="grid grid-cols-2 gap-2 border-y border-border py-3 text-[12.5px]"><div><p className="font-bold text-primary">إلى</p><p>{preview.contact?.full_name ?? "—"}</p></div><div><p className="font-bold text-primary">العقد</p><p dir="ltr" className="text-end">{preview.contract?.contract_number ?? "—"}</p></div></div>
+          {([["المجموع قبل الضريبة", preview.subtotal], ["الضريبة", preview.vat_amount], ["المدفوع", preview.paid], ["المتبقي", preview.remaining]] as const).map(([k, v]) => <div key={k} className="flex justify-between text-[12.5px]"><span className="text-muted-foreground">{k}</span><b>{formatCurrency(v)}</b></div>)}
+          <div className="flex items-center justify-between rounded-lg bg-warning/10 px-3 py-2"><b className="text-primary">الإجمالي</b><b className="text-[16px]">{formatCurrency(preview.total)}</b></div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {preview.remaining > 0 ? <button type="button" onClick={() => openPayment(preview)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary text-[13px] font-semibold text-primary-foreground"><Banknote className="size-4" />تسجيل دفعة</button> : <span className="grid h-10 place-items-center rounded-xl bg-success/10 text-[13px] font-semibold text-success">مسدّدة</span>}
+          <Link to="/invoices/$invoiceId" params={{ invoiceId: preview.id }} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary text-[13px] font-semibold text-primary"><Eye className="size-4" />عرض الفاتورة</Link>
+        </div>
+      </aside> : null}</div>}
     <Modal open={Boolean(payFor)} onClose={() => setPayFor(null)} title={payFor ? `تسجيل دفعة — فاتورة ${payFor.invoice_number}` : "تسجيل دفعة"} subtitle={payFor ? `الإجمالي ${formatCurrency(payFor.total)} · المدفوع ${formatCurrency(payFor.paid)} · المتبقي ${formatCurrency(payFor.remaining)}` : ""} footer={<><PrimaryButton onClick={() => recordPayment.mutate()} disabled={recordPayment.isPending}>{recordPayment.isPending ? <Loader2 className="size-4 animate-spin" /> : null}حفظ الدفعة</PrimaryButton><GhostButton onClick={() => setPayFor(null)}>إلغاء</GhostButton></>}>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="المبلغ المدفوع الآن"><input className={inputClass} dir="ltr" inputMode="decimal" value={payment.amount} onChange={(event) => setPayment({ ...payment, amount: event.target.value })} /></Field>
