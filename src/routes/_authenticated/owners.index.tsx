@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Eye, Loader2, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { ArrowLeftRight, Eye, GripVertical, Loader2, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -82,6 +82,9 @@ function OwnersPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<{ rows: Row[]; clear?: (() => void) | undefined } | null>(null);
   const [withContracts, setWithContracts] = useState(true);
+  const [kind, setKind] = useState<"all" | "rent" | "sale">("all");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overZone, setOverZone] = useState<"rent" | "sale" | null>(null);
 
   const { data, isLoading } = useTableRows<Row>({
     table: "contacts",
@@ -111,7 +114,33 @@ function OwnersPage() {
     },
   });
 
-  const rows = data ?? [];
+  const allRows = data ?? [];
+  const isSale = (r: Row) => (r.roles ?? []).includes("sale_owner");
+  const rows = kind === "all" ? allRows : allRows.filter((r) => (kind === "sale") === isSale(r));
+  const saleRows = allRows.filter(isSale);
+  const rentRows = allRows.filter((r) => !isSale(r));
+
+  const moveOwner = useMutation({
+    mutationFn: async ({ row, to }: { row: Row; to: "rent" | "sale" }) => {
+      const base = (row.roles ?? []).filter((r) => r !== "sale_owner");
+      const roles = Array.from(new Set([...base, "owner", ...(to === "sale" ? ["sale_owner"] : [])]));
+      const { data: upd, error } = await supabase.from("contacts").update({ roles }).eq("id", row.id).select("id");
+      if (error) throw error;
+      if (!upd?.length) throw new Error("لم يتم التحديث — تحقق من الصلاحيات");
+    },
+    onSuccess: (_d, v) => {
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["sale-owners"] });
+      toast.success(v.to === "sale" ? `نُقل ${v.row.full_name} إلى ملاك البيع` : `نُقل ${v.row.full_name} إلى ملاك الإيجار`);
+    },
+    onError: (err) => toast.error(describeDbError(err, "تعذّر النقل")),
+  });
+  const dropTo = (to: "rent" | "sale") => {
+    const row = allRows.find((r) => r.id === dragId);
+    setDragId(null);
+    setOverZone(null);
+    if (row && isSale(row) !== (to === "sale")) moveOwner.mutate({ row, to });
+  };
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
 
@@ -203,11 +232,11 @@ function OwnersPage() {
 
   const stats = useMemo(
     () => ({
-      all: rows.length,
-      active: rows.filter((r) => r.is_active).length,
-      withProperties: rows.filter((r) => (links.data?.properties[r.id] ?? 0) > 0).length,
+      all: allRows.length,
+      sale: allRows.filter(isSale).length,
+      rent: allRows.filter((r) => !isSale(r)).length,
     }),
-    [rows, links.data],
+    [allRows],
   );
 
   return (
@@ -218,8 +247,8 @@ function OwnersPage() {
         icon={Users}
         stats={[
           { value: String(stats.all), label: "إجمالي الملاك" },
-          { value: String(stats.active), label: "نشط" },
-          { value: String(stats.withProperties), label: "لديهم عقارات" },
+          { value: String(stats.rent), label: "ملاك إيجار" },
+          { value: String(stats.sale), label: "ملاك بيع" },
         ]}
       />
 
@@ -234,6 +263,61 @@ function OwnersPage() {
         </Link>
       </div>
 
+
+      <section className="grid gap-4 md:grid-cols-2">
+        {(["rent", "sale"] as const).map((zone) => {
+          const list = zone === "sale" ? saleRows : rentRows;
+          return (
+            <div
+              key={zone}
+              onDragOver={(e) => { e.preventDefault(); setOverZone(zone); }}
+              onDragLeave={() => setOverZone((z) => (z === zone ? null : z))}
+              onDrop={(e) => { e.preventDefault(); dropTo(zone); }}
+              className={`surface-card p-4 transition-colors ${overZone === zone ? "ring-2 ring-primary bg-accent" : ""}`}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-[15px] font-bold">{zone === "sale" ? "ملاك البيع" : "ملاك الإيجار"}</h2>
+                <Chip tone={zone === "sale" ? "gold" : "primary"}>{list.length}</Chip>
+              </div>
+              <p className="mb-3 text-[11.5px] text-muted-foreground">
+                {zone === "sale"
+                  ? "تصلهم رسالة المتابعة كل 14 يومًا يوم الجمعة الساعة 4 العصر."
+                  : "اسحب أي مالك وأفلته هنا لنقله إلى الإيجار."}
+              </p>
+              <ul className="max-h-72 space-y-1.5 overflow-y-auto">
+                {list.map((r) => (
+                  <li
+                    key={r.id}
+                    draggable
+                    onDragStart={() => setDragId(r.id)}
+                    onDragEnd={() => { setDragId(null); setOverZone(null); }}
+                    className={`flex cursor-grab items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-[13px] active:cursor-grabbing ${dragId === r.id ? "opacity-50" : ""}`}
+                  >
+                    <GripVertical className="size-4 shrink-0 text-muted-foreground" />
+                    <Link to="/owners/$ownerId" params={{ ownerId: r.id }} className="min-w-0 flex-1 truncate font-semibold hover:text-primary">{r.full_name}</Link>
+                    <span dir="ltr" className="text-[11.5px] text-muted-foreground">{r.phone ?? ""}</span>
+                    <button
+                      type="button"
+                      title={zone === "sale" ? "نقل إلى الإيجار" : "نقل إلى البيع"}
+                      onClick={() => moveOwner.mutate({ row: r, to: zone === "sale" ? "rent" : "sale" })}
+                      className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary"
+                    >
+                      <ArrowLeftRight className="size-4" />
+                    </button>
+                  </li>
+                ))}
+                {!list.length ? <li className="rounded-xl border border-dashed border-border py-6 text-center text-[12px] text-muted-foreground">أفلت مالكًا هنا</li> : null}
+              </ul>
+            </div>
+          );
+        })}
+      </section>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {([["all", "كل الملاك"], ["rent", "ملاك الإيجار"], ["sale", "ملاك البيع"]] as const).map(([k, l]) => (
+          <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-full px-4 py-1.5 text-[12.5px] font-bold ${kind === k ? "brand-tile" : "border border-border bg-card text-muted-foreground"}`}>{l}</button>
+        ))}
+      </div>
       {isLoading ? (
         <div className="surface-card grid place-items-center px-6 py-16">
           <Loader2 className="size-6 animate-spin text-primary" />
@@ -282,8 +366,8 @@ function OwnersPage() {
             },
             {
               header: "النوع",
-              value: () => "مالك",
-              cell: () => <Chip tone="gold">مالك</Chip>,
+              value: (r) => (isSale(r) ? "بيع" : "إيجار"),
+              cell: (r) => <Chip tone={isSale(r) ? "gold" : "primary"}>{isSale(r) ? "مالك بيع" : "مالك إيجار"}</Chip>,
             },
             { header: "رقم الهوية / السجل", cell: (r) => <span dir="ltr">{r.national_id ?? "—"}</span> },
             { header: "الجوال", cell: (r) => <span dir="ltr">{r.phone ?? "—"}</span> },
