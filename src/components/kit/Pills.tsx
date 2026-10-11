@@ -19,7 +19,7 @@ export function Pills({
   const [active, setActive] = useState(defaultKey ?? items[0]?.key);
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-start">
       <div
         className={cn(
           "inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-muted/50 p-1.5",
