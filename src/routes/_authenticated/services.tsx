@@ -191,6 +191,25 @@ function ServicesPage() {
         )}
       </div>
 
+      {rows.filter((r) => r.is_active).length > 0 ? (
+        <div className="surface-card p-4">
+          <h2 className="mb-3 text-[14px] font-bold text-foreground">معاينة عرض الخدمات للزوار</h2>
+          <p className="mb-4 text-[12px] text-muted-foreground">هذا نموذج تقريبي لكيفية ظهور طور الخدمات الإلكتروني في الموقع للزوار</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+            {[...rows]
+              .filter((r) => r.is_active)
+              .sort((x, y) => (x.sort_order ?? 0) - (y.sort_order ?? 0))
+              .map((r) => (
+                <div key={r.id} className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 text-center">
+                  <span className="grid size-12 place-items-center rounded-full bg-[color:var(--warning)]/12 text-[color:var(--warning)]"><Sparkles className="size-5" /></span>
+                  <h3 className="text-[13px] font-bold text-foreground">{r.title}</h3>
+                  <a href="/services" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary">اعرف أكثر ←</a>
+                </div>
+              ))}
+          </div>
+        </div>
+      ) : null}
+
       <Modal
         open={open}
         onClose={() => setOpen(false)}

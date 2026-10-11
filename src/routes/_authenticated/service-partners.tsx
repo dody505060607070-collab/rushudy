@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Handshake, KeyRound } from "lucide-react";
-import { useState } from "react";
+import { Ban, CheckCircle2, Clock3, Handshake, KeyRound, Phone, Search, Users } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import partnerImage from "@/assets/almqrin-services.jpg";
@@ -19,19 +19,45 @@ function AdminPartners() {
   const videos = useMutation({ mutationFn: (input:{partnerId:string;videoUrls:string[]}) => updatePartnerVideos({ data: input }), onSuccess: () => { void qc.invalidateQueries({queryKey:["admin-service-partners"]}); toast.success("تم حفظ روابط الفيديو"); }, onError:(e)=>toast.error(e instanceof Error?e.message:"تعذّر حفظ الروابط") });
   const partners = data.data?.partners ?? [];
   const requests = data.data?.requests ?? [];
+  const [search, setSearch] = useState("");
+  const statusOf = (p: (typeof partners)[number]) => (p as { status?: string | null }).status ?? "active";
+  const activeCount = partners.filter((p) => statusOf(p) !== "suspended" && statusOf(p) !== "pending").length;
+  const reviewCount = partners.filter((p) => statusOf(p) === "pending").length;
+  const suspendedCount = partners.filter((p) => statusOf(p) === "suspended").length;
+  const visiblePartners = useMemo(
+    () => partners.filter((p) => !search.trim() || p.name.toLowerCase().includes(search.trim().toLowerCase())),
+    [partners, search],
+  );
+  const statusBadge = (p: (typeof partners)[number]) => {
+    const st = statusOf(p);
+    if (st === "suspended") return <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2.5 py-0.5 text-[11px] font-semibold text-destructive"><span className="size-1.5 rounded-full bg-destructive"/>موقوفة</span>;
+    if (st === "pending") return <span className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2.5 py-0.5 text-[11px] font-semibold text-warning"><span className="size-1.5 rounded-full bg-warning"/>قيد المراجعة</span>;
+    return <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-0.5 text-[11px] font-semibold text-success"><span className="size-1.5 rounded-full bg-success"/>نشطة</span>;
+  };
   return <div className="space-y-6">
-    <PageHero title="شركاء الخدمات" subtitle="إدارة الشركات وطلبات العملاء والفواتير" icon={Handshake} stats={[{value:String(partners.length),label:"شركة"},{value:String(requests.length),label:"طلب"},{value:String(data.data?.invoices.length??0),label:"فاتورة"}]} />
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {partners.map((p)=><article key={p.id} className="surface-card flex flex-col gap-3 p-4">
+    <PageHero title="شركاء الخدمات" subtitle="إدارة الشركات المعتمدة والمتخصصة بأعمال العقارات" icon={Handshake} stats={[{value:String(partners.length),label:"إجمالي الشركات"},{value:String(activeCount),label:"شركات نشطة"},{value:String(reviewCount),label:"قيد المراجعة"},{value:String(suspendedCount),label:"موقوفة"}]} />
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="relative flex-1 min-w-[220px]">
+        <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="البحث باسم الشركة أو التخصص…" className="h-10 w-full rounded-lg border border-border bg-card ps-3 pe-9 text-[13px] outline-none focus:border-primary" />
+      </div>
+    </div>
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {visiblePartners.map((p)=><article key={p.id} className="surface-card flex flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3"><img src={partnerImage} alt={p.name} width={1200} height={912} loading="lazy" className="size-14 rounded-full object-cover ring-2 ring-primary/20"/><div><h2 className="text-[16px] font-black">{p.name}</h2><p className="text-[12px] text-muted-foreground">{p.category}</p></div></div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-0.5 text-[11px] font-semibold text-success"><span className="size-1.5 rounded-full bg-success"/>نشط</span>
+          <div className="flex items-center gap-3"><img src={partnerImage} alt={p.name} width={1200} height={912} loading="lazy" className="size-12 rounded-full object-cover ring-2 ring-primary/20"/><div><h2 className="text-[15px] font-black">{p.name}</h2><p className="text-[12px] text-muted-foreground">{p.category}</p></div></div>
+          {statusBadge(p)}
         </div>
-        {p.description ? <p className="text-[12.5px] text-muted-foreground">{p.description}</p> : null}
-        <div className="grid grid-cols-2 gap-2 text-[12px]"><div className="rounded-xl bg-muted/50 px-3 py-2"><p className="text-muted-foreground">رقم التواصل</p><b dir="ltr" className="block text-end">{p.whatsapp_number ?? "—"}</b></div><div className="rounded-xl bg-muted/50 px-3 py-2"><p className="text-muted-foreground">الطلبات</p><b>{requests.filter((r)=>r.partner_id===p.id).length}</b></div></div>
+        {p.description ? <p className="line-clamp-2 text-[12.5px] text-muted-foreground">{p.description}</p> : null}
+        <div className="grid grid-cols-2 gap-2 text-[12px]">
+          <div className="rounded-xl bg-muted/50 px-3 py-2"><p className="flex items-center gap-1 text-muted-foreground">مقر الشركة</p><b className="block text-end">{(p as { city?: string | null }).city ?? "—"}</b></div>
+          <div className="rounded-xl bg-muted/50 px-3 py-2"><p className="flex items-center gap-1 text-muted-foreground"><Phone className="size-3"/>رقم التواصل</p><b dir="ltr" className="block text-end">{p.whatsapp_number ?? "—"}</b></div>
+        </div>
+        <div className="rounded-xl bg-muted/50 px-3 py-2 text-[12px]"><p className="flex items-center gap-1 text-muted-foreground"><Users className="size-3"/>الطلبات</p><b>{requests.filter((r)=>r.partner_id===p.id).length}</b></div>
         <details className="rounded-xl border border-border px-3 py-2 text-[12.5px]"><summary className="cursor-pointer font-semibold">روابط الفيديو</summary><textarea dir="ltr" defaultValue={(p.video_urls??[]).join("\n")} onBlur={(e)=>videos.mutate({partnerId:p.id, videoUrls:e.target.value.split("\n").map((v)=>v.trim()).filter(Boolean)})} className="mt-2 min-h-24 w-full rounded-lg border border-border bg-background p-3 text-end text-xs"/><p className="text-[11px] text-muted-foreground">رابط في كل سطر — تُحفظ بعد الخروج من الحقل وتظهر في صفحة الشركة داخل البوابة.</p></details>
-        <Button className="mt-auto" onClick={()=>issue.mutate(p.id)} disabled={issue.isPending}><KeyRound className="size-4"/> إصدار/تغيير بيانات الدخول</Button>
+        <Button className="mt-auto" onClick={()=>issue.mutate(p.id)} disabled={issue.isPending}><KeyRound className="size-4"/> عرض الشركة / إصدار بيانات الدخول</Button>
       </article>)}
+      {visiblePartners.length===0?<p className="col-span-full py-8 text-center text-[13px] text-muted-foreground">لا توجد شركات مطابقة</p>:null}
     </div>
     {credentials?<section className="rounded-xl border border-primary/30 bg-primary/5 p-5"><h2 className="font-bold">بيانات الدخول الجديدة — انسخها الآن</h2><p dir="ltr" className="mt-3 text-end font-mono">Email: {credentials.email}</p><p dir="ltr" className="text-end font-mono">Password: {credentials.password}</p><p className="mt-2 text-xs text-muted-foreground">لن يحتفظ النظام بنسخة قابلة للعرض من كلمة المرور.</p></section>:null}
     <section className="surface-card overflow-hidden"><header className="p-4"><h2 className="text-[17px] font-bold">أحدث طلبات الخدمات</h2><p className="text-[12px] text-muted-foreground">آخر الطلبات المرسلة من العملاء لشركات الخدمات</p></header>

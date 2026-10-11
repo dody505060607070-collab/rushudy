@@ -52,7 +52,11 @@ type Row = {
   created_by: string | null;
   created_at: string;
   creator: { full_name: string } | null;
-  properties: { name: string; code: string | null } | null;
+  properties: {
+    name: string;
+    code: string | null;
+    property_images: { url: string; display_url: string | null; is_cover: boolean; sort_order: number }[] | null;
+  } | null;
   employee: { full_name: string } | null;
   contact: { full_name: string } | null;
 };
@@ -100,6 +104,14 @@ function errorMessage(error: unknown, fallback: string) {
   return message;
 }
 
+function coverImage(row: Row): string | null {
+  const images = row.properties?.property_images ?? [];
+  const sorted = [...images].sort(
+    (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order,
+  );
+  return sorted[0] ? (sorted[0].display_url ?? sorted[0].url) : null;
+}
+
 function ReservationsPage() {
   const { newReservation, propertyId } = Route.useSearch();
   const { userId, roles, isSuperAdmin, loading: authLoading } = useCurrentUser();
@@ -125,7 +137,7 @@ function ReservationsPage() {
       const { data, error } = await supabase
         .from("reservations")
         .select(
-          "id,status,starts_at,ends_at,extended_count,notes,property_id,employee_id,contact_id,created_by,created_at,properties:property_id(name,code),employee:employee_id(full_name),contact:contact_id(full_name)",
+          "id,status,starts_at,ends_at,extended_count,notes,property_id,employee_id,contact_id,created_by,created_at,properties:property_id(name,code,property_images(url,display_url,is_cover,sort_order)),employee:employee_id(full_name),contact:contact_id(full_name)",
         )
         .order("created_at", { ascending: false })
         .limit(300);
@@ -152,6 +164,8 @@ function ReservationsPage() {
   const [picker, setPicker] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [employeeFilter, setEmployeeFilter] = useState<string>("all");
+  const [propertyFilter, setPropertyFilter] = useState<string>("all");
 
   // معرض الإعلانات: نفس شكل الموقع العام لاختيار العقار المراد حجزه.
   const gallery = useQuery({
@@ -350,7 +364,10 @@ function ReservationsPage() {
 
   const rows = query.data ?? [];
   const active = rows.filter((row) => ["hold", "active"].includes(row.status));
-  const shownRows = statusFilter === "all" ? rows : rows.filter((r) => r.status === statusFilter);
+  const shownRows = rows
+    .filter((r) => statusFilter === "all" || r.status === statusFilter)
+    .filter((r) => employeeFilter === "all" || r.employee_id === employeeFilter)
+    .filter((r) => propertyFilter === "all" || r.property_id === propertyFilter);
   const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   return (
@@ -414,6 +431,34 @@ function ReservationsPage() {
           rowClassName={(row) => toneRowClass[reservationTone(row.status)]}
           exportFileName="قائمة الحجوزات"
           searchPlaceholder="بحث بالعقار أو الموظف أو العميل"
+          toolbarExtra={
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                className={inputClass}
+                value={employeeFilter}
+                onChange={(e) => setEmployeeFilter(e.target.value)}
+              >
+                <option value="all">كل الموظفين</option>
+                {options.data?.staff.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.full_name}
+                  </option>
+                ))}
+              </select>
+              <select
+                className={inputClass}
+                value={propertyFilter}
+                onChange={(e) => setPropertyFilter(e.target.value)}
+              >
+                <option value="all">كل العقارات</option>
+                {options.data?.properties.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} — {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          }
           emptyState={
             <EmptyState text="لا توجد حجوزات" hint="أنشئ حجزًا جديدًا ليظهر هنا مع حالته ومدته." />
           }
@@ -421,7 +466,16 @@ function ReservationsPage() {
             {
               header: "العقار",
               value: (row) => row.properties?.name,
-              cell: (row) => row.properties?.name ?? "—",
+              cell: (row) => (
+                <span className="flex items-center gap-2.5">
+                  <span className="grid size-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+                    {coverImage(row) ? (
+                      <img src={coverImage(row) ?? undefined} alt="" className="size-full object-cover" />
+                    ) : null}
+                  </span>
+                  <span className="truncate">{row.properties?.name ?? "—"}</span>
+                </span>
+              ),
               className: "font-semibold",
             },
             {
@@ -517,9 +571,16 @@ function ReservationsPage() {
                 <XCircle className="size-4" />
               </button>
             </header>
-            <div className="rounded-xl bg-primary/5 p-3">
-              <p className="text-[15px] font-bold">{selected.properties?.name ?? "—"}</p>
-              <p className="text-[12px] text-muted-foreground" dir="ltr">#{selected.properties?.code ?? "—"}</p>
+            <div className="overflow-hidden rounded-xl bg-primary/5">
+              <div className="h-36 bg-muted">
+                {coverImage(selected) ? (
+                  <img src={coverImage(selected) ?? undefined} alt="" className="size-full object-cover" />
+                ) : null}
+              </div>
+              <div className="p-3">
+                <p className="text-[15px] font-bold">{selected.properties?.name ?? "—"}</p>
+                <p className="text-[12px] text-muted-foreground" dir="ltr">#{selected.properties?.code ?? "—"}</p>
+              </div>
             </div>
             {([
               ["بداية الحجز", formatDate(selected.starts_at)],

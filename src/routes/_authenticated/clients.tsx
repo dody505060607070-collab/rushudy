@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Contact, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Contact, Loader2, Pencil, Phone, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -252,6 +252,9 @@ function ClientsPage() {
 
   const filtered = tab === "all" ? rows : rows.filter((r) => (r.roles ?? []).includes(tab));
 
+  const initialsOf = (name: string) =>
+    name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join(" ");
+
   return (
     <>
       <PageHero
@@ -272,39 +275,130 @@ function ClientsPage() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
+        <Pills
+          variant="card"
+          defaultKey="all"
+          onChange={setTab}
+          items={[
+            { key: "all", label: "الكل", count: counts.all },
+            { key: "buyer", label: "مشترون", count: counts.buyer },
+            { key: "tenant", label: "مستأجرون", count: counts.tenant },
+            { key: "broker", label: "وسطاء العقود", count: counts.broker },
+          ]}
+        />
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-[13px] font-semibold text-primary-foreground hover:opacity-90"
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg bg-primary px-4 text-[13px] font-semibold text-primary-foreground hover:opacity-90"
         >
           <Plus className="size-4" />
-          إضافة عميل
+          إضافة عميل جديد
         </button>
       </div>
-
-      <Pills
-        variant="card"
-        defaultKey="all"
-        onChange={setTab}
-        items={[
-          { key: "all", label: "الكل", count: counts.all },
-          { key: "buyer", label: "مشترون", count: counts.buyer },
-          { key: "tenant", label: "مستأجرون", count: counts.tenant },
-          { key: "broker", label: "وسطاء العقود", count: counts.broker },
-        ]}
-      />
 
       {isLoading ? (
         <div className="surface-card grid place-items-center gap-2 px-6 py-16">
           <Loader2 className="size-6 animate-spin text-primary" />
         </div>
       ) : (
+        <div className={`grid items-start gap-4 ${detail ? "xl:grid-cols-[340px_minmax(0,1fr)]" : ""}`}>
+        {detail ? (
+          <aside className="surface-card sticky top-4 space-y-4 p-5 xl:order-first">
+            <header className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-3">
+                <div className="grid size-16 shrink-0 place-items-center rounded-full bg-primary/10 text-[20px] font-bold text-primary">
+                  {initialsOf(detail.full_name)}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-[16px] font-bold">{detail.full_name}</p>
+                  <Chip tone={detail.is_active ? "success" : "neutral"} className="mt-1">
+                    {detail.is_active ? "نشط" : "موقوف"}
+                  </Chip>
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="إغلاق"
+                onClick={() => setDetail(null)}
+                className="grid size-8 shrink-0 place-items-center rounded-lg hover:bg-muted"
+              >
+                <X className="size-4" />
+              </button>
+            </header>
+
+            <div className="flex flex-wrap gap-1.5">
+              {(detail.roles ?? []).filter((role) => role !== "lead").length ? (
+                (detail.roles ?? []).filter((role) => role !== "lead").map((role) => (
+                  <Chip key={role} tone="primary">
+                    {contactRoleLabels[role] ?? role}
+                  </Chip>
+                ))
+              ) : (
+                <Chip tone="neutral">عميل</Chip>
+              )}
+            </div>
+
+            {detail.phone ? (
+              <a
+                href={`tel:${detail.phone}`}
+                className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-[13px] font-semibold"
+                dir="ltr"
+              >
+                <Phone className="size-4 text-primary" />
+                {detail.phone}
+              </a>
+            ) : null}
+
+            <dl className="grid gap-2 text-[12.5px]">
+              {[
+                ["البريد", detail.email],
+                ["الهوية", detail.national_id],
+                ["العنوان", detail.address],
+                ["المصدر", detail.source],
+                ["نوع العقار المطلوب", detail.interested_property_type],
+                [
+                  "الميزانية",
+                  detail.budget_min || detail.budget_max
+                    ? `${formatCurrency(detail.budget_min)} — ${formatCurrency(detail.budget_max)}`
+                    : null,
+                ],
+                ["الأحياء المفضّلة", (detail.preferred_districts ?? []).join("، ")],
+                ["أُضيف", formatDate(detail.created_at)],
+              ].map(([label, value]) => (
+                <div key={String(label)} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+                  <dt className="shrink-0 text-muted-foreground">{label}</dt>
+                  <dd className="truncate font-semibold">{value || "—"}</dd>
+                </div>
+              ))}
+            </dl>
+
+            {detail.notes ? (
+              <div className="rounded-xl bg-muted/50 p-3 text-[12.5px] leading-6">
+                <p className="mb-1 text-[11.5px] font-bold text-muted-foreground">ملاحظات</p>
+                {detail.notes}
+              </div>
+            ) : null}
+
+            <ClientAccessPanel contactId={detail.id} phone={detail.whatsapp ?? detail.phone} />
+
+            <button
+              type="button"
+              onClick={() => openEdit(detail)}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-border text-[13px] font-semibold hover:bg-muted"
+            >
+              <Pencil className="size-4" />
+              تعديل بيانات العميل
+            </button>
+          </aside>
+        ) : null}
+
         <DataTable<Row>
           rows={filtered}
           selectable
           showColumnsButton
           draggableRows
           dragLabel="عميل"
+          onRowClick={(r) => setDetail(r)}
           searchPlaceholder="بحث بالاسم أو الجوال أو البريد"
           emptyState={
             <EmptyState
@@ -318,18 +412,20 @@ function ClientsPage() {
               sortable: true,
               value: (r) => r.full_name,
               cell: (r) => (
-                <button
-                  type="button"
-                  onClick={() => setDetail(r)}
-                  className="font-semibold text-primary"
-                >
-                  {r.full_name}
-                </button>
+                <span className="flex items-center gap-2.5">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-[12px] font-bold text-primary">
+                    {initialsOf(r.full_name)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setDetail(r)}
+                    className="truncate font-semibold text-primary hover:underline"
+                  >
+                    {r.full_name}
+                  </button>
+                </span>
               ),
             },
-            { header: "الجوال", cell: (r) => <span dir="ltr">{r.phone ?? "—"}</span> },
-            { header: "واتساب", cell: (r) => <span dir="ltr">{r.whatsapp ?? "—"}</span> },
-            { header: "البريد", cell: (r) => <span dir="ltr">{r.email ?? "—"}</span> },
             {
               header: "الأدوار",
               cell: (r) => (
@@ -346,6 +442,9 @@ function ClientsPage() {
                 </span>
               ),
             },
+            { header: "الجوال", cell: (r) => <span dir="ltr">{r.phone ?? "—"}</span> },
+            { header: "واتساب", cell: (r) => <span dir="ltr">{r.whatsapp ?? "—"}</span> },
+            { header: "البريد", cell: (r) => <span dir="ltr">{r.email ?? "—"}</span> },
             { header: "المصدر", cell: (r) => r.source ?? "—" },
             {
               header: "الميزانية",
@@ -357,7 +456,7 @@ function ClientsPage() {
                   : "—",
             },
             {
-              header: "نشط",
+              header: "الحالة",
               cell: (r) => (
                 <Toggle
                   label={`تفعيل ${r.full_name}`}
@@ -400,6 +499,7 @@ function ClientsPage() {
             },
           ]}
         />
+        </div>
       )}
 
       <Modal
@@ -566,44 +666,6 @@ function ClientsPage() {
         </div>
       </Modal>
 
-      <Modal
-        open={Boolean(detail)}
-        onClose={() => setDetail(null)}
-        title={detail?.full_name ?? ""}
-        subtitle="ملف العميل الكامل"
-      >
-        {detail ? (
-          <dl className="grid gap-3 text-[13px] sm:grid-cols-2">
-            {[
-              ["الجوال", detail.phone],
-              ["جوال بديل", detail.phone_alt],
-              ["واتساب", detail.whatsapp],
-              ["البريد", detail.email],
-              ["الهوية", detail.national_id],
-              ["العنوان", detail.address],
-              ["المصدر", detail.source],
-              ["نوع العقار المطلوب", detail.interested_property_type],
-              [
-                "الميزانية",
-                detail.budget_min || detail.budget_max
-                  ? `${formatCurrency(detail.budget_min)} — ${formatCurrency(detail.budget_max)}`
-                  : null,
-              ],
-              ["الأحياء المفضّلة", (detail.preferred_districts ?? []).join("، ")],
-              ["ملاحظات", detail.notes],
-              ["أُضيف", formatDate(detail.created_at)],
-            ].map(([label, value]) => (
-              <div key={String(label)} className="rounded-lg border border-border px-3 py-2">
-                <dt className="text-[11.5px] text-muted-foreground">{label}</dt>
-                <dd className="mt-0.5 font-semibold">{value || "—"}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
-        {detail ? (
-          <ClientAccessPanel contactId={detail.id} phone={detail.whatsapp ?? detail.phone} />
-        ) : null}
-      </Modal>
     </>
   );
 }

@@ -1,7 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Loader2, MessageSquare, Plus, Send, Users } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Briefcase,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Hash,
+  Loader2,
+  MessageSquare,
+  Plus,
+  Search,
+  Send,
+  UserRound,
+  Users,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/kit/Chip";
@@ -72,6 +85,7 @@ export function ActivitiesPage() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<"open" | "closed">("open");
+  const [q, setQ] = useState("");
 
   const activities = useQuery({
     queryKey: ["employee-activities"],
@@ -111,10 +125,14 @@ export function ActivitiesPage() {
     },
   });
 
-  const rows = useMemo(
-    () => (activities.data ?? []).filter((a) => (tab === "open" ? a.status !== "closed" : a.status === "closed")),
-    [activities.data, tab],
-  );
+  const rows = useMemo(() => {
+    const base = (activities.data ?? []).filter((a) =>
+      tab === "open" ? a.status !== "closed" : a.status === "closed",
+    );
+    const term = q.trim();
+    if (!term) return base;
+    return base.filter((a) => `${a.subject} ${a.employee?.full_name ?? ""}`.includes(term));
+  }, [activities.data, tab, q]);
 
   const active = (activities.data ?? []).find((a) => a.id === selected) ?? null;
 
@@ -205,72 +223,94 @@ export function ActivitiesPage() {
         ]}
       />
 
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
-        <div className="flex min-w-0 gap-2">
-          {(["open", "closed"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-[13px] font-semibold transition-colors",
-                tab === t ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground",
-              )}
-            >
-              {t === "open" ? "الأنشطة المفتوحة" : "الأنشطة المغلقة"}
-              <span className="grid size-5 place-items-center rounded-full bg-background/25 text-[11px]">
-                {(activities.data ?? []).filter((a) => (t === "closed") === (a.status === "closed")).length}
-              </span>
-            </button>
-          ))}
-        </div>
-        <PrimaryButton onClick={() => setOpen(true)}>
-          <Plus className="size-4" /> تسجيل نشاط
-        </PrimaryButton>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[380px_minmax(0,1fr)]">
-        <div className="space-y-2">
-          {activities.isLoading ? (
-            <div className="surface-card grid h-32 place-items-center text-muted-foreground">
-              <Loader2 className="size-5 animate-spin" />
+      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)_340px] lg:items-start">
+        {/* عمود القائمة (يمين) */}
+        <div className="surface-card flex max-h-[720px] flex-col overflow-hidden lg:max-h-[calc(100vh-220px)]">
+          <div className="space-y-3 border-b border-border p-3">
+            <div className="flex items-center gap-2">
+              {(["open", "closed"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTab(t)}
+                  className={cn(
+                    "inline-flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-semibold transition-colors",
+                    tab === t
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground",
+                  )}
+                >
+                  {t === "open" ? "الأنشطة المفتوحة" : "الأنشطة المغلقة"}
+                  <span className="grid size-5 shrink-0 place-items-center rounded-full bg-background/25 text-[11px]">
+                    {(activities.data ?? []).filter((a) => (t === "closed") === (a.status === "closed")).length}
+                  </span>
+                </button>
+              ))}
             </div>
-          ) : rows.length === 0 ? (
-            <div className="surface-card p-6 text-center text-[13px] text-muted-foreground">لا توجد أنشطة.</div>
-          ) : (
-            rows.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => setSelected(a.id)}
-                className={cn(
-                  "flex w-full items-start gap-3 rounded-xl border bg-card p-3 text-start transition-colors",
-                  selected === a.id ? "border-warning/50 bg-warning/5 shadow-card" : "border-border hover:bg-accent/40",
-                )}
-              >
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 text-[13px] font-bold text-primary">
-                  {(a.employee?.full_name ?? "؟").slice(0, 1)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-[14px] font-bold text-foreground">{a.subject}</span>
-                    <Chip tone={a.status === "closed" ? "neutral" : "success"}>
-                      <span className="me-1 inline-block size-1.5 rounded-full bg-current" />
-                      {a.status === "closed" ? "منتهٍ" : "مفتوح"}
-                    </Chip>
+            <div className="relative">
+              <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                className={cn(inputClass, "pe-9")}
+                placeholder="البحث في الأنشطة …"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+            <div className="[&>button]:w-full [&>button]:justify-center">
+              <PrimaryButton onClick={() => setOpen(true)}>
+                <Plus className="size-4" /> تسجيل نشاط
+              </PrimaryButton>
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-2 overflow-y-auto p-3">
+            {activities.isLoading ? (
+              <div className="grid h-32 place-items-center text-muted-foreground">
+                <Loader2 className="size-5 animate-spin" />
+              </div>
+            ) : rows.length === 0 ? (
+              <div className="p-6 text-center text-[13px] text-muted-foreground">لا توجد أنشطة.</div>
+            ) : (
+              rows.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setSelected(a.id)}
+                  className={cn(
+                    "flex w-full items-start gap-3 rounded-xl border bg-card p-3 text-start transition-colors",
+                    selected === a.id
+                      ? "border-warning/50 bg-warning/5 shadow-card"
+                      : "border-border hover:bg-accent/40",
+                  )}
+                >
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 text-[13px] font-bold text-primary">
+                    {(a.employee?.full_name ?? "؟").slice(0, 1)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-[14px] font-bold text-foreground">{a.subject}</span>
+                      <Chip tone={a.status === "closed" ? "neutral" : "success"}>
+                        <span className="me-1 inline-block size-1.5 rounded-full bg-current" />
+                        {a.status === "closed" ? "منتهٍ" : "مفتوح"}
+                      </Chip>
+                    </div>
+                    <p className="mt-1 truncate text-[12px] text-muted-foreground">
+                      المكلَّف: {a.employee?.full_name ?? "—"} • {typeLabels[a.activity_type] ?? a.activity_type}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {new Date(a.created_at).toLocaleDateString("ar-SA")}
+                    </p>
                   </div>
-                  <p className="mt-1 text-[12px] text-muted-foreground">
-                    المكلَّف: {a.employee?.full_name ?? "—"} • أسندها: {(employees.data ?? []).find((e) => e.id === a.created_by)?.full_name ?? "—"} • {typeLabels[a.activity_type] ?? a.activity_type}
-                  </p>
-                </div>
-              </button>
-            ))
-          )}
+                </button>
+              ))
+            )}
+          </div>
         </div>
 
+        {/* عمود المحادثة (وسط) */}
         <div className="min-w-0">
           {active ? (
-            <ActivityPanel
+            <ChatPanel
               activity={active}
               canClose={isSuperAdmin}
               onClose={(outcome) => close.mutate({ id: active.id, outcome })}
@@ -279,6 +319,17 @@ export function ActivitiesPage() {
           ) : (
             <div className="surface-card grid h-full min-h-56 place-items-center p-8 text-center text-[13px] text-muted-foreground">
               اختر نشاطًا لعرض المحادثة الخاصة بينك وبين الموظف.
+            </div>
+          )}
+        </div>
+
+        {/* عمود تفاصيل النشاط (يسار) */}
+        <div className="min-w-0">
+          {active ? (
+            <DetailsPanel activity={active} onRegisterNew={() => setOpen(true)} />
+          ) : (
+            <div className="surface-card grid h-full min-h-56 place-items-center p-8 text-center text-[13px] text-muted-foreground">
+              تفاصيل النشاط تظهر هنا بعد اختياره.
             </div>
           )}
         </div>
@@ -380,7 +431,7 @@ function CreateModal({
   );
 }
 
-function ActivityPanel({
+function ChatPanel({
   activity,
   canClose,
   onClose,
@@ -458,24 +509,28 @@ function ActivityPanel({
   const closed = activity.status === "closed";
 
   return (
-    <section className="surface-card flex h-full flex-col overflow-hidden">
-      <header className="border-b border-border bg-accent/40 px-4 py-3">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+    <section className="surface-card flex h-full min-h-[560px] flex-col overflow-hidden">
+      <header className="flex items-center justify-between gap-3 border-b border-border bg-accent/40 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-[13px] font-bold text-primary">
+            {(activity.employee?.full_name ?? "؟").slice(0, 1)}
+          </span>
           <div className="min-w-0">
-            <h2 className="truncate text-[15px] font-bold text-foreground">{activity.subject}</h2>
-            <p className="text-[12px] text-muted-foreground">
-              {activity.employee?.full_name ?? "—"} • {typeLabels[activity.activity_type] ?? activity.activity_type}
-              {activity.contact ? ` • ${activity.contact.full_name}` : ""}
+            <h2 className="truncate text-[14px] font-bold text-foreground">{activity.employee?.full_name ?? "—"}</h2>
+            <p className="truncate text-[12px] text-muted-foreground">
+              {activity.employee?.job_title ?? typeLabels[activity.activity_type] ?? activity.activity_type}
             </p>
           </div>
-          <Chip tone={closed ? "neutral" : "success"}>{closed ? "منتهٍ" : "مفتوح"}</Chip>
         </div>
-        {activity.details ? (
-          <p className="mt-2 whitespace-pre-wrap text-[13px] text-foreground/80">{activity.details}</p>
-        ) : null}
+        <div className="shrink-0 text-end">
+          <p className="truncate text-[13px] font-bold text-foreground">{activity.subject}</p>
+          {activity.contact ? (
+            <p className="truncate text-[11.5px] text-muted-foreground">{activity.contact.full_name}</p>
+          ) : null}
+        </div>
       </header>
 
-      <div className="flex-1 space-y-2 overflow-y-auto p-4" style={{ maxHeight: 420 }}>
+      <div className="flex-1 space-y-2 overflow-y-auto p-4">
         {(messages.data ?? []).length === 0 ? (
           <p className="py-8 text-center text-[13px] text-muted-foreground">
             <MessageSquare className="mx-auto mb-2 size-5" />
@@ -544,5 +599,109 @@ function ActivityPanel({
         </footer>
       )}
     </section>
+  );
+}
+
+function DetailsPanel({ activity, onRegisterNew }: { activity: Activity; onRegisterNew: () => void }) {
+  const closed = activity.status === "closed";
+  const shortId = activity.id.slice(0, 8).toUpperCase();
+
+  return (
+    <section className="surface-card flex h-full min-h-[560px] flex-col overflow-hidden">
+      <header className="border-b border-border bg-accent/40 px-4 py-3">
+        <h2 className="text-[15px] font-bold text-foreground">تفاصيل النشاط</h2>
+      </header>
+
+      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+        <DetailRow icon={Hash} label="رقم النشاط">
+          <span className="font-mono text-[12.5px] text-foreground">#ACT-{shortId}</span>
+        </DetailRow>
+
+        <DetailRow icon={UserRound} label="الموظف المسؤول">
+          <div className="flex items-center gap-2">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-[12px] font-bold text-primary">
+              {(activity.employee?.full_name ?? "؟").slice(0, 1)}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-bold text-foreground">{activity.employee?.full_name ?? "—"}</p>
+              {activity.employee?.job_title ? (
+                <p className="truncate text-[11.5px] text-muted-foreground">{activity.employee.job_title}</p>
+              ) : null}
+            </div>
+          </div>
+        </DetailRow>
+
+        <DetailRow icon={ClipboardList} label="نوع النشاط">
+          <Chip tone="warning">{typeLabels[activity.activity_type] ?? activity.activity_type}</Chip>
+        </DetailRow>
+
+        {activity.contact ? (
+          <DetailRow icon={Briefcase} label="الجهة المرتبطة">
+            <div className="rounded-xl border border-border bg-card p-3 text-[13px] font-semibold text-foreground">
+              {activity.contact.full_name}
+            </div>
+          </DetailRow>
+        ) : null}
+
+        <DetailRow icon={MessageSquare} label="حالة النشاط">
+          <Chip tone={closed ? "neutral" : "success"}>
+            <span className="me-1 inline-block size-1.5 rounded-full bg-current" />
+            {closed ? "منتهٍ" : "قيد المتابعة"}
+          </Chip>
+        </DetailRow>
+
+        <DetailRow icon={CalendarClock} label={closed ? "تاريخ الإغلاق" : "تاريخ الإنشاء"}>
+          <span className="text-[13px] text-foreground">
+            {new Date(closed && activity.closed_at ? activity.closed_at : activity.created_at).toLocaleString("ar-SA")}
+          </span>
+        </DetailRow>
+
+        {activity.details ? (
+          <DetailRow icon={ClipboardList} label="وصف النشاط">
+            <p className="whitespace-pre-wrap text-[13px] leading-6 text-foreground/80">{activity.details}</p>
+          </DetailRow>
+        ) : null}
+
+        {activity.notes ? (
+          <DetailRow icon={ClipboardList} label="ملاحظات">
+            <p className="whitespace-pre-wrap text-[13px] leading-6 text-foreground/80">{activity.notes}</p>
+          </DetailRow>
+        ) : null}
+
+        {closed && activity.outcome ? (
+          <DetailRow icon={CheckCircle2} label="النتيجة">
+            <p className="whitespace-pre-wrap text-[13px] leading-6 text-foreground/80">{activity.outcome}</p>
+          </DetailRow>
+        ) : null}
+      </div>
+
+      <footer className="border-t border-border p-3">
+        <div className="[&>button]:w-full [&>button]:justify-center">
+          <PrimaryButton onClick={onRegisterNew}>
+            <Plus className="size-4" /> تسجيل نشاط
+          </PrimaryButton>
+        </div>
+      </footer>
+    </section>
+  );
+}
+
+function DetailRow({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: typeof Hash;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground">
+        <Icon className="size-3.5" />
+        {label}
+      </p>
+      {children}
+    </div>
   );
 }

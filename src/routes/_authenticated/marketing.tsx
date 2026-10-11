@@ -543,7 +543,29 @@ function MarketingPage() {
         ]}
       />
 
-      <div className="surface-card flex flex-wrap items-center justify-between gap-3 p-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="المسوقون النشطون" value={metrics.active} icon={Users} hint={`من إجمالي ${data.marketers.length} مسوق`} />
+        <StatCard label="العملاء المنسوبون" value={metrics.leads} icon={UserCheck} hint={`${metrics.open} قيد المتابعة`} />
+        <StatCard label="الصفقات المغلقة" value={metrics.won} icon={BadgeCheck} hint={`نسبة إغلاق ${metrics.closeRate.toFixed(0)}%`} />
+        <StatCard label="قيمة الصفقات" value={metrics.wonValue} suffix="ر.س" icon={Banknote} hint="إجمالي الصفقات المؤكدة" />
+      </div>
+
+      <div className="surface-card flex flex-wrap items-center justify-between gap-3 p-2.5">
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setTab(item.value)}
+              className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition ${
+                tab === item.value ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-card text-foreground hover:bg-muted/60"
+              }`}
+            >
+              <item.icon className="size-4" />
+              {item.label}
+            </button>
+          ))}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
             <Filter className="size-3.5" /> الفترة
@@ -563,16 +585,19 @@ function MarketingPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            className={`${inputClass} w-56 pe-9`}
+            placeholder="ابحث باسم مسوق أو عميل أو جوال…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              className={`${inputClass} w-56 pe-9`}
-              placeholder="ابحث باسم مسوق أو عميل أو جوال…"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
           <Button variant="outline" onClick={exportCsv}>
             <Download />
             تصدير التقرير
@@ -590,33 +615,6 @@ function MarketingPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="زيارات روابط المسوقين" value={metrics.visits} icon={Activity} hint={`${metrics.uniqueVisitors.toLocaleString("ar-EG")} زائر مختلف`} />
-        <StatCard label="نسبة التحويل إلى عميل" value={metrics.conversion} suffix="%" icon={Target} hint="العملاء ÷ الزيارات" />
-        <StatCard label="نسبة إغلاق الصفقات" value={metrics.closeRate} suffix="%" icon={TrendingUp} hint={`${metrics.won} صفقة من ${metrics.leads} عميل`} />
-        <StatCard label="خط الأنابيب المفتوح" value={metrics.pipelineValue} suffix="ر.س" icon={Flame} hint={`${metrics.open} عميل قيد المتابعة`} />
-        <StatCard label="عمولات متوقعة" value={metrics.expected} suffix="ر.س" icon={BarChart3} />
-        <StatCard label="عمولات مستحقة/معتمدة" value={metrics.due} suffix="ر.س" icon={Banknote} />
-        <StatCard label="عمولات مدفوعة" value={metrics.paid} suffix="ر.س" icon={BadgeCheck} />
-        <StatCard label="مشاركات عقارات للمسوقين" value={metrics.shares} icon={Link2} hint="إرسال يدوي فقط" />
-      </div>
-
-      <div className="surface-card flex flex-wrap gap-2 p-2.5">
-        {tabs.map((item) => (
-          <button
-            key={item.value}
-            type="button"
-            onClick={() => setTab(item.value)}
-            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition ${
-              tab === item.value ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-card text-foreground hover:bg-muted/60"
-            }`}
-          >
-            <item.icon className="size-4" />
-            {item.label}
-          </button>
-        ))}
-      </div>
-
       {dashboard.isLoading ? (
         <p className="surface-card p-10 text-center text-sm text-muted-foreground">جاري تحميل بيانات التسويق…</p>
       ) : null}
@@ -624,7 +622,42 @@ function MarketingPage() {
       {tab === "overview" ? (
         <div className="space-y-6">
           <div className="grid gap-4 xl:grid-cols-3">
-            <Panel className="xl:col-span-2" icon={TrendingUp} title="حركة الزيارات والعملاء والصفقات" subtitle="اتجاه الأداء التسويقي خلال الفترة المختارة.">
+            <Panel icon={Target} title="مراحل التحويل البيعي" subtitle="من الزيارة حتى إغلاق الصفقة.">
+              <div className="flex flex-col gap-1.5 py-2">
+                {funnel.map((stage, index) => {
+                  const n = Math.max(funnel.length, 1);
+                  const step = 60 / n;
+                  const top = 100 - index * step;
+                  const bottom = 100 - (index + 1) * step;
+                  const inset = (100 - bottom / top * 100) / 2;
+                  const tone = n > 1 ? index / (n - 1) : 0;
+                  const pct =
+                    index > 0 && (funnel[index - 1]?.value ?? 0)
+                      ? `${((stage.value / (funnel[index - 1]?.value ?? 0)) * 100).toFixed(0)}%`
+                      : "100%";
+                  return (
+                    <div key={stage.label} className="grid grid-cols-[minmax(0,1fr)_96px] items-center gap-3">
+                      <div className="flex justify-center">
+                        <div
+                          className="h-11"
+                          style={{
+                            width: `${top}%`,
+                            clipPath: `polygon(0 0, 100% 0, ${100 - inset}% 100%, ${inset}% 100%)`,
+                            backgroundColor: `color-mix(in srgb, var(--color-primary), var(--color-gold) ${(tone * 100).toFixed(0)}%)`,
+                          }}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-base font-extrabold tabular-nums text-foreground">{stage.value.toLocaleString("ar-EG")}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">{stage.label} · {pct}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Panel>
+
+            <Panel className="xl:col-span-2" icon={TrendingUp} title="الزيارات والعملاء المحتملون" subtitle="اتجاه الأداء التسويقي خلال الفترة المختارة.">
               <div className="h-72" dir="ltr">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={trend}>
@@ -645,35 +678,20 @@ function MarketingPage() {
                 </ResponsiveContainer>
               </div>
             </Panel>
-
-            <Panel icon={Target} title="قمع التسويق" subtitle="من الزيارة حتى إغلاق الصفقة.">
-              <div className="space-y-3">
-                {funnel.map((stage, index) => {
-                  const base = (funnel[0]?.value ?? 1) || 1;
-                  const width = Math.max(4, (stage.value / base) * 100);
-                  return (
-                    <div key={stage.label}>
-                      <div className="flex items-center justify-between text-xs font-semibold">
-                        <span className="text-foreground">{stage.label}</span>
-                        <span className="text-muted-foreground">
-                          {stage.value.toLocaleString("ar-EG")}
-                          {index > 0 && (funnel[index - 1]?.value ?? 0)
-                            ? ` · ${((stage.value / (funnel[index - 1]?.value ?? 0)) * 100).toFixed(0)}%`
-                            : ""}
-                        </span>
-                      </div>
-                      <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Panel>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-3">
-            <Panel className="xl:col-span-2" icon={Crown} title="ترتيب المسوقين" subtitle="مؤشر أداء مركّب من الزيارات والعملاء والصفقات.">
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Panel
+              icon={Crown}
+              title="أفضل المسوقين أداءً"
+              subtitle="مؤشر أداء مركّب من الزيارات والعملاء والصفقات."
+              actions={
+                <button type="button" onClick={() => setTab("marketers")} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-[12px] font-bold text-foreground hover:bg-muted">
+                  <Eye className="size-3.5" />
+                  عرض الكل
+                </button>
+              }
+            >
               {leaderboard.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">لا توجد بيانات كافية بعد.</p>
               ) : (
@@ -682,20 +700,19 @@ function MarketingPage() {
                     <thead className="text-[11.5px] text-muted-foreground">
                       <tr>
                         <th className="px-2 py-2 font-semibold">#</th>
-                        <th className="px-2 py-2 font-semibold">المسوق</th>
+                        <th className="px-2 py-2 font-semibold">اسم المسوق</th>
                         <th className="px-2 py-2 font-semibold">زيارات</th>
-                        <th className="px-2 py-2 font-semibold">عملاء</th>
-                        <th className="px-2 py-2 font-semibold">صفقات</th>
-                        <th className="px-2 py-2 font-semibold">تحويل</th>
-                        <th className="px-2 py-2 font-semibold">إغلاق</th>
-                        <th className="px-2 py-2 font-semibold">عمولات</th>
-                        <th className="px-2 py-2 font-semibold">النقاط</th>
+                        <th className="px-2 py-2 font-semibold">العملاء المحتملون</th>
+                        <th className="px-2 py-2 font-semibold">الصفقات المغلقة</th>
+                        <th className="px-2 py-2 font-semibold">قيمة الصفقات</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {leaderboard.map((row, index) => (
+                      {leaderboard.slice(0, 5).map((row, index) => (
                         <tr key={row.marketer.id} className="border-t border-border/70">
-                          <td className="px-2 py-2 font-bold text-muted-foreground">{index + 1}</td>
+                          <td className="px-2 py-2">
+                            <Chip tone={index === 0 ? "gold" : "neutral"}>{index + 1}</Chip>
+                          </td>
                           <td className="px-2 py-2">
                             <Link
                               to="/marketing/$marketerId"
@@ -708,12 +725,7 @@ function MarketingPage() {
                           <td className="px-2 py-2 tabular-nums">{row.visits}</td>
                           <td className="px-2 py-2 tabular-nums">{row.leads}</td>
                           <td className="px-2 py-2 tabular-nums font-bold text-success">{row.won}</td>
-                          <td className="px-2 py-2 tabular-nums">{row.conversion.toFixed(1)}%</td>
-                          <td className="px-2 py-2 tabular-nums">{row.closeRate.toFixed(0)}%</td>
-                          <td className="px-2 py-2 tabular-nums">{money(row.earned)}</td>
-                          <td className="px-2 py-2">
-                            <Chip tone={index === 0 ? "gold" : "neutral"}>{row.score}</Chip>
-                          </td>
+                          <td className="px-2 py-2 tabular-nums">{money(row.dealValue)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -722,25 +734,83 @@ function MarketingPage() {
               )}
             </Panel>
 
-            <Panel icon={Users} title="توزيع حالات العملاء" subtitle="أين يقف العملاء المنسوبون الآن.">
-              {leadMix.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">لا يوجد عملاء منسوبون بعد.</p>
+            <Panel
+              icon={Banknote}
+              title="العمولات المستحقة"
+              subtitle="العمولات التي تنتظر الاعتماد أو الصرف."
+              actions={
+                <button type="button" onClick={() => setTab("commissions")} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-[12px] font-bold text-foreground hover:bg-muted">
+                  <Eye className="size-3.5" />
+                  عرض الكل
+                </button>
+              }
+            >
+              {leaderboard.filter((row) => row.earned - row.paid > 0).length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">لا توجد عمولات مستحقة حاليًا.</p>
               ) : (
-                <div className="h-64" dir="ltr">
-                  <ResponsiveContainer>
-                    <PieChart>
-                      <Pie data={leadMix} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={2}>
-                        {leadMix.map((entry, index) => (
-                          <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right text-sm">
+                    <thead className="text-[11.5px] text-muted-foreground">
+                      <tr>
+                        <th className="px-2 py-2 font-semibold">اسم المسوق</th>
+                        <th className="px-2 py-2 font-semibold">الصفقات</th>
+                        <th className="px-2 py-2 font-semibold">قيمة المبيعات</th>
+                        <th className="px-2 py-2 font-semibold">العمولة المستحقة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboard
+                        .filter((row) => row.earned - row.paid > 0)
+                        .sort((a, b) => b.earned - b.paid - (a.earned - a.paid))
+                        .slice(0, 5)
+                        .map((row) => (
+                          <tr key={row.marketer.id} className="border-t border-border/70">
+                            <td className="px-2 py-2 font-semibold text-foreground">
+                              <Link to="/marketing/$marketerId" params={{ marketerId: row.marketer.id }} className="font-bold text-primary hover:underline">
+                                {row.marketer.full_name}
+                              </Link>
+                            </td>
+                            <td className="px-2 py-2 tabular-nums">{row.won}</td>
+                            <td className="px-2 py-2 tabular-nums">{money(row.dealValue)}</td>
+                            <td className="px-2 py-2 tabular-nums font-bold text-warning">{money(row.earned - row.paid)}</td>
+                          </tr>
                         ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                    </tbody>
+                  </table>
                 </div>
               )}
             </Panel>
           </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="زيارات روابط المسوقين" value={metrics.visits} icon={Activity} hint={`${metrics.uniqueVisitors.toLocaleString("ar-EG")} زائر مختلف`} />
+            <StatCard label="نسبة التحويل إلى عميل" value={metrics.conversion} suffix="%" icon={Target} hint="العملاء ÷ الزيارات" />
+            <StatCard label="خط الأنابيب المفتوح" value={metrics.pipelineValue} suffix="ر.س" icon={Flame} hint={`${metrics.open} عميل قيد المتابعة`} />
+            <StatCard label="مشاركات عقارات للمسوقين" value={metrics.shares} icon={Link2} hint="إرسال يدوي فقط" />
+            <StatCard label="عمولات متوقعة" value={metrics.expected} suffix="ر.س" icon={BarChart3} />
+            <StatCard label="عمولات مستحقة/معتمدة" value={metrics.due} suffix="ر.س" icon={Banknote} />
+            <StatCard label="عمولات مدفوعة" value={metrics.paid} suffix="ر.س" icon={BadgeCheck} />
+            <StatCard label="نسبة إغلاق الصفقات" value={metrics.closeRate} suffix="%" icon={TrendingUp} hint={`${metrics.won} صفقة من ${metrics.leads} عميل`} />
+          </div>
+
+          <Panel icon={Users} title="توزيع حالات العملاء" subtitle="أين يقف العملاء المنسوبون الآن.">
+            {leadMix.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">لا يوجد عملاء منسوبون بعد.</p>
+            ) : (
+              <div className="h-64" dir="ltr">
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie data={leadMix} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={2}>
+                      {leadMix.map((entry, index) => (
+                        <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </Panel>
         </div>
       ) : null}
 
@@ -1202,23 +1272,28 @@ function Panel({
   subtitle,
   children,
   className = "",
+  actions,
 }: {
   icon: typeof Eye;
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   className?: string;
+  actions?: React.ReactNode;
 }) {
   return (
     <section className={`surface-card p-5 ${className}`}>
-      <div className="mb-4 flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="size-5" />
-        </span>
-        <div>
-          <h2 className="text-base font-bold text-foreground">{title}</h2>
-          {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
+            <Icon className="size-5" />
+          </span>
+          <div>
+            <h2 className="text-base font-bold text-foreground">{title}</h2>
+            {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
+          </div>
         </div>
+        {actions ?? null}
       </div>
       {children}
     </section>
