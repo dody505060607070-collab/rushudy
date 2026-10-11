@@ -63,9 +63,9 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                         to={item.to}
                         onClick={onNavigate}
                         className={cn(
-                          "group flex items-center justify-between rounded-xl py-2.5 pe-2 ps-3 text-[13.5px] transition-colors",
+                          "group relative flex items-center justify-between rounded-xl py-2.5 pe-2 ps-3 text-[13.5px] transition-colors",
                           active
-                            ? "brand-tile font-semibold"
+                            ? "bg-primary/[0.07] font-bold text-primary before:absolute before:inset-y-2 before:-start-1 before:w-1 before:rounded-full before:bg-primary"
                             : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60",
                         )}
                       >
@@ -74,7 +74,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                             <span
                               className={cn(
                                 "size-1.5 shrink-0 rounded-full",
-                                active ? "bg-primary-foreground" : "bg-border",
+                                active ? "bg-primary" : "bg-border",
                               )}
                             />
                           ) : null}
