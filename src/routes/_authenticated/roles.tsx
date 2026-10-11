@@ -131,7 +131,7 @@ function RolesPage() {
           />
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+        <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
           <div className="surface-card p-4">
             <h2 className="px-1 text-[17px] font-bold text-foreground">قائمة الموظفين</h2>
             <p className="px-1 pb-3 text-[12px] text-muted-foreground">اختر موظفًا لعرض أو تعديل صلاحياته</p>
@@ -156,7 +156,7 @@ function RolesPage() {
             </ul>
           </div>
 
-          <div className="surface-card p-5">
+          <div className="surface-card min-w-0 p-5">
             {isTargetAdmin ? (
               <p className="rounded-lg border border-primary/25 bg-primary/8 px-4 py-3 text-[13px] text-primary">
                 هذا الحساب مدير عام ولديه كل الصلاحيات تلقائيًا.
