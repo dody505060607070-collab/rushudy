@@ -164,6 +164,8 @@ function ReservationsPage() {
   const [picker, setPicker] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [employeeFilter, setEmployeeFilter] = useState<string>("all");
+  const [propertyFilter, setPropertyFilter] = useState<string>("all");
 
   // معرض الإعلانات: نفس شكل الموقع العام لاختيار العقار المراد حجزه.
   const gallery = useQuery({
@@ -362,7 +364,10 @@ function ReservationsPage() {
 
   const rows = query.data ?? [];
   const active = rows.filter((row) => ["hold", "active"].includes(row.status));
-  const shownRows = statusFilter === "all" ? rows : rows.filter((r) => r.status === statusFilter);
+  const shownRows = rows
+    .filter((r) => statusFilter === "all" || r.status === statusFilter)
+    .filter((r) => employeeFilter === "all" || r.employee_id === employeeFilter)
+    .filter((r) => propertyFilter === "all" || r.property_id === propertyFilter);
   const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   return (
