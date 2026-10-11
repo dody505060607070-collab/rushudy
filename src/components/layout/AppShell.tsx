@@ -3,7 +3,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Archive, Bell, Bot, Building, Building2, CalendarCheck, CalendarClock, ChevronDown, ClipboardCheck, FileText, FileWarning, Handshake, History, Home, KeyRound, LayoutGrid, ListChecks, LogOut, Megaphone, Menu, MessageCircle, MessagesSquare, Receipt, Settings, ShieldCheck, Target, UserCog, UserRound, Users, Wrench, X, type LucideIcon } from "lucide-react";
 
 const itemIcons: Record<string, LucideIcon> = {
-  "/dashboard": Home, "/ai": Bot, "/properties": Building, "/sale-owners": KeyRound, "/buildings": Building2,
+  "/dashboard": Home, "/ai": Bot, "/properties": Building, "/sale-owners": KeyRound, "/rent-owners": KeyRound, "/buildings": Building2,
   "/supply-requests": FileText, "/listing-requests": ClipboardCheck, "/reservations": CalendarCheck,
   "/owners": Users, "/contracts": FileText, "/renewals": Bell, "/invoices": Receipt, "/reminders": CalendarClock,
   "/maintenance": Wrench, "/service-partners": Handshake, "/tasks": ListChecks, "/activities": History,

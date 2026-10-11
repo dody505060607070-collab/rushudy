@@ -92,4 +92,5 @@ export const contactRoleLabels: Record<string, string> = {
   broker: "وسيط عقد",
   lead: "عميل",
   sale_owner: "مالك بيع",
+  rent_owner: "مالك إيجار",
 };

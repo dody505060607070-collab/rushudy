@@ -494,3 +494,171 @@ function Stat({ label, value }: { label: string; value: number | string }) {
     </div>
   );
 }
+
+type FollowupLastEntry = { result: string; reason: string | null; at: string; auto: boolean } | undefined;
+type FollowupStatus = {
+  enabled: boolean;
+  template: string;
+  defaultTemplate: string;
+  lastRunAt: string | null;
+  nextRun: string;
+  last: Record<string, FollowupLastEntry>;
+} | undefined;
+
+function OwnerFollowupBadge({ entry }: { entry: FollowupLastEntry }) {
+  if (!entry) return <span className="rounded-md bg-muted px-2 py-1 text-[11px] font-bold text-muted-foreground">لم تُرسل بعد</span>;
+  if (entry.result === "sent")
+    return (
+      <span title={fmtDateTime(entry.at)} className="rounded-md bg-success/15 px-2 py-1 text-[11px] font-bold text-success">
+        وصلت • {fmtDateTime(entry.at)}
+      </span>
+    );
+  return (
+    <span title={entry.reason ?? "فشل الإرسال"} className="rounded-md bg-destructive/15 px-2 py-1 text-[11px] font-bold text-destructive">
+      فشلت
+    </span>
+  );
+}
+
+function OwnerFollowupPanel({
+  status,
+  isLoading,
+  countdown,
+  template,
+  templateDirty,
+  onTemplateChange,
+  onSaveTemplate,
+  onResetTemplate,
+  onToggle,
+  onSendAll,
+  sendAllPending,
+  saveTemplatePending,
+  togglePending,
+  ownersCount,
+}: {
+  status: FollowupStatus;
+  isLoading: boolean;
+  countdown: { days: number; hours: number; minutes: number; passed: boolean } | null;
+  template: string;
+  templateDirty: boolean;
+  onTemplateChange: (v: string) => void;
+  onSaveTemplate: () => void;
+  onResetTemplate: () => void;
+  onToggle: (v: boolean) => void;
+  onSendAll: () => void;
+  sendAllPending: boolean;
+  saveTemplatePending: boolean;
+  togglePending: boolean;
+  ownersCount: number;
+}) {
+  const last = status?.last ?? {};
+  const counts = useMemo(() => {
+    let sent = 0;
+    let failed = 0;
+    for (const v of Object.values(last)) {
+      if (!v) continue;
+      if (v.result === "sent") sent += 1;
+      else failed += 1;
+    }
+    return { sent, failed, pending: Math.max(ownersCount - sent - failed, 0) };
+  }, [last, ownersCount]);
+
+  return (
+    <div className="surface-card space-y-5 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-2-soft text-accent-2"><BellRing className="size-5" /></span>
+          <div>
+            <h2 className="text-[16px] font-extrabold text-foreground">رسالة المتابعة كل 14 يومًا</h2>
+            <p className="text-[12px] text-muted-foreground">تُرسل تلقائيًا لكل ملاك البيع عبر واتساب يوم الجمعة الساعة 4:00 م بتوقيت الرياض.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={togglePending || isLoading}
+          onClick={() => onToggle(!(status?.enabled ?? true))}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-bold transition-colors disabled:opacity-50 ${
+            status?.enabled ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          <span className={`relative h-5 w-9 rounded-full transition-colors ${status?.enabled ? "bg-success" : "bg-border"}`}>
+            <span className={`absolute top-0.5 size-4 rounded-full bg-white transition-all ${status?.enabled ? "right-0.5" : "right-4"}`} />
+          </span>
+          {status?.enabled ? "مفعّلة" : "موقوفة"}
+        </button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
+        <div className="rounded-xl border border-border bg-muted/30 p-4">
+          <div className="mb-2 flex items-center gap-2 text-[12px] font-bold text-muted-foreground">
+            <Clock className="size-4" /> الموعد القادم
+          </div>
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">جارٍ التحميل…</p>
+          ) : !status?.enabled ? (
+            <p className="text-[15px] font-extrabold text-muted-foreground">موقوفة — لن تُرسل</p>
+          ) : countdown ? (
+            <div className="flex items-end gap-3">
+              {[
+                { v: countdown.days, l: "يوم" },
+                { v: countdown.hours, l: "ساعة" },
+                { v: countdown.minutes, l: "دقيقة" },
+              ].map((x) => (
+                <div key={x.l} className="text-center">
+                  <div className="text-[26px] font-extrabold leading-none text-primary">{x.v}</div>
+                  <div className="text-[11px] text-muted-foreground">{x.l}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <p className="mt-2 text-[12.5px] text-foreground">الجمعة … الساعة 4:00 م — {status ? fmtDateTime(status.nextRun) : "—"}</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">آخر تشغيل: {status?.lastRunAt ? fmtDateTime(status.lastRunAt) : "لم يُنفَّذ بعد"}</p>
+        </div>
+
+        <div className="flex flex-col justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <div className="flex items-center justify-center gap-1 text-success"><CheckCircle2 className="size-4" /><span className="text-[18px] font-extrabold">{counts.sent}</span></div>
+              <div className="text-[11px] text-muted-foreground">وصلت</div>
+            </div>
+            <div>
+              <div className="flex items-center justify-center gap-1 text-destructive"><XCircle className="size-4" /><span className="text-[18px] font-extrabold">{counts.failed}</span></div>
+              <div className="text-[11px] text-muted-foreground">فشلت</div>
+            </div>
+            <div>
+              <div className="flex items-center justify-center gap-1 text-muted-foreground"><Clock className="size-4" /><span className="text-[18px] font-extrabold">{counts.pending}</span></div>
+              <div className="text-[11px] text-muted-foreground">لم تُرسل</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={sendAllPending}
+            onClick={() => window.confirm(`سيتم إرسال رسالة المتابعة الآن إلى ${ownersCount} من ملاك البيع. متابعة؟`) && onSendAll()}
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-[13px] font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            <Send className="size-4" /> {sendAllPending ? "جارٍ الإرسال…" : "إرسال الآن لكل ملاك البيع"}
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-[13px] font-bold text-foreground">نص الرسالة</label>
+          <span className="text-[11px] text-muted-foreground">{template.length} حرف</span>
+        </div>
+        <textarea
+          className={`${textareaClass} min-h-[110px]`}
+          value={template}
+          onChange={(e) => onTemplateChange(e.target.value)}
+          dir="rtl"
+        />
+        <div className="flex justify-end gap-2">
+          <GhostButton onClick={onResetTemplate} disabled={isLoading}>استرجاع القالب الافتراضي</GhostButton>
+          <PrimaryButton onClick={onSaveTemplate} disabled={!templateDirty || saveTemplatePending}>
+            {saveTemplatePending ? "جارٍ الحفظ…" : "حفظ القالب"}
+          </PrimaryButton>
+        </div>
+      </div>
+    </div>
+  );
+}
