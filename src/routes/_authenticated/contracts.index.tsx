@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Eye, FileText, FileUp, Loader2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Bell, Clock, Eye, FileText, FileUp, Loader2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -632,6 +632,69 @@ function ContractsPage() {
           />
         </div>
       )}
+
+      {(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const upcoming = rows
+          .filter((r) => r.status === "active" && r.end_date)
+          .map((r) => ({
+            r,
+            days: Math.ceil((new Date(r.end_date as string).getTime() - today.getTime()) / 86400000),
+          }))
+          .filter((x) => x.days >= 0 && x.days <= 120)
+          .sort((a, b) => a.days - b.days)
+          .slice(0, 8);
+        if (!upcoming.length) return null;
+        return (
+          <div id="upcoming-renewals" className="surface-card space-y-3 p-5">
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-[15px] font-bold">
+                <Clock className="size-5 text-primary" />
+                العقود القادمة للتجديد
+              </h3>
+              <Link
+                to="/renewals"
+                className="inline-flex h-8 items-center rounded-full border border-primary/40 px-4 text-[12px] font-semibold text-primary hover:bg-primary/5"
+              >
+                عرض الكل
+              </Link>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-border">
+              <table className="w-full text-[13px]">
+                <thead className="bg-muted/60 text-muted-foreground">
+                  <tr>
+                    {["رقم العقد", "المالك", "المستأجر", "تاريخ الانتهاء", "الأيام المتبقية", "القيمة", "إجراء"].map((h) => (
+                      <th key={h} className="px-3 py-2 text-start font-semibold">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {upcoming.map(({ r, days }) => (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="px-3 py-2 font-bold text-primary">{r.contract_number ?? "—"}</td>
+                      <td className="px-3 py-2">{r.owner?.full_name ?? "—"}</td>
+                      <td className="px-3 py-2">{r.tenant?.full_name ?? "—"}</td>
+                      <td className="px-3 py-2">{formatDate(r.end_date)}</td>
+                      <td className="px-3 py-2">
+                        <span className={`rounded-md px-2 py-0.5 text-[12px] font-semibold ${days <= 15 ? "bg-destructive/10 text-destructive" : days <= 45 ? "bg-warning/15 text-warning" : "bg-muted text-muted-foreground"}`}>
+                          {days} يوم
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">{formatCurrency(r.annual_rent ?? r.total_value ?? 0)}</td>
+                      <td className="px-3 py-2">
+                        <Link to="/contracts/$contractId" params={{ contractId: r.id }} className="inline-flex items-center gap-1 font-semibold text-primary">
+                          <Eye className="size-4" /> عرض
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
       <Modal
         open={formOpen}
