@@ -188,8 +188,9 @@ function SettingsPage() {
         ]}
       />
 
-      <div className="surface-card overflow-hidden">
-        <div className="flex flex-wrap gap-1.5 border-b border-border px-4 py-3">
+      <div className={cn("grid gap-4", tab !== "areas" && "xl:grid-cols-[minmax(0,1fr)_380px]")}>
+      <div className="surface-card grid overflow-hidden md:grid-cols-[200px_minmax(0,1fr)]">
+        <div className="flex gap-1.5 overflow-x-auto border-b border-border p-3 md:flex-col md:border-b-0 md:border-e">
           {tabs.map((item) => {
             const Icon = item.icon;
             const active = tab === item.key;
@@ -199,20 +200,20 @@ function SettingsPage() {
                 type="button"
                 onClick={() => setTab(item.key)}
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-colors",
+                  "inline-flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-3 text-[13.5px] font-semibold transition-colors",
                   active
-                    ? "bg-accent text-accent-foreground"
+                    ? "border border-primary/20 bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted",
                 )}
               >
-                <Icon className="size-4" />
+                <Icon className="size-[18px]" />
                 {item.label}
               </button>
             );
           })}
         </div>
 
-        <div className="space-y-5 p-5">
+        <div className="min-w-0 space-y-5 p-5">
           {tab === "brand" ? (
             <>
               <Note text="اسم الشركة وشعارها يظهران في رأس الموقع وفي الفواتير والرسائل." />
@@ -435,9 +436,38 @@ function SettingsPage() {
           {tab === "areas" ? <AreasPanel /> : null}
         </div>
       </div>
+      {tab !== "areas" ? (
+        <aside className="surface-card hidden overflow-hidden xl:block">
+          <div className="border-b border-border p-4">
+            <h3 className="text-[15px] font-bold">معاينة الموقع العام</h3>
+            <p className="text-[12px] text-muted-foreground">معاينة حية لشكل رأس الموقع كما يظهر للزوار</p>
+          </div>
+          <div className="p-4">
+            <div className="overflow-hidden rounded-xl border border-border">
+              <div className="flex items-center gap-1.5 bg-muted px-3 py-2">
+                <span className="size-2.5 rounded-full bg-destructive" />
+                <span className="size-2.5 rounded-full bg-warning" />
+                <span className="size-2.5 rounded-full bg-success" />
+                <span className="ms-2 flex-1 rounded-full bg-background px-3 py-0.5 text-[11px] text-muted-foreground" dir="ltr">https://www.alrashudi.sa</span>
+              </div>
+              <div className="bg-primary px-4 py-5 text-center text-primary-foreground">
+                {form.logo_url ? <img src={form.logo_url} alt="الشعار" className="mx-auto max-h-12 w-auto object-contain" /> : <p className="text-lg font-bold">{form.company_name || "الرشودي للعقارات"}</p>}
+                <div className="mt-4 flex justify-center gap-5 text-[12px] opacity-90">
+                  <span className="border-b-2 border-current pb-1 font-bold">الرئيسية</span><span>العقارات</span><span>من نحن</span><span>اتصل بنا</span>
+                </div>
+              </div>
+              <div className="bg-gradient-to-b from-primary/80 to-foreground/90 px-5 py-14 text-primary-foreground">
+                <p className="text-2xl font-bold leading-snug">{form.company_name || "الرشودي للعقارات"}</p>
+                <p className="mt-2 text-[12px] opacity-85">{form.whatsapp_number ? `واتساب: ${form.whatsapp_number}` : "فرص استثمارية موثوقة وخدمات عقارية متكاملة"}</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+      ) : null}
+      </div>
 
       {tab !== "areas" ? (
-        <div className="flex justify-center">
+        <div className="flex justify-start">
           <button
             type="button"
             onClick={() => save.mutate()}
