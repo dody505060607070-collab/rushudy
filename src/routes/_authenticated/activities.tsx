@@ -213,11 +213,14 @@ export function ActivitiesPage() {
               type="button"
               onClick={() => setTab(t)}
               className={cn(
-                "rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition-colors",
-                tab === t ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground",
+                "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-[13px] font-semibold transition-colors",
+                tab === t ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground",
               )}
             >
-              {t === "open" ? "مفتوحة" : "منتهية"}
+              {t === "open" ? "الأنشطة المفتوحة" : "الأنشطة المغلقة"}
+              <span className="grid size-5 place-items-center rounded-full bg-background/25 text-[11px]">
+                {(activities.data ?? []).filter((a) => (t === "closed") === (a.status === "closed")).length}
+              </span>
             </button>
           ))}
         </div>
@@ -241,19 +244,25 @@ export function ActivitiesPage() {
                 type="button"
                 onClick={() => setSelected(a.id)}
                 className={cn(
-                  "w-full rounded-xl border bg-card p-3 text-start transition-colors",
-                  selected === a.id ? "border-primary shadow-card" : "border-border hover:bg-accent/40",
+                  "flex w-full items-start gap-3 rounded-xl border bg-card p-3 text-start transition-colors",
+                  selected === a.id ? "border-warning/50 bg-warning/5 shadow-card" : "border-border hover:bg-accent/40",
                 )}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <Chip tone={a.status === "closed" ? "neutral" : "success"}>
-                    {a.status === "closed" ? "منتهٍ" : "مفتوح"}
-                  </Chip>
-                  <span className="truncate text-[13.5px] font-bold text-foreground">{a.subject}</span>
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 text-[13px] font-bold text-primary">
+                  {(a.employee?.full_name ?? "؟").slice(0, 1)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[14px] font-bold text-foreground">{a.subject}</span>
+                    <Chip tone={a.status === "closed" ? "neutral" : "success"}>
+                      <span className="me-1 inline-block size-1.5 rounded-full bg-current" />
+                      {a.status === "closed" ? "منتهٍ" : "مفتوح"}
+                    </Chip>
+                  </div>
+                  <p className="mt-1 text-[12px] text-muted-foreground">
+                    المكلَّف: {a.employee?.full_name ?? "—"} • أسندها: {(employees.data ?? []).find((e) => e.id === a.created_by)?.full_name ?? "—"} • {typeLabels[a.activity_type] ?? a.activity_type}
+                  </p>
                 </div>
-                <p className="mt-1 text-end text-[12px] text-muted-foreground">
-                  المكلَّف: {a.employee?.full_name ?? "—"} • أسندها: {(employees.data ?? []).find((e) => e.id === a.created_by)?.full_name ?? "—"} • {typeLabels[a.activity_type] ?? a.activity_type}
-                </p>
               </button>
             ))
           )}
