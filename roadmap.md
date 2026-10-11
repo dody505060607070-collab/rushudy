@@ -7,7 +7,7 @@
 - [x] Check notifications + automation health
 - [x] UI redesign: all 29 pages reviewed against designs and reworked where different
 - [ ] Reminders: «إرسال تذكير جديد» compose panel from design (needs user approval — new feature)
-- [ ] Full system health check (pages + automation)
-- [ ] Rent owners (no contract) page under sale owners
-- [ ] Goals: list like design, employee goals page, auto calc + admin manual override
-- [ ] Sale owners: biweekly message panel (template, countdown, delivery status, send now, on/off)
+- [x] Full system health check (pages + automation)
+- [x] Rent owners (no contract) page under sale owners
+- [x] Goals: list like design, employee goals page, auto calc + admin manual override
+- [x] Sale owners: biweekly message panel (template, countdown, delivery status, send now, on/off)
