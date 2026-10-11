@@ -41,7 +41,7 @@ export async function loadOwnerFollowupConfig() {
 }
 
 /** Sends the follow-up to sale owners (optionally one owner) and logs every attempt. */
-export async function sendOwnerFollowup(opts: { contactId?: string; sentBy?: string | null } = {}) {
+export async function sendOwnerFollowup(opts: { contactId?: string | undefined; sentBy?: string | null } = {}) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { whatsappSend } = await import("@/lib/whatsapp.functions");
   const cfg = await loadOwnerFollowupConfig();
@@ -61,7 +61,7 @@ export async function sendOwnerFollowup(opts: { contactId?: string; sentBy?: str
       if (!phone) {
         failed++;
         await supabaseAdmin.from("message_log").insert({
-          kind: "owner_biweekly", contact_id: o.id, recipient_name: o.full_name, recipient_phone: null,
+          kind: "owner_biweekly", contact_id: o.id, recipient_name: o.full_name, recipient_phone: "",
           body: cfg.template, channel: "whatsapp", result: "failed", failure_reason: "لا يوجد رقم جوال",
           sent_by: opts.sentBy ?? null, sent_by_system: !opts.sentBy,
         });

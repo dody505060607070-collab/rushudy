@@ -376,6 +376,18 @@ function SaleOwnersPage() {
                   </div>
                 </div>
 
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/40 px-3 py-2">
+                  <OwnerFollowupBadge entry={followup.data?.last?.[o.id]} />
+                  <button
+                    type="button"
+                    disabled={sendOne.isPending}
+                    onClick={() => window.confirm(`إرسال رسالة المتابعة الآن إلى ${o.full_name}؟`) && sendOne.mutate(o.id)}
+                    className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-[11.5px] font-bold text-foreground hover:bg-muted disabled:opacity-50"
+                  >
+                    <Send className="size-3.5" /> إرسال الآن
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3 border-y border-border py-3">
                   <div>
                     <div className="text-[12px] text-muted-foreground">العقارات المرتبطة</div>
