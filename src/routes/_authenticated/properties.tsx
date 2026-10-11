@@ -300,11 +300,12 @@ function PropertiesPage() {
     [rows],
   );
   const gq = gridSearch.trim().toLowerCase();
-  const gridRows = gq
-    ? filtered.filter((r) =>
-        [r.name, r.code, r.city, r.district].some((v) => (v ?? "").toLowerCase().includes(gq)),
-      )
-    : filtered;
+  const gridRows = rows.filter(
+    (r) =>
+      (tab === "all" ? true : tab === "sale" ? r.purpose === "sale" : r.purpose !== "sale") &&
+      (!gq ||
+        [r.name, r.code, r.city, r.district].some((v) => (v ?? "").toLowerCase().includes(gq))),
+  );
 
   const filtered = rows.filter((r) =>
     tab === "all" ? true : tab === "sale" ? r.purpose === "sale" : r.purpose !== "sale",
