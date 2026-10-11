@@ -623,31 +623,33 @@ function MarketingPage() {
         <div className="space-y-6">
           <div className="grid gap-4 xl:grid-cols-3">
             <Panel icon={Target} title="مراحل التحويل البيعي" subtitle="من الزيارة حتى إغلاق الصفقة.">
-              <div className="flex flex-col items-center gap-1 py-2">
+              <div className="flex flex-col gap-1.5 py-2">
                 {funnel.map((stage, index) => {
-                  const base = (funnel[0]?.value ?? 1) || 1;
-                  const topWidth = Math.max(16, (stage.value / base) * 100);
-                  const nextValue = funnel[index + 1]?.value ?? stage.value * 0.7;
-                  const bottomWidth = Math.max(12, (nextValue / base) * 100);
-                  const tone = funnel.length > 1 ? index / (funnel.length - 1) : 0;
+                  const n = Math.max(funnel.length, 1);
+                  const step = 60 / n;
+                  const top = 100 - index * step;
+                  const bottom = 100 - (index + 1) * step;
+                  const inset = (100 - bottom / top * 100) / 2;
+                  const tone = n > 1 ? index / (n - 1) : 0;
                   const pct =
                     index > 0 && (funnel[index - 1]?.value ?? 0)
                       ? `${((stage.value / (funnel[index - 1]?.value ?? 0)) * 100).toFixed(0)}%`
                       : "100%";
                   return (
-                    <div key={stage.label} className="flex w-full items-center justify-between gap-4">
-                      <div
-                        className="h-11 shrink-0"
-                        style={{
-                          width: `${topWidth}%`,
-                          maxWidth: "100%",
-                          clipPath: `polygon(0 0, 100% 0, ${50 + bottomWidth / 2}% 100%, ${50 - bottomWidth / 2}% 100%)`,
-                          backgroundColor: `color-mix(in srgb, var(--color-primary), var(--color-gold) ${(tone * 100).toFixed(0)}%)`,
-                        }}
-                      />
-                      <div className="shrink-0 text-left">
-                        <p className="text-sm font-extrabold tabular-nums text-foreground">{stage.value.toLocaleString("ar-EG")}</p>
-                        <p className="text-[11px] text-muted-foreground">{stage.label} · {pct}</p>
+                    <div key={stage.label} className="grid grid-cols-[minmax(0,1fr)_96px] items-center gap-3">
+                      <div className="flex justify-center">
+                        <div
+                          className="h-11"
+                          style={{
+                            width: `${top}%`,
+                            clipPath: `polygon(0 0, 100% 0, ${100 - inset}% 100%, ${inset}% 100%)`,
+                            backgroundColor: `color-mix(in srgb, var(--color-primary), var(--color-gold) ${(tone * 100).toFixed(0)}%)`,
+                          }}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-base font-extrabold tabular-nums text-foreground">{stage.value.toLocaleString("ar-EG")}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">{stage.label} · {pct}</p>
                       </div>
                     </div>
                   );
