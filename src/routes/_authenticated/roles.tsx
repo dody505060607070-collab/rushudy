@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Check, Loader2, ShieldCheck, UserRound } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -25,6 +25,8 @@ export const Route = createFileRoute("/_authenticated/roles")({
   }),
   component: RolesPage,
 });
+
+const ALL_ACTIONS = Array.from(new Set(permissionModules.flatMap((m) => m.actions as readonly string[])));
 
 function RolesPage() {
   const { isSuperAdmin, loading } = useCurrentUser();
@@ -129,22 +131,24 @@ function RolesPage() {
           />
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-          <div className="surface-card p-3">
-            <p className="px-2 pb-2 text-[12.5px] font-semibold text-muted-foreground">الموظفون</p>
-            <ul className="space-y-1">
+        <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <div className="surface-card p-4">
+            <h2 className="px-1 text-[17px] font-bold text-foreground">قائمة الموظفين</h2>
+            <p className="px-1 pb-3 text-[12px] text-muted-foreground">اختر موظفًا لعرض أو تعديل صلاحياته</p>
+            <ul className="space-y-2">
               {(staff.data?.profiles ?? []).map((p) => (
                 <li key={p.id}>
                   <button
                     type="button"
                     onClick={() => setSelected(p.id)}
                     className={cn(
-                      "w-full rounded-lg px-3 py-2 text-start text-[13.5px] transition-colors",
+                      "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-start text-[13.5px] transition-colors",
                       p.id === userId
-                        ? "bg-accent font-semibold text-accent-foreground"
-                        : "hover:bg-muted",
+                        ? "border-primary/50 bg-primary/[0.06] font-bold text-foreground"
+                        : "border-border hover:bg-muted",
                     )}
                   >
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[color:var(--warning)]/12 text-[color:var(--warning)]"><UserRound className="size-5" /></span>
                     {p.full_name}
                   </button>
                 </li>
@@ -152,7 +156,7 @@ function RolesPage() {
             </ul>
           </div>
 
-          <div className="surface-card p-5">
+          <div className="surface-card min-w-0 p-5">
             {isTargetAdmin ? (
               <p className="rounded-lg border border-primary/25 bg-primary/8 px-4 py-3 text-[13px] text-primary">
                 هذا الحساب مدير عام ولديه كل الصلاحيات تلقائيًا.
@@ -182,37 +186,44 @@ function RolesPage() {
             </div>
 
 
-            <div className="mt-4 space-y-5">
-              {permissionModules.map((mod) => (
-                <div key={mod.key}>
-                  <p className="text-[13.5px] font-bold text-foreground">{mod.label}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {mod.actions.map((action) => {
-                      const key = `${mod.key}:${action}`;
-                      const on = isTargetAdmin || userPerms.has(key);
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          disabled={isTargetAdmin || toggle.isPending}
-                          onClick={() =>
-                            toggle.mutate({ module: mod.key, action, enabled: !on })
-                          }
-                          className={cn(
-                            "rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition-colors disabled:opacity-60",
-                            on
-                              ? "border-success/30 bg-success/12 text-success"
-                              : "border-border text-muted-foreground hover:bg-muted",
-                          )}
-                        >
-                          {actionLabels[action] ?? action}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+            <h2 className="mt-5 text-[17px] font-bold text-foreground">صلاحيات الموظف</h2>
+            <p className="text-[12px] text-muted-foreground">اضغط على المربع لتفعيل أو إلغاء الصلاحية — تُحفظ فورًا</p>
+            <div className="mt-3 overflow-x-auto rounded-2xl border border-border">
+              <table className="w-full text-[13px]">
+                <thead className="bg-muted/60">
+                  <tr>
+                    <th className="px-4 py-3 text-start font-bold">الوحدة</th>
+                    {ALL_ACTIONS.map((a) => <th key={a} className="px-3 py-3 text-center font-bold">{actionLabels[a] ?? a}</th>)}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {permissionModules.map((mod) => (
+                    <tr key={mod.key}>
+                      <td className="px-4 py-3 font-semibold">{mod.label}</td>
+                      {ALL_ACTIONS.map((action) => {
+                        if (!(mod.actions as readonly string[]).includes(action)) return <td key={action} className="text-center text-muted-foreground">—</td>;
+                        const key = `${mod.key}:${action}`;
+                        const on = isTargetAdmin || userPerms.has(key);
+                        return (
+                          <td key={action} className="px-3 py-3 text-center">
+                            <button
+                              type="button"
+                              aria-label={`${mod.label} - ${actionLabels[action] ?? action}`}
+                              disabled={isTargetAdmin || toggle.isPending}
+                              onClick={() => toggle.mutate({ module: mod.key, action, enabled: !on })}
+                              className={cn("inline-grid size-7 place-items-center rounded-md border-2 transition-colors disabled:opacity-60", on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:border-primary/50")}
+                            >
+                              {on ? <Check className="size-4" /> : null}
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+            <p className="mt-3 rounded-xl bg-[color:var(--warning)]/10 px-4 py-3 text-[12.5px] text-muted-foreground">الصلاحيات تُطبّق فورًا على هذا الموظف داخل النظام.</p>
           </div>
         </div>
       )}

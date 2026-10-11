@@ -5,4 +5,4 @@
 - [x] Public property order: new first, featured pinned, quick control
 - [x] Delete button for supply requests / requests
 - [x] Check notifications + automation health
-- [ ] UI redesign per 21 design images (done: shared shell, properties cards, owners cards, contracts alert + renewals table, 02+03 request boards; + invoices, reservations, maintenance, renewals, reminders, service-partners; remaining: 08,09,15,16,17,20,21 (07 ai, 18 goals done))
+- [ ] UI redesign per design images (done: most pages incl. partners, services; remaining: buildings, tasks, activities, team-chat, marketing, settings)

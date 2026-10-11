@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Handshake, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Handshake, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -183,7 +183,7 @@ function PartnersPage() {
               header: "الشعار",
               cell: (r) =>
                 r.logo_url ? (
-                  <img src={r.logo_url} alt={r.name} className="h-8 w-auto object-contain" />
+                  <span className="grid h-14 w-20 place-items-center rounded-xl bg-muted/60 p-2"><img src={r.logo_url} alt={r.name} className="max-h-full w-auto object-contain" /></span>
                 ) : (
                   "—"
                 ),
@@ -200,7 +200,7 @@ function PartnersPage() {
                     dir="ltr"
                     className="text-primary hover:underline"
                   >
-                    زيارة
+                    {r.website_url.replace(/^https?:\/\//, "").replace(/\/$/, "")} ↗
                   </a>
                 ) : (
                   "—"
@@ -210,10 +210,11 @@ function PartnersPage() {
             {
               header: "الحالة",
               cell: (r) => (
-                <button type="button" onClick={() => toggleActive.mutate(r)}>
-                  <Chip tone={r.is_active ? "success" : "neutral"}>
-                    {r.is_active ? "ظاهر" : "مخفي"}
-                  </Chip>
+                <button type="button" onClick={() => toggleActive.mutate(r)} className={`inline-flex items-center gap-2 rounded-full px-1 py-1 pe-3 text-[12px] font-bold ${r.is_active ? "bg-success/12 text-success" : "bg-muted text-muted-foreground"}`}>
+                  <span className={`relative h-6 w-11 rounded-full transition-colors ${r.is_active ? "bg-success" : "bg-border"}`}>
+                    <span className={`absolute top-0.5 size-5 rounded-full bg-card shadow transition-all ${r.is_active ? "start-0.5" : "start-[22px]"}`} />
+                  </span>
+                  {r.is_active ? "مفعل" : "مخفي"}
                 </button>
               ),
             },
@@ -221,8 +222,8 @@ function PartnersPage() {
               header: "إجراءات",
               cell: (r) => (
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => startEdit(r)} aria-label="تعديل">
-                    <Pencil className="size-4 text-muted-foreground hover:text-primary" />
+                  <button type="button" onClick={() => startEdit(r)} aria-label="تعديل" className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-[12.5px] font-semibold hover:bg-muted">
+                    <Pencil className="size-4" /> تعديل
                   </button>
                   <button
                     type="button"
@@ -230,6 +231,7 @@ function PartnersPage() {
                       if (confirm(`حذف الشريك «${r.name}»؟`)) remove.mutate(r.id);
                     }}
                     aria-label="حذف"
+                    className="grid size-9 place-items-center rounded-xl bg-destructive/10"
                   >
                     <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
                   </button>
@@ -239,6 +241,23 @@ function PartnersPage() {
           ]}
         />
       </div>
+
+      {rows.some((r) => r.is_active) ? (
+        <section className="surface-card space-y-4 bg-[color:var(--warning)]/[0.06] p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid size-11 place-items-center rounded-xl bg-[color:var(--warning)]/15 text-[color:var(--warning)]"><Eye className="size-5" /></span>
+            <div><h2 className="text-[17px] font-bold">كيف تظهر الشعارات في الموقع</h2><p className="text-[12px] text-muted-foreground">معاينة لطريقة عرض شعارات الشركاء في الموقع العام</p></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 rounded-2xl bg-card p-5 sm:grid-cols-4">
+            {rows.filter((r) => r.is_active).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)).map((r) => (
+              <div key={r.id} className="grid place-items-center gap-2 text-center">
+                {r.logo_url ? <img src={r.logo_url} alt={r.name} className="h-16 w-auto object-contain" /> : <span className="grid size-16 place-items-center rounded-xl bg-muted"><Handshake className="size-7 text-muted-foreground" /></span>}
+                <span className="text-[13px] font-bold">{r.name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <Modal
         open={open}
