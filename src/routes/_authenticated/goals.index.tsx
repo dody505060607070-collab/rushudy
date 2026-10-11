@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, CircleCheck, Eye, Star, Target, User, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleCheck, Eye, Star, Target, TrendingUp, User, Users } from "lucide-react";
 
 import { Chip } from "@/components/kit/Chip";
 import { EmptyState } from "@/components/kit/LiveTable";
-import { inputClass } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -12,6 +11,8 @@ import {
   effectiveAchieved,
   goalPoints,
   monthStart,
+  percentOf,
+  remainingOf,
   type GoalRow,
 } from "@/lib/goals";
 import { useState } from "react";
@@ -77,7 +78,10 @@ function GoalsIndexPage() {
           return {
             ...emp,
             goals: rows.length,
-            pct: target ? Math.min(100, Math.round((achieved / target) * 100)) : 0,
+            target,
+            achieved,
+            remaining: remainingOf(achieved, target),
+            pct: percentOf(achieved, target),
             points,
           };
         }),
@@ -87,7 +91,7 @@ function GoalsIndexPage() {
 
   const rows = summary.length
     ? summary
-    : employees.map((e) => ({ ...e, goals: 0, pct: 0, points: 0 }));
+    : employees.map((e) => ({ ...e, goals: 0, target: 0, achieved: 0, remaining: 0, pct: 0, points: 0 }));
   const totalPoints = rows.reduce((s, r) => s + r.points, 0);
 
   const shiftMonth = (delta: number) => {
@@ -166,10 +170,24 @@ function GoalsIndexPage() {
                 </div>
                 <Chip tone="success">نشط</Chip>
               </div>
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-muted/50 p-2.5 text-center">
+                  <p className="text-[11px] text-muted-foreground">المستهدف</p>
+                  <p className="mt-1 text-[16px] font-extrabold text-foreground">
+                    {emp.target.toLocaleString("ar-EG")}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-muted/50 p-2.5 text-center">
+                  <p className="text-[11px] text-muted-foreground">المُنجز</p>
+                  <p className="mt-1 text-[16px] font-extrabold text-primary">
+                    {emp.achieved.toLocaleString("ar-EG")}
+                  </p>
+                </div>
+              </div>
               <div className="mb-4 grid grid-cols-3 gap-2">
                 {[
                   { label: "الأهداف", value: String(emp.goals), icon: Target },
-                  { label: "الإنجاز", value: `${emp.pct}%`, icon: CircleCheck },
+                  { label: "المتبقي", value: emp.remaining.toLocaleString("ar-EG"), icon: TrendingUp },
                   { label: "النقاط", value: String(emp.points), icon: Star },
                 ].map((s) => (
                   <div key={s.label} className="rounded-xl bg-muted/50 p-2.5 text-center">

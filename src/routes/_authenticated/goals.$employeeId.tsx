@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Plus, Target, Trash2 } from "lucide-react";
+import { ArrowRight, Pencil, Plus, RotateCcw, Target, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -15,13 +15,18 @@ import {
   textareaClass,
 } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
+import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
   computeAutoProgress,
   effectiveAchieved,
+  emptyAutoProgress,
   goalPoints,
   goalTypes,
+  goalUnit,
   monthStart,
+  percentOf,
+  remainingOf,
   type GoalRow,
 } from "@/lib/goals";
 
@@ -47,7 +52,16 @@ function currentMonth() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-const emptyAuto = { rent: 0, sale: 0, collection: 0, tasks: 0, leads: 0, visits: 0 };
+/** يقبل الأرقام العربية/الفارسية والفواصل، ويرفض أي شيء غير رقم صحيح غير سالب. */
+function toNum(v: string | number) {
+  const s = String(v ?? "")
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[٬,\s]/g, "")
+    .replace("٫", ".");
+  const n = s === "" ? 0 : Number(s);
+  return Number.isFinite(n) ? n : NaN;
+}
 
 const emptyForm = {
   goal_type: "rent",
@@ -58,12 +72,22 @@ const emptyForm = {
   notes: "",
 };
 
+function monthShift(month: string, delta: number) {
+  const [y = 2026, m = 1] = month.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function EmployeeGoalsPage() {
   const { employeeId } = Route.useParams();
   const qc = useQueryClient();
+  const { isSuperAdmin, can } = useCurrentUser();
+  const canManage = isSuperAdmin || can("employees", "manage");
   const [month, setMonth] = useState(currentMonth());
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
   const period = monthStart(month);
 
   const { data: employee } = useQuery({
@@ -95,7 +119,7 @@ function EmployeeGoalsPage() {
     },
   });
 
-  const { data: auto = emptyAuto } = useQuery({
+  const { data: auto = emptyAutoProgress } = useQuery({
     queryKey: ["employee-auto-progress", employeeId, month],
     queryFn: () => computeAutoProgress(employeeId, month),
   });
@@ -107,16 +131,6 @@ function EmployeeGoalsPage() {
 
   const save = useMutation({
     mutationFn: async () => {
-      // Accept Arabic/Persian digits and separators; reject anything that is not a valid non-negative number.
-      const toNum = (v: string | number) => {
-        const s = String(v ?? "")
-          .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
-          .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
-          .replace(/[٬,\s]/g, "")
-          .replace("٫", ".");
-        const n = s === "" ? 0 : Number(s);
-        return Number.isFinite(n) ? n : NaN;
-      };
       const target = toNum(form.target_value);
       const achievedValue = toNum(form.achieved_value);
       const points = toNum(form.points_per_unit);
@@ -170,10 +184,27 @@ function EmployeeGoalsPage() {
     },
   });
 
+  const saveManualValue = (goal: GoalRow) => {
+    const value = toNum(editValue);
+    if (!Number.isFinite(value) || value < 0) {
+      toast.error("اكتب رقمًا صحيحًا صفرًا أو أكثر");
+      return;
+    }
+    patch.mutate({ id: goal.id, values: { achieved_value: value, auto_track: false } });
+    setEditingId(null);
+    setEditValue("");
+  };
+
   const totalTarget = goals.reduce((s, g) => s + Number(g.target_value || 0), 0);
   const totalAchieved = goals.reduce((s, g) => s + effectiveAchieved(g, auto), 0);
   const totalPoints = goals.reduce((s, g) => s + goalPoints(g, auto), 0);
-  const overall = totalTarget ? Math.min(100, Math.round((totalAchieved / totalTarget) * 100)) : 0;
+  const totalRemaining = remainingOf(totalAchieved, totalTarget);
+  const overall = percentOf(totalAchieved, totalTarget);
+
+  const monthLabel = new Date(`${month}-01T00:00:00`).toLocaleDateString("ar-SA-u-ca-gregory", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -184,6 +215,8 @@ function EmployeeGoalsPage() {
         stats={[
           { value: String(goals.length), label: "هدف هذا الشهر" },
           { value: `${overall}%`, label: "الإنجاز العام" },
+          { value: `${totalAchieved.toLocaleString("ar-EG")} / ${totalTarget.toLocaleString("ar-EG")}`, label: "المنجز / المستهدف" },
+          { value: String(totalRemaining.toLocaleString("ar-EG")), label: "المتبقي" },
           { value: String(totalPoints), label: "النقاط" },
         ]}
       />
@@ -195,14 +228,33 @@ function EmployeeGoalsPage() {
         >
           <ArrowRight className="size-4" /> كل الموظفين
         </Link>
-        <div className="flex items-center gap-3">
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className={`${inputClass} max-w-[190px]`}
-            aria-label="الشهر"
-          />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMonth((m) => monthShift(m, -1))}
+            className="grid size-9 place-items-center rounded-lg border border-border bg-card hover:bg-muted"
+            aria-label="الشهر السابق"
+          >
+            <ArrowRight className="size-4 rotate-180" />
+          </button>
+          <label className="relative min-w-[140px] rounded-lg border border-border bg-card px-3 py-2 text-center text-[13px] font-bold text-foreground">
+            {monthLabel}
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => e.target.value && setMonth(e.target.value)}
+              className="absolute inset-0 cursor-pointer opacity-0"
+              aria-label="الشهر"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => setMonth((m) => monthShift(m, 1))}
+            className="grid size-9 place-items-center rounded-lg border border-border bg-card hover:bg-muted"
+            aria-label="الشهر التالي"
+          >
+            <ArrowRight className="size-4" />
+          </button>
           <PrimaryButton onClick={() => setOpen(true)}>
             <Plus className="size-4" /> هدف جديد
           </PrimaryButton>
@@ -265,9 +317,12 @@ function EmployeeGoalsPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           {goals.map((goal) => {
             const achieved = effectiveAchieved(goal, auto);
-            const pct = goal.target_value
-              ? Math.min(100, Math.round((achieved / Number(goal.target_value)) * 100))
-              : 0;
+            const target = Number(goal.target_value || 0);
+            const pct = percentOf(achieved, target);
+            const remaining = remainingOf(achieved, target);
+            const typeDef = goalTypes.find((g) => g.key === goal.goal_type);
+            const isAutoSource = typeDef?.auto ?? false;
+            const isEditing = editingId === goal.id;
             return (
               <article
                 key={goal.id}
@@ -275,14 +330,20 @@ function EmployeeGoalsPage() {
               >
                 <header className="mb-3 flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-[14px] font-bold text-foreground">
-                      {goalTypes.find((g) => g.key === goal.goal_type)?.label ?? goal.goal_type}
-                    </h3>
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <h3 className="text-[14px] font-bold text-foreground">
+                        {typeDef?.label ?? goal.goal_type}
+                      </h3>
+                      <Chip tone={goal.auto_track && isAutoSource ? "info" : "neutral"}>
+                        {goal.auto_track && isAutoSource ? "تلقائي من النظام" : "يدوي"}
+                      </Chip>
+                    </div>
                     <p className="text-[12px] text-muted-foreground">
-                      {achieved.toLocaleString("ar-EG")} /{" "}
-                      {Number(goal.target_value).toLocaleString("ar-EG")}
-                      {" — "}
-                      {goalPoints(goal, auto)} نقطة
+                      المستهدف: {target.toLocaleString("ar-EG")} {goalUnit(goal.goal_type)}
+                    </p>
+                    <p className="text-[12px] text-muted-foreground">
+                      المُنجز: {achieved.toLocaleString("ar-EG")} — المتبقي:{" "}
+                      {remaining.toLocaleString("ar-EG")} — {goalPoints(goal, auto)} نقطة
                     </p>
                   </div>
                   <Chip tone={pct >= 100 ? "success" : pct >= 50 ? "info" : "warning"}>{pct}%</Chip>
@@ -296,31 +357,106 @@ function EmployeeGoalsPage() {
                 {goal.notes ? (
                   <p className="mb-3 text-[12px] text-muted-foreground">{goal.notes}</p>
                 ) : null}
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={goal.auto_track}
-                      onChange={(e) =>
-                        patch.mutate({ id: goal.id, values: { auto_track: e.target.checked } })
-                      }
-                    />
-                    احتساب تلقائي
-                  </label>
-                  {!goal.auto_track ? (
-                    <input
-                      type="number"
-              min={0}
-              inputMode="decimal"
-                      defaultValue={Number(goal.achieved_value)}
-                      onBlur={(e) => {
-                        const value = Number(e.target.value || 0);
-                        if (value !== Number(goal.achieved_value))
-                          patch.mutate({ id: goal.id, values: { achieved_value: value } });
-                      }}
-                      className={`${inputClass} h-8 max-w-[130px] text-[12px]`}
-                      aria-label="تحديث المنجز يدويًا"
-                    />
+                <div className="flex flex-wrap items-center gap-2">
+                  {canManage ? (
+                    <>
+                      {isAutoSource && goal.auto_track ? (
+                        isEditing ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className={`${inputClass} h-8 max-w-[110px] text-[12px]`}
+                              placeholder="الرقم الفعلي"
+                              aria-label="تعديل الرقم يدويًا"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => saveManualValue(goal)}
+                              className="rounded-lg bg-primary px-2.5 py-1.5 text-[11.5px] font-semibold text-primary-foreground hover:opacity-90"
+                            >
+                              حفظ
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingId(null);
+                                setEditValue("");
+                              }}
+                              className="rounded-lg border border-border px-2.5 py-1.5 text-[11.5px] text-muted-foreground hover:bg-muted"
+                            >
+                              إلغاء
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingId(goal.id);
+                              setEditValue(String(achieved));
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11.5px] font-semibold text-foreground hover:bg-muted"
+                          >
+                            <Pencil className="size-3.5" /> تعديل الرقم
+                          </button>
+                        )
+                      ) : null}
+                      {isAutoSource && !goal.auto_track ? (
+                        <button
+                          type="button"
+                          onClick={() => patch.mutate({ id: goal.id, values: { auto_track: true } })}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11.5px] font-semibold text-primary hover:bg-primary/10"
+                        >
+                          <RotateCcw className="size-3.5" /> رجوع للحساب التلقائي
+                        </button>
+                      ) : null}
+                      {!isAutoSource ? (
+                        isEditing ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className={`${inputClass} h-8 max-w-[110px] text-[12px]`}
+                              aria-label="تحديث المنجز يدويًا"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => saveManualValue(goal)}
+                              className="rounded-lg bg-primary px-2.5 py-1.5 text-[11.5px] font-semibold text-primary-foreground hover:opacity-90"
+                            >
+                              حفظ
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingId(null);
+                                setEditValue("");
+                              }}
+                              className="rounded-lg border border-border px-2.5 py-1.5 text-[11.5px] text-muted-foreground hover:bg-muted"
+                            >
+                              إلغاء
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingId(goal.id);
+                              setEditValue(String(achieved));
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11.5px] font-semibold text-foreground hover:bg-muted"
+                          >
+                            <Pencil className="size-3.5" /> تعديل الرقم
+                          </button>
+                        )
+                      ) : null}
+                    </>
                   ) : null}
                   <button
                     type="button"
@@ -375,8 +511,7 @@ function EmployeeGoalsPage() {
           </Field>
           <Field label="القيمة المستهدفة" required>
             <input
-              type="number"
-              min={0}
+              type="text"
               inputMode="decimal"
               value={form.target_value}
               onChange={(e) => setForm({ ...form, target_value: e.target.value })}
@@ -385,8 +520,7 @@ function EmployeeGoalsPage() {
           </Field>
           <Field label="نقاط الهدف عند اكتماله">
             <input
-              type="number"
-              min={0}
+              type="text"
               inputMode="decimal"
               value={form.points_per_unit}
               onChange={(e) => setForm({ ...form, points_per_unit: e.target.value })}
@@ -395,8 +529,7 @@ function EmployeeGoalsPage() {
           </Field>
           <Field label="المنجز اليدوي">
             <input
-              type="number"
-              min={0}
+              type="text"
               inputMode="decimal"
               value={form.achieved_value}
               onChange={(e) => setForm({ ...form, achieved_value: e.target.value })}
