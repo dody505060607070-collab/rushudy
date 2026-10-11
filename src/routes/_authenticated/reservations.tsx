@@ -150,6 +150,8 @@ function ReservationsPage() {
   });
 
   const [picker, setPicker] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // معرض الإعلانات: نفس شكل الموقع العام لاختيار العقار المراد حجزه.
   const gallery = useQuery({
@@ -348,6 +350,8 @@ function ReservationsPage() {
 
   const rows = query.data ?? [];
   const active = rows.filter((row) => ["hold", "active"].includes(row.status));
+  const shownRows = statusFilter === "all" ? rows : rows.filter((r) => r.status === statusFilter);
+  const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   return (
     <>
@@ -378,14 +382,35 @@ function ReservationsPage() {
         ) : null}
       </div>
 
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        {([
+          ["all", "الكل", rows.length],
+          ...(["hold", "active", "converted", "expired", "cancelled"] as const).map(
+            (k) => [k, reservationStatusLabels[k] ?? k, rows.filter((r) => r.status === k).length] as const,
+          ),
+        ] as const).map(([key, label, count]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setStatusFilter(key)}
+            className={`flex items-center justify-between rounded-2xl border bg-card px-4 py-3 text-[13.5px] font-bold transition ${statusFilter === key ? "border-primary shadow-sm ring-1 ring-primary/30" : "border-border hover:bg-muted/50"}`}
+          >
+            <span>{label}</span>
+            <span className="rounded-full bg-primary/10 px-3 py-0.5 text-primary">{count}</span>
+          </button>
+        ))}
+      </div>
+
       {query.isLoading ? (
         <div className="surface-card grid place-items-center gap-2 px-6 py-16 text-center">
           <Loader2 className="size-6 animate-spin text-primary" />
           <p className="text-[13px] text-muted-foreground">جاري تحميل الحجوزات…</p>
         </div>
       ) : (
+        <div className={`grid items-start gap-4 ${selected ? "xl:grid-cols-[minmax(0,1fr)_340px]" : ""}`}>
         <DataTable<Row>
-          rows={rows}
+          rows={shownRows}
+          onRowClick={(row) => setSelectedId(row.id)}
           rowClassName={(row) => toneRowClass[reservationTone(row.status)]}
           exportFileName="قائمة الحجوزات"
           searchPlaceholder="بحث بالعقار أو الموظف أو العميل"
@@ -484,6 +509,58 @@ function ReservationsPage() {
             },
           ]}
         />
+        {selected ? (
+          <aside className="surface-card sticky top-4 space-y-3 p-4">
+            <header className="flex items-center justify-between">
+              <h3 className="text-[16px] font-bold">تفاصيل الحجز</h3>
+              <button type="button" aria-label="إغلاق" onClick={() => setSelectedId(null)} className="grid size-8 place-items-center rounded-lg hover:bg-muted">
+                <XCircle className="size-4" />
+              </button>
+            </header>
+            <div className="rounded-xl bg-primary/5 p-3">
+              <p className="text-[15px] font-bold">{selected.properties?.name ?? "—"}</p>
+              <p className="text-[12px] text-muted-foreground" dir="ltr">#{selected.properties?.code ?? "—"}</p>
+            </div>
+            {([
+              ["بداية الحجز", formatDate(selected.starts_at)],
+              ["ينتهي", formatDate(selected.ends_at)],
+              ["الحالة", reservationStatusLabels[selected.status] ?? selected.status],
+              ["العميل", selected.contact?.full_name ?? "—"],
+              ["الموظف المسؤول", selected.employee?.full_name ?? "—"],
+              ["بواسطة", selected.creator?.full_name ?? "—"],
+              ["عدد التمديد", String(selected.extended_count)],
+            ] as const).map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-[13px]">
+                <span className="text-muted-foreground">{k}</span>
+                <b>{v}</b>
+              </div>
+            ))}
+            {selected.notes ? <p className="rounded-xl bg-muted/50 p-3 text-[12.5px]">{selected.notes}</p> : null}
+            {canBook ? (
+              <div className="grid gap-2">
+                {["hold", "active"].includes(selected.status) ? (
+                  <>
+                    <Button onClick={() => update.mutate({ row: selected, action: "approve" })} disabled={update.isPending}>
+                      <CheckCircle2 /> تحويل لعقد
+                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" onClick={() => update.mutate({ row: selected, action: "extend" })} disabled={update.isPending}>
+                        <Clock3 /> تمديد 24س
+                      </Button>
+                      <Button variant="outline" className="text-destructive" onClick={() => update.mutate({ row: selected, action: "cancel" })} disabled={update.isPending}>
+                        <XCircle /> إلغاء الحجز
+                      </Button>
+                    </div>
+                  </>
+                ) : null}
+                <Button variant="outline" onClick={() => openEdit(selected)}>
+                  <Pencil /> تعديل كامل
+                </Button>
+              </div>
+            ) : null}
+          </aside>
+        ) : null}
+        </div>
       )}
 
       <Modal
