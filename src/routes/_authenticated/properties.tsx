@@ -4,11 +4,16 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Building2,
   ChevronLeft,
+  LayoutGrid,
+  List,
   Loader2,
+  MapPin,
   Megaphone,
   Pencil,
   Plus,
+  Search,
   Send,
+  Star,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
@@ -148,6 +153,24 @@ function PropertiesPage() {
 
   // وحدات العمارات تُدار من صفحة العمارات فقط حتى لا تختلط بقائمة العقارات المستقلة.
   const rows = (data ?? []).filter((row) => !row.building_id);
+  const [view, setView] = useState<"grid" | "list">("grid");
+  const [gridSearch, setGridSearch] = useState("");
+  const covers = useQuery({
+    queryKey: ["property-covers", rows.length],
+    enabled: rows.length > 0,
+    queryFn: async () => {
+      const { data: imgs, error: imgErr } = await supabase
+        .from("property_images")
+        .select("property_id, url, display_url, is_cover, sort_order")
+        .order("is_cover", { ascending: false })
+        .order("sort_order", { ascending: true })
+        .limit(5000);
+      if (imgErr) throw imgErr;
+      const map: Record<string, string> = {};
+      for (const i of imgs ?? []) if (!map[i.property_id]) map[i.property_id] = i.display_url ?? i.url;
+      return map;
+    },
+  });
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
   const openCreate = () => {
@@ -276,6 +299,13 @@ function PropertiesPage() {
     }),
     [rows],
   );
+  const gq = gridSearch.trim().toLowerCase();
+  const gridRows = rows.filter(
+    (r) =>
+      (tab === "all" ? true : tab === "sale" ? r.purpose === "sale" : r.purpose !== "sale") &&
+      (!gq ||
+        [r.name, r.code, r.city, r.district].some((v) => (v ?? "").toLowerCase().includes(gq))),
+  );
 
   const filtered = rows.filter((r) =>
     tab === "all" ? true : tab === "sale" ? r.purpose === "sale" : r.purpose !== "sale",
@@ -320,16 +350,36 @@ function PropertiesPage() {
         </nav>
       </div>
 
-      <Pills
-        variant="card"
-        defaultKey="all"
-        onChange={setTab}
-        items={[
-          { key: "all", label: "الكل", count: counts.all },
-          { key: "rent", label: "الإيجار", count: counts.rent },
-          { key: "sale", label: "البيع", count: counts.sale },
-        ]}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Pills
+          variant="card"
+          defaultKey="all"
+          onChange={setTab}
+          items={[
+            { key: "all", label: "الكل", count: counts.all },
+            { key: "rent", label: "الإيجار", count: counts.rent },
+            { key: "sale", label: "البيع", count: counts.sale },
+          ]}
+        />
+        <div className="inline-flex rounded-xl border border-border bg-card p-1">
+          <button
+            type="button"
+            aria-label="عرض الكروت"
+            onClick={() => setView("grid")}
+            className={`grid size-9 place-items-center rounded-lg ${view === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            <LayoutGrid className="size-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="عرض الجدول"
+            onClick={() => setView("list")}
+            className={`grid size-9 place-items-center rounded-lg ${view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            <List className="size-4" />
+          </button>
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="surface-card grid place-items-center gap-2 px-6 py-16 text-center">
@@ -343,6 +393,79 @@ function PropertiesPage() {
           <p className="text-[12.5px] text-muted-foreground" dir="ltr">
             {error instanceof Error ? error.message : "خطأ غير معروف"}
           </p>
+        </div>
+      ) : view === "grid" ? (
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={gridSearch}
+              onChange={(e) => setGridSearch(e.target.value)}
+              placeholder="ابحث بالاسم، الكود، الحي أو المدينة…"
+              className="h-11 w-full rounded-xl border border-border bg-card ps-10 pe-3 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          {gridRows.length === 0 ? (
+            <EmptyState text="لا توجد عقارات مطابقة" hint="غيّر البحث أو التصنيف." />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {gridRows.map((r) => {
+                const img = covers.data?.[r.id];
+                return (
+                  <button
+                    type="button"
+                    key={r.id}
+                    onClick={() => navigate({ to: "/property-form", search: { id: r.id } })}
+                    className="surface-card overflow-hidden text-start transition-shadow hover:shadow-lg"
+                  >
+                    <div className="relative aspect-[16/8] bg-muted">
+                      {img ? (
+                        <img src={img} alt={r.name} loading="lazy" className="size-full object-cover" />
+                      ) : (
+                        <div className="grid size-full place-items-center text-muted-foreground">
+                          <Building2 className="size-10 opacity-40" />
+                        </div>
+                      )}
+                      <span className="absolute end-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-card/95 px-2.5 py-1 text-[11px] font-semibold">
+                        <span className={`size-2 rounded-full ${r.is_visible ? "bg-success" : "bg-muted-foreground"}`} />
+                        {r.is_visible ? "ظاهر" : "مخفي"}
+                      </span>
+                      {r.is_featured && (
+                        <span className="absolute start-3 top-3 inline-flex items-center gap-1 rounded-md bg-warning px-2 py-1 text-[11px] font-bold text-warning-foreground">
+                          <Star className="size-3 fill-current" /> مميز
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-3 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-[15px] font-bold">{r.name}</p>
+                          <p className="mt-0.5 flex items-center gap-1 text-[12px] text-muted-foreground">
+                            <MapPin className="size-3.5" />
+                            {[r.district, r.city].filter(Boolean).join("، ") || "—"}
+                          </p>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground" dir="ltr">#{r.code ?? "—"}</span>
+                      </div>
+                      <div className="flex items-end justify-between border-t border-border pt-3">
+                        <div>
+                          <p className="text-[11px] text-muted-foreground">{r.purpose === "sale" ? "سعر البيع" : "سعر الإيجار"}</p>
+                          <p className="text-[14px] font-bold text-primary">
+                            {r.price_value ? formatCurrency(r.price_value) : r.price_text || "—"}
+                            {r.purpose !== "sale" && r.price_value ? " / سنويًا" : ""}
+                          </p>
+                        </div>
+                        <div className="text-end">
+                          <p className="text-[11px] text-muted-foreground">الحالة</p>
+                          <p className="text-[13px] font-semibold">{statusLabels[r.status] ?? r.status}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       ) : (
         <DataTable<PropertyRow>

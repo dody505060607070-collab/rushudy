@@ -116,6 +116,7 @@ function OwnersPage() {
 
   const allRows = data ?? [];
   const isSale = (r: Row) => (r.roles ?? []).includes("sale_owner");
+  const [cardLimit, setCardLimit] = useState(12);
   const rows = kind === "all" ? allRows : allRows.filter((r) => (kind === "sale") === isSale(r));
   const saleRows = allRows.filter(isSale);
   const rentRows = allRows.filter((r) => !isSale(r));
@@ -318,6 +319,66 @@ function OwnersPage() {
           <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-full px-4 py-1.5 text-[12.5px] font-bold ${kind === k ? "brand-tile" : "border border-border bg-card text-muted-foreground"}`}>{l}</button>
         ))}
       </div>
+      {!isLoading && rows.length > 0 ? (
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {rows.slice(0, cardLimit).map((r) => {
+            const sale = isSale(r);
+            const initials = r.full_name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join(" ");
+            return (
+              <article key={r.id} className="surface-card space-y-4 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10 text-[14px] font-bold text-primary">
+                    {initials}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-bold">{r.full_name}</p>
+                    <p className="text-[11.5px] text-muted-foreground" dir="ltr">{r.national_id || r.email || ""}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Chip tone={sale ? "gold" : "primary"}>{sale ? "بيع" : "إيجار"}</Chip>
+                    <Chip tone={r.is_active ? "success" : "neutral"}>{r.is_active ? "نشط" : "موقوف"}</Chip>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl bg-muted/60 p-3">
+                    <p className="text-[11px] text-muted-foreground">الجوال</p>
+                    <p className="mt-1 text-[13px] font-bold" dir="ltr">{r.phone || "—"}</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/60 p-3">
+                    <p className="text-[11px] text-muted-foreground">واتساب</p>
+                    <p className="mt-1 text-[13px] font-bold" dir="ltr">{r.whatsapp || r.phone || "—"}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Link
+                    to="/owners/$ownerId"
+                    params={{ ownerId: r.id }}
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-[12.5px] font-semibold text-primary-foreground hover:opacity-90"
+                  >
+                    <Eye className="size-4" /> عرض ملف المالك
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => moveOwner.mutate({ row: r, to: sale ? "rent" : "sale" })}
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[12.5px] font-semibold hover:bg-muted"
+                  >
+                    <ArrowLeftRight className="size-4" /> تغيير التصنيف
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+          {rows.length > cardLimit ? (
+            <button
+              type="button"
+              onClick={() => setCardLimit((n) => n + 12)}
+              className="col-span-full h-10 rounded-xl border border-border bg-card text-[13px] font-semibold text-primary hover:bg-muted"
+            >
+              عرض المزيد ({rows.length - cardLimit})
+            </button>
+          ) : null}
+        </section>
+      ) : null}
       {isLoading ? (
         <div className="surface-card grid place-items-center px-6 py-16">
           <Loader2 className="size-6 animate-spin text-primary" />
