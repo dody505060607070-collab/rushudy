@@ -282,6 +282,23 @@ function SaleOwnersPage() {
         ]}
       />
 
+      <OwnerFollowupPanel
+        status={followup.data}
+        isLoading={followup.isLoading}
+        countdown={countdown}
+        template={template}
+        templateDirty={templateDraft !== null}
+        onTemplateChange={setTemplateDraft}
+        onSaveTemplate={() => saveTemplate.mutate(template)}
+        onResetTemplate={() => followup.data && setTemplateDraft(followup.data.defaultTemplate)}
+        onToggle={(v) => toggleEnabled.mutate(v)}
+        onSendAll={() => sendAll.mutate()}
+        sendAllPending={sendAll.isPending}
+        saveTemplatePending={saveTemplate.isPending}
+        togglePending={toggleEnabled.isPending}
+        ownersCount={owners.data?.length ?? 0}
+      />
+
       <div className="surface-card flex flex-wrap items-center gap-3 p-3">
         <div className="flex flex-wrap gap-2">
           {([
