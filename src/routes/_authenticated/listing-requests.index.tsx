@@ -9,6 +9,7 @@ import { PageHero } from "@/components/kit/PageHero";
 import { Pills } from "@/components/kit/Pills";
 import { requestStatusLabels } from "@/lib/labels";
 import { DeleteRequestButton, useStaffList, useStaffName } from "@/components/requests/RequestStaff";
+import { RequestBoard, ViewToggle } from "@/components/requests/RequestBoard";
 
 type ListingRow = {
   id: string;
@@ -89,17 +90,20 @@ function ListingRequestsPage() {
         ]}
       />
 
-      <Pills
-        defaultKey="all"
-        onChange={setTab}
-        items={[
-          { key: "all", label: "الكل", count: counts.all },
-          { key: "open", label: "بانتظار المراجعة", count: counts.open },
-          { key: "contacted", label: "تم التواصل", count: counts.contacted },
-          { key: "done", label: "معتمدة", count: counts.done },
-          { key: "closed", label: "مغلقة", count: counts.closed },
-        ]}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Pills
+          defaultKey="all"
+          onChange={setTab}
+          items={[
+            { key: "all", label: "الكل", count: counts.all },
+            { key: "open", label: "بانتظار المراجعة", count: counts.open },
+            { key: "contacted", label: "تم التواصل", count: counts.contacted },
+            { key: "done", label: "معتمدة", count: counts.done },
+            { key: "closed", label: "مغلقة", count: counts.closed },
+          ]}
+        />
+        <ViewToggle view={view} onChange={setView} />
+      </div>
 
       {listing.isLoading ? (
         <div className="surface-card grid place-items-center gap-2 px-6 py-16 text-center">
@@ -114,6 +118,23 @@ function ListingRequestsPage() {
             {listing.error instanceof Error ? listing.error.message : "خطأ غير معروف"}
           </p>
         </div>
+      ) : view === "board" ? (
+        <RequestBoard
+          codePrefix="LR"
+          onOpen={(id) => navigate({ to: "/listing-requests/$requestId", params: { requestId: id } })}
+          items={filtered.map((r) => ({
+            id: r.id,
+            status: r.status,
+            title: r.full_name,
+            kind: `${r.purpose === "sale" ? "بيع" : "إيجار"}${r.property_type ? ` • ${r.property_type}` : ""}`,
+            location: [r.city, r.district].filter(Boolean).join(" - "),
+            money: r.asking_price ? `السعر المطلوب: ${r.asking_price}` : null,
+            staff: staffName(r.assigned_to),
+            tag: r.attachments?.length ? `${r.attachments.length} صور` : null,
+            created_at: r.created_at,
+            extra: <DeleteRequestButton table="listing_requests" id={r.id} queryKey={["listing_requests"]} />,
+          }))}
+        />
       ) : (
         <DataTable<ListingRow>
           rows={filtered}
