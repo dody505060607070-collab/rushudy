@@ -22,7 +22,7 @@ export function Pills({
     <div className="flex justify-center">
       <div
         className={cn(
-          "inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-card p-1.5",
+          "inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-muted/50 p-1.5",
           variant === "card" && "shadow-card",
         )}
       >
@@ -40,7 +40,7 @@ export function Pills({
               className={cn(
                 "inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-colors",
                 isActive
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted",
               )}
             >
@@ -50,7 +50,7 @@ export function Pills({
                 <span
                   className={cn(
                     "rounded-md px-1.5 py-0.5 text-[11px] font-bold",
-                    isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                    isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
                   )}
                 >
                   {item.count}

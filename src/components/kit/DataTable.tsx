@@ -115,7 +115,7 @@ export function DataTable<T>({
               setPage(1);
             }}
             placeholder={searchPlaceholder}
-            className="h-10 w-[220px] rounded-lg border border-border bg-card pe-9 ps-3 text-[13px] outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/40"
+            className="h-11 w-[300px] max-w-full rounded-xl border border-border bg-card pe-9 ps-3 text-[13px] outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/40"
           />
         </div>
         {toolbarExtra}
@@ -220,7 +220,7 @@ export function DataTable<T>({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-right">
             <thead>
-              <tr className="border-b border-border bg-card">
+              <tr className="border-b border-border bg-muted/60">
                 {selectable ? (
                   <th className="w-10 px-4 py-3">
                     <input
