@@ -2081,12 +2081,14 @@ export type Database = {
         Row: {
           body: string
           channel: string
+          contact_id: string | null
           contract_id: string | null
           created_at: string
           failure_reason: string | null
           followup_id: string | null
           id: string
           idempotency_key: string | null
+          kind: string | null
           payment_id: string | null
           provider_message_id: string | null
           recipient_name: string | null
@@ -2101,12 +2103,14 @@ export type Database = {
         Insert: {
           body: string
           channel?: string
+          contact_id?: string | null
           contract_id?: string | null
           created_at?: string
           failure_reason?: string | null
           followup_id?: string | null
           id?: string
           idempotency_key?: string | null
+          kind?: string | null
           payment_id?: string | null
           provider_message_id?: string | null
           recipient_name?: string | null
@@ -2121,12 +2125,14 @@ export type Database = {
         Update: {
           body?: string
           channel?: string
+          contact_id?: string | null
           contract_id?: string | null
           created_at?: string
           failure_reason?: string | null
           followup_id?: string | null
           id?: string
           idempotency_key?: string | null
+          kind?: string | null
           payment_id?: string | null
           provider_message_id?: string | null
           recipient_name?: string | null
@@ -2139,6 +2145,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "message_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "message_log_contract_id_fkey"
             columns: ["contract_id"]
@@ -2629,6 +2642,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      owner_followup_config: {
+        Row: {
+          enabled: boolean
+          id: boolean
+          template: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          id?: boolean
+          template?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          id?: boolean
+          template?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       owner_login_events: {
         Row: {
