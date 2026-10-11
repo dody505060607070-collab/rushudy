@@ -86,7 +86,8 @@ function OwnersPage() {
   const { data, isLoading } = useTableRows<Row>({
     table: "contacts",
     select: SELECT,
-    filter: (q) => q.contains("roles", ["owner"]),
+    // Rent-management owners only; manually added sale/rent owners (no contracts) live on their own pages.
+    filter: (q) => q.contains("roles", ["owner"]).not("roles", "ov", "{sale_owner,rent_owner}"),
     orderBy: { column: "created_at" },
     queryKey: ["contacts", "owners"],
   });
