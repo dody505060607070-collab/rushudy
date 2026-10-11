@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BadgeDollarSign, Copy, Link2, MessageCircle, Pencil, Phone, Plus, Trash2, Unlink } from "lucide-react";
+import { BadgeDollarSign, Copy, Home, Link2, MessageCircle, Pencil, Phone, Plus, Search, Trash2, Unlink, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -198,31 +198,46 @@ function SaleOwnersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHero title="ملاك البيع" subtitle="كل ملاك عقارات البيع في صفحة مستقلة — أضف المالك واربط عقاراته المعروضة للبيع." icon={BadgeDollarSign} />
+      <PageHero
+        title="ملاك البيع"
+        subtitle="إدارة ملاك البيع والعقارات المرتبطة بهم."
+        icon={BadgeDollarSign}
+        stats={[
+          { value: String(owners.data?.length ?? 0), label: "ملاك البيع", icon: Users },
+          { value: String(totalProps), label: "العقارات المرتبطة", icon: Home },
+          { value: String(noOwner), label: "عقارات بدون مالك", icon: Unlink },
+          { value: availableValue.toLocaleString("ar-SA"), unit: "ر.س", label: `قيمة البيع المتاحة • مباع ${soldCount}`, icon: BadgeDollarSign },
+        ]}
+      />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <Stat label="عدد ملاك البيع" value={owners.data?.length ?? 0} />
-        <Stat label="عقارات بيع مربوطة بمالك" value={totalProps} />
-        <Stat label="عقارات بيع بدون مالك" value={noOwner} />
-        <Stat label="مباعة من عقاراتهم" value={soldCount} />
-        <Stat label="قيمة المتاح للبيع" value={`${availableValue.toLocaleString("ar-SA")} ر.س`} />
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <input className={`${inputClass} max-w-sm`} placeholder="بحث بالاسم أو الجوال أو الهوية أو كود العقار" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <select className={`${inputClass} w-auto`} value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)}>
-          <option value="all">كل الملاك</option>
-          <option value="with">لديهم عقارات</option>
-          <option value="without">بدون عقارات</option>
-          <option value="available">لديهم عقار متاح</option>
-          <option value="sold">لديهم عقار مباع</option>
-        </select>
+      <div className="surface-card flex flex-wrap items-center gap-3 p-3">
+        <div className="flex flex-wrap gap-2">
+          {([
+            ["all", "الكل"],
+            ["with", "لديهم عقارات"],
+            ["without", "بدون عقارات"],
+            ["available", "متاح"],
+            ["sold", "مباع"],
+          ] as const).map(([k, l]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setFilter(k)}
+              className={`rounded-xl px-4 py-2 text-[13px] font-bold transition-colors ${filter === k ? "bg-primary text-primary-foreground shadow-sm" : "border border-border bg-card text-foreground hover:bg-muted"}`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input className={`${inputClass} ps-9`} placeholder="البحث باسم مالك البيع أو الجوال أو الهوية أو كود العقار…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
         <select className={`${inputClass} w-auto`} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
           <option value="newest">الأحدث</option>
           <option value="name">بالاسم</option>
           <option value="props">الأكثر عقارات</option>
         </select>
-        <span className="text-xs text-muted-foreground">{list.length} نتيجة</span>
         <PrimaryButton onClick={openNew}>
           <Plus className="h-4 w-4" /> إضافة مالك بيع
         </PrimaryButton>
@@ -238,68 +253,99 @@ function SaleOwnersPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           {list.map((o) => {
             const ps = byOwner[o.id] ?? [];
+            const initials = o.full_name.split(/\s+/).slice(0, 2).map((w) => w[0]).join(" ");
+            const hasAvail = ps.some((p) => p.status === "available");
+            const allSold = ps.length > 0 && ps.every((p) => p.status === "sold");
+            const value = ps.reduce((n, p) => n + (p.price_value ?? 0), 0);
             return (
-              <div key={o.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div key={o.id} className="surface-card space-y-4 p-5">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-semibold text-foreground">{o.full_name}</div>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                      <span dir="ltr">{o.phone ?? "—"}</span>
-                      {o.phone ? (
-                        <>
-                          <a href={`tel:${o.phone}`} title="اتصال" className="hover:text-primary"><Phone className="h-4 w-4" /></a>
-                          <a href={waLink(o.whatsapp ?? o.phone) ?? "#"} target="_blank" rel="noreferrer" title="فتح واتساب" className="hover:text-success"><MessageCircle className="h-4 w-4" /></a>
-                          <button type="button" title="نسخ الرقم" className="hover:text-primary" onClick={() => { navigator.clipboard.writeText(o.phone ?? ""); toast.success("تم نسخ الرقم"); }}><Copy className="h-4 w-4" /></button>
-                        </>
-                      ) : null}
-                    </div>
-                    <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
-                      {o.national_id && <div>الهوية: {o.national_id}</div>}
-                      {o.email && <div dir="ltr" className="text-end">{o.email}</div>}
-                      {o.address && <div>العنوان: {o.address}</div>}
-                      {o.notes && <div>ملاحظات: {o.notes}</div>}
-                      <div>أُضيف: {new Date(o.created_at).toLocaleDateString("ar-SA")}</div>
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-14 shrink-0 place-items-center rounded-full bg-primary/10 text-[16px] font-bold text-primary">{initials}</span>
+                    <div>
+                      <div className="text-[15px] font-bold text-foreground">{o.full_name}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground">
+                        <span dir="ltr">{o.phone ?? "—"}</span>
+                        {o.phone ? (
+                          <>
+                            <a href={`tel:${o.phone}`} title="اتصال" className="hover:text-primary"><Phone className="h-4 w-4" /></a>
+                            <a href={waLink(o.whatsapp ?? o.phone) ?? "#"} target="_blank" rel="noreferrer" title="فتح واتساب" className="hover:text-success"><MessageCircle className="h-4 w-4" /></a>
+                            <button type="button" title="نسخ الرقم" className="hover:text-primary" onClick={() => { navigator.clipboard.writeText(o.phone ?? ""); toast.success("تم نسخ الرقم"); }}><Copy className="h-4 w-4" /></button>
+                          </>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <GhostButton onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></GhostButton>
-                    <GhostButton
-                      
-                      onClick={() => window.confirm(`حذف ${o.full_name} من ملاك البيع؟`) && remove.mutate(o)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </GhostButton>
+                  <div className="flex flex-wrap items-center justify-end gap-1.5">
+                    {ps.length ? (
+                      <span className="rounded-lg bg-[color:var(--warning)]/15 px-2.5 py-1 text-[11.5px] font-bold text-[color:var(--warning)]">لديه عقارات</span>
+                    ) : (
+                      <span className="rounded-lg bg-muted px-2.5 py-1 text-[11.5px] font-bold text-muted-foreground">بدون عقارات</span>
+                    )}
+                    {hasAvail ? <span className="rounded-lg bg-success/15 px-2.5 py-1 text-[11.5px] font-bold text-success">● متاح للبيع</span> : null}
+                    {allSold ? <span className="rounded-lg bg-[color:var(--warning)]/15 px-2.5 py-1 text-[11.5px] font-bold text-[color:var(--warning)]">● مباع بالكامل</span> : null}
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">عقارات البيع ({ps.length})</div>
-                  {ps.length === 0 && <div className="text-xs text-muted-foreground">لا توجد عقارات مربوطة.</div>}
+
+                <div className="grid grid-cols-2 gap-3 border-y border-border py-3">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">العقارات المرتبطة</div>
+                    <div className="text-[20px] font-extrabold text-primary">{ps.length}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">القيمة المطلوبة</div>
+                    <div className="text-[20px] font-extrabold text-primary">{value ? `${value.toLocaleString("ar-SA")} ر.س` : "--"}</div>
+                  </div>
+                </div>
+
+                {(o.national_id || o.email || o.address || o.notes) && (
+                  <div className="space-y-0.5 text-xs text-muted-foreground">
+                    {o.national_id && <div>الهوية: {o.national_id}</div>}
+                    {o.email && <div dir="ltr" className="text-end">{o.email}</div>}
+                    {o.address && <div>العنوان: {o.address}</div>}
+                    {o.notes && <div>ملاحظات: {o.notes}</div>}
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  {ps.length === 0 && (
+                    <div className="grid place-items-center gap-1 rounded-xl bg-muted/50 py-6 text-center text-[12px] text-muted-foreground">
+                      <Home className="size-7" />
+                      لا توجد عقارات مرتبطة حاليًا
+                    </div>
+                  )}
                   {ps.map((p) => (
-                    <div key={p.id} className={`flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm ${q && p.code && norm(p.code).includes(q) ? "bg-accent ring-1 ring-primary/40" : "bg-muted/50"}`}>
+                    <div key={p.id} className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm ${q && p.code && norm(p.code).includes(q) ? "bg-accent ring-1 ring-primary/40" : "bg-muted/50"}`}>
                       <Link to="/properties" className="min-w-0 truncate hover:underline">
                         {p.code ? `${p.code} — ` : ""}{p.name ?? "عقار"}
                         {p.city ? ` • ${p.city}` : ""}
                         {p.price_value ? ` • ${p.price_value.toLocaleString("ar-SA")} ر.س` : ""}
                       </Link>
                       <span className={`shrink-0 rounded-md px-1.5 text-[11px] font-bold ${p.status === "sold" ? "bg-success/15 text-success" : "bg-accent-2-soft text-accent-2"}`}>{STATUS[p.status ?? ""] ?? p.status ?? "—"}</span>
-                      <button
-                        className="text-muted-foreground hover:text-destructive"
-                        title="فك الربط"
-                        onClick={() => setPropOwner.mutate({ propId: p.id, ownerId: null })}
-                      >
+                      <button className="text-muted-foreground hover:text-destructive" title="فك الربط" onClick={() => setPropOwner.mutate({ propId: p.id, ownerId: null })}>
                         <Unlink className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
-                  <GhostButton onClick={() => { setLinkFor(o); setLinkSearch(""); }}>
-                    <Link2 className="h-4 w-4" /> ربط عقار بيع
-                  </GhostButton>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => openEdit(o)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-[13px] font-bold text-primary-foreground hover:opacity-90">
+                    <Pencil className="size-4" /> عرض / تعديل الملف
+                  </button>
+                  <button type="button" onClick={() => { setLinkFor(o); setLinkSearch(""); }} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-[13px] font-bold text-foreground hover:bg-muted">
+                    <Link2 className="size-4" /> ربط عقار بيع
+                  </button>
+                  <button type="button" title="حذف" onClick={() => window.confirm(`حذف ${o.full_name} من ملاك البيع؟`) && remove.mutate(o)} className="grid size-10 place-items-center rounded-xl border border-border hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </button>
                 </div>
               </div>
             );
           })}
         </div>
       )}
+      <p className="text-xs text-muted-foreground">عرض {list.length} نتيجة</p>
 
       <Modal open={open} onClose={() => setOpen(false)} title={editing ? "تعديل مالك بيع" : "إضافة مالك بيع"}>
         <div className="space-y-3">
