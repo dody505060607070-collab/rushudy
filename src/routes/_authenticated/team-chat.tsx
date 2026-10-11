@@ -63,6 +63,9 @@ export function TeamChatPage() {
   const bottom = useRef<HTMLDivElement>(null);
   const [autoDone, setAutoDone] = useState(false);
   const autoTried = useRef(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [membersOpenMobile, setMembersOpenMobile] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
 
   // دخول تلقائي للشات المشترك ببيانات الربط المحفوظة (ربط مرة واحدة فقط)
   useEffect(() => {
@@ -132,6 +135,21 @@ export function TeamChatPage() {
     const q = search.trim();
     return q ? all.filter((m) => (m.body ?? "").includes(q)) : all;
   }, [all, search]);
+  const channelLabel = activeChannel === "shared" ? "الشات المشترك" : "فريق الرشودي";
+  const initialsOf = (name: string) =>
+    name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("") || "؟";
+  const dayLabel = (iso: string) => {
+    const d = new Date(iso);
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    const formatted = d.toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long" });
+    return isToday ? `اليوم ${formatted}` : formatted;
+  };
+  const filteredStaff = useMemo(() => {
+    const q = memberSearch.trim();
+    const list = staff.data ?? [];
+    return q ? list.filter((p) => p.full_name.includes(q)) : list;
+  }, [staff.data, memberSearch]);
 
   useEffect(() => {
     if (!search) bottom.current?.scrollIntoView({ block: "end" });

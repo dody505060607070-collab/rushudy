@@ -1,6 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Loader2, MessageSquare, Plus, Send, Users } from "lucide-react";
+import {
+  Briefcase,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Hash,
+  Loader2,
+  MessageSquare,
+  Plus,
+  Search,
+  Send,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -72,6 +85,7 @@ export function ActivitiesPage() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<"open" | "closed">("open");
+  const [q, setQ] = useState("");
 
   const activities = useQuery({
     queryKey: ["employee-activities"],
@@ -111,10 +125,14 @@ export function ActivitiesPage() {
     },
   });
 
-  const rows = useMemo(
-    () => (activities.data ?? []).filter((a) => (tab === "open" ? a.status !== "closed" : a.status === "closed")),
-    [activities.data, tab],
-  );
+  const rows = useMemo(() => {
+    const base = (activities.data ?? []).filter((a) =>
+      tab === "open" ? a.status !== "closed" : a.status === "closed",
+    );
+    const term = q.trim();
+    if (!term) return base;
+    return base.filter((a) => `${a.subject} ${a.employee?.full_name ?? ""}`.includes(term));
+  }, [activities.data, tab, q]);
 
   const active = (activities.data ?? []).find((a) => a.id === selected) ?? null;
 
