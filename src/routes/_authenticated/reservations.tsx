@@ -431,6 +431,34 @@ function ReservationsPage() {
           rowClassName={(row) => toneRowClass[reservationTone(row.status)]}
           exportFileName="قائمة الحجوزات"
           searchPlaceholder="بحث بالعقار أو الموظف أو العميل"
+          toolbarExtra={
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                className={inputClass}
+                value={employeeFilter}
+                onChange={(e) => setEmployeeFilter(e.target.value)}
+              >
+                <option value="all">كل الموظفين</option>
+                {options.data?.staff.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.full_name}
+                  </option>
+                ))}
+              </select>
+              <select
+                className={inputClass}
+                value={propertyFilter}
+                onChange={(e) => setPropertyFilter(e.target.value)}
+              >
+                <option value="all">كل العقارات</option>
+                {options.data?.properties.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} — {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          }
           emptyState={
             <EmptyState text="لا توجد حجوزات" hint="أنشئ حجزًا جديدًا ليظهر هنا مع حالته ومدته." />
           }
@@ -438,7 +466,16 @@ function ReservationsPage() {
             {
               header: "العقار",
               value: (row) => row.properties?.name,
-              cell: (row) => row.properties?.name ?? "—",
+              cell: (row) => (
+                <span className="flex items-center gap-2.5">
+                  <span className="grid size-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+                    {coverImage(row) ? (
+                      <img src={coverImage(row) ?? undefined} alt="" className="size-full object-cover" />
+                    ) : null}
+                  </span>
+                  <span className="truncate">{row.properties?.name ?? "—"}</span>
+                </span>
+              ),
               className: "font-semibold",
             },
             {
@@ -534,9 +571,16 @@ function ReservationsPage() {
                 <XCircle className="size-4" />
               </button>
             </header>
-            <div className="rounded-xl bg-primary/5 p-3">
-              <p className="text-[15px] font-bold">{selected.properties?.name ?? "—"}</p>
-              <p className="text-[12px] text-muted-foreground" dir="ltr">#{selected.properties?.code ?? "—"}</p>
+            <div className="overflow-hidden rounded-xl bg-primary/5">
+              <div className="h-36 bg-muted">
+                {coverImage(selected) ? (
+                  <img src={coverImage(selected) ?? undefined} alt="" className="size-full object-cover" />
+                ) : null}
+              </div>
+              <div className="p-3">
+                <p className="text-[15px] font-bold">{selected.properties?.name ?? "—"}</p>
+                <p className="text-[12px] text-muted-foreground" dir="ltr">#{selected.properties?.code ?? "—"}</p>
+              </div>
             </div>
             {([
               ["بداية الحجز", formatDate(selected.starts_at)],
