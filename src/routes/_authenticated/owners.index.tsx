@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeftRight, Eye, GripVertical, Loader2, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
+import { Eye, Loader2, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -82,11 +82,6 @@ function OwnersPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<{ rows: Row[]; clear?: (() => void) | undefined } | null>(null);
   const [withContracts, setWithContracts] = useState(true);
-  const [kind, setKind] = useState<"all" | "rent" | "sale">("all");
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [overZone, setOverZone] = useState<"rent" | "sale" | null>(null);
-  const [cardSearch, setCardSearch] = useState("");
-  const [showBoard, setShowBoard] = useState(false);
 
   const { data, isLoading } = useTableRows<Row>({
     table: "contacts",
@@ -116,38 +111,7 @@ function OwnersPage() {
     },
   });
 
-  const allRows = data ?? [];
-  const isSale = (r: Row) => (r.roles ?? []).includes("sale_owner");
-  const [cardLimit, setCardLimit] = useState(12);
-  const rows = kind === "all" ? allRows : allRows.filter((r) => (kind === "sale") === isSale(r));
-  const saleRows = allRows.filter(isSale);
-  const rentRows = allRows.filter((r) => !isSale(r));
-  const term = cardSearch.trim().toLowerCase();
-  const visibleRows = term
-    ? rows.filter((r) => [r.full_name, r.phone].filter(Boolean).some((v) => String(v).toLowerCase().includes(term)))
-    : rows;
-
-  const moveOwner = useMutation({
-    mutationFn: async ({ row, to }: { row: Row; to: "rent" | "sale" }) => {
-      const base = (row.roles ?? []).filter((r) => r !== "sale_owner");
-      const roles = Array.from(new Set([...base, "owner", ...(to === "sale" ? ["sale_owner"] : [])]));
-      const { data: upd, error } = await supabase.from("contacts").update({ roles }).eq("id", row.id).select("id");
-      if (error) throw error;
-      if (!upd?.length) throw new Error("لم يتم التحديث — تحقق من الصلاحيات");
-    },
-    onSuccess: (_d, v) => {
-      queryClient.invalidateQueries({ queryKey: ["contacts"] });
-      queryClient.invalidateQueries({ queryKey: ["sale-owners"] });
-      toast.success(v.to === "sale" ? `نُقل ${v.row.full_name} إلى ملاك البيع` : `نُقل ${v.row.full_name} إلى ملاك الإيجار`);
-    },
-    onError: (err) => toast.error(describeDbError(err, "تعذّر النقل")),
-  });
-  const dropTo = (to: "rent" | "sale") => {
-    const row = allRows.find((r) => r.id === dragId);
-    setDragId(null);
-    setOverZone(null);
-    if (row && isSale(row) !== (to === "sale")) moveOwner.mutate({ row, to });
-  };
+  const rows = data ?? [];
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
 
@@ -239,11 +203,11 @@ function OwnersPage() {
 
   const stats = useMemo(
     () => ({
-      all: allRows.length,
-      sale: allRows.filter(isSale).length,
-      rent: allRows.filter((r) => !isSale(r)).length,
+      all: rows.length,
+      active: rows.filter((r) => r.is_active).length,
+      withProperties: rows.filter((r) => (links.data?.properties[r.id] ?? 0) > 0).length,
     }),
-    [allRows],
+    [rows, links.data],
   );
 
   return (
@@ -254,24 +218,12 @@ function OwnersPage() {
         icon={Users}
         stats={[
           { value: String(stats.all), label: "إجمالي الملاك" },
-          { value: String(stats.rent), label: "ملاك إيجار" },
-          { value: String(stats.sale), label: "ملاك بيع" },
+          { value: String(stats.active), label: "نشط" },
+          { value: String(stats.withProperties), label: "لديهم عقارات" },
         ]}
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        {([["all", "كل الملاك"], ["rent", "ملاك الإيجار"], ["sale", "ملاك البيع"]] as const).map(([k, l]) => (
-          <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-full px-4 py-1.5 text-[12.5px] font-bold ${kind === k ? "brand-tile" : "border border-border bg-card text-muted-foreground"}`}>{l}</button>
-        ))}
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            className="h-10 w-full max-w-xs rounded-xl border border-border bg-card px-3 pe-9 text-[13px] outline-none focus:border-primary"
-            placeholder="البحث باسم المالك أو رقم الجوال ..."
-            value={cardSearch}
-            onChange={(e) => setCardSearch(e.target.value)}
-          />
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           to="/owner-form"
           search={{ id: "" }}
@@ -281,128 +233,7 @@ function OwnersPage() {
           إضافة مالك جديد
         </Link>
       </div>
-      {!isLoading && visibleRows.length > 0 ? (
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {visibleRows.slice(0, cardLimit).map((r) => {
-            const sale = isSale(r);
-            const initials = r.full_name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join(" ");
-            return (
-              <article key={r.id} className="surface-card space-y-4 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10 text-[14px] font-bold text-primary">
-                    {initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-bold">{r.full_name}</p>
-                    <p className="text-[11.5px] text-muted-foreground" dir="ltr">{r.national_id || r.email || ""}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Chip tone={sale ? "gold" : "primary"}>{sale ? "بيع" : "إيجار"}</Chip>
-                    <Chip tone={r.is_active ? "success" : "neutral"}>{r.is_active ? "نشط" : "موقوف"}</Chip>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-xl bg-muted/60 p-3">
-                    <p className="text-[11px] text-muted-foreground">الجوال</p>
-                    <p className="mt-1 text-[13px] font-bold" dir="ltr">{r.phone || "—"}</p>
-                  </div>
-                  <div className="rounded-xl bg-muted/60 p-3">
-                    <p className="text-[11px] text-muted-foreground">واتساب</p>
-                    <p className="mt-1 text-[13px] font-bold" dir="ltr">{r.whatsapp || r.phone || "—"}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Link
-                    to="/owners/$ownerId"
-                    params={{ ownerId: r.id }}
-                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-[12.5px] font-semibold text-primary-foreground hover:opacity-90"
-                  >
-                    <Eye className="size-4" /> عرض ملف المالك
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => moveOwner.mutate({ row: r, to: sale ? "rent" : "sale" })}
-                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[12.5px] font-semibold hover:bg-muted"
-                  >
-                    <ArrowLeftRight className="size-4" /> تغيير التصنيف
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-          {visibleRows.length > cardLimit ? (
-            <button
-              type="button"
-              onClick={() => setCardLimit((n) => n + 12)}
-              className="col-span-full h-10 rounded-xl border border-border bg-card text-[13px] font-semibold text-primary hover:bg-muted"
-            >
-              عرض المزيد ({visibleRows.length - cardLimit})
-            </button>
-          ) : null}
-        </section>
-      ) : null}
 
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setShowBoard((v) => !v)}
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-[12.5px] font-semibold text-foreground hover:bg-muted"
-        >
-          <ArrowLeftRight className="size-4" />
-          {showBoard ? "إخفاء إعادة التصنيف بالسحب" : "إعادة التصنيف بالسحب"}
-        </button>
-      </div>
-
-      {showBoard ? (
-        <section className="grid gap-4 md:grid-cols-2">
-          {(["rent", "sale"] as const).map((zone) => {
-            const list = zone === "sale" ? saleRows : rentRows;
-            return (
-              <div
-                key={zone}
-                onDragOver={(e) => { e.preventDefault(); setOverZone(zone); }}
-                onDragLeave={() => setOverZone((z) => (z === zone ? null : z))}
-                onDrop={(e) => { e.preventDefault(); dropTo(zone); }}
-                className={`surface-card p-4 transition-colors ${overZone === zone ? "ring-2 ring-primary bg-accent" : ""}`}
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-[15px] font-bold">{zone === "sale" ? "ملاك البيع" : "ملاك الإيجار"}</h2>
-                  <Chip tone={zone === "sale" ? "gold" : "primary"}>{list.length}</Chip>
-                </div>
-                <p className="mb-3 text-[11.5px] text-muted-foreground">
-                  {zone === "sale"
-                    ? "تصلهم رسالة المتابعة كل 14 يومًا يوم الجمعة الساعة 4 العصر."
-                    : "اسحب أي مالك وأفلته هنا لنقله إلى الإيجار."}
-                </p>
-                <ul className="max-h-72 space-y-1.5 overflow-y-auto">
-                  {list.map((r) => (
-                    <li
-                      key={r.id}
-                      draggable
-                      onDragStart={() => setDragId(r.id)}
-                      onDragEnd={() => { setDragId(null); setOverZone(null); }}
-                      className={`flex cursor-grab items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-[13px] active:cursor-grabbing ${dragId === r.id ? "opacity-50" : ""}`}
-                    >
-                      <GripVertical className="size-4 shrink-0 text-muted-foreground" />
-                      <Link to="/owners/$ownerId" params={{ ownerId: r.id }} className="min-w-0 flex-1 truncate font-semibold hover:text-primary">{r.full_name}</Link>
-                      <span dir="ltr" className="text-[11.5px] text-muted-foreground">{r.phone ?? ""}</span>
-                      <button
-                        type="button"
-                        title={zone === "sale" ? "نقل إلى الإيجار" : "نقل إلى البيع"}
-                        onClick={() => moveOwner.mutate({ row: r, to: zone === "sale" ? "rent" : "sale" })}
-                        className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary"
-                      >
-                        <ArrowLeftRight className="size-4" />
-                      </button>
-                    </li>
-                  ))}
-                  {!list.length ? <li className="rounded-xl border border-dashed border-border py-6 text-center text-[12px] text-muted-foreground">أفلت مالكًا هنا</li> : null}
-                </ul>
-              </div>
-            );
-          })}
-        </section>
-      ) : null}
       {isLoading ? (
         <div className="surface-card grid place-items-center px-6 py-16">
           <Loader2 className="size-6 animate-spin text-primary" />
@@ -451,8 +282,8 @@ function OwnersPage() {
             },
             {
               header: "النوع",
-              value: (r) => (isSale(r) ? "بيع" : "إيجار"),
-              cell: (r) => <Chip tone={isSale(r) ? "gold" : "primary"}>{isSale(r) ? "مالك بيع" : "مالك إيجار"}</Chip>,
+              value: () => "مالك",
+              cell: () => <Chip tone="gold">مالك</Chip>,
             },
             { header: "رقم الهوية / السجل", cell: (r) => <span dir="ltr">{r.national_id ?? "—"}</span> },
             { header: "الجوال", cell: (r) => <span dir="ltr">{r.phone ?? "—"}</span> },
