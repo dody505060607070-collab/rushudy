@@ -1,6 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ChevronDown, LogOut, Menu, X } from "lucide-react";
+import { Archive, Bell, Bot, Building, Building2, CalendarCheck, CalendarClock, ChevronDown, ClipboardCheck, FileText, FileWarning, Handshake, History, Home, KeyRound, LayoutGrid, ListChecks, LogOut, Megaphone, Menu, MessageCircle, MessagesSquare, Receipt, Settings, ShieldCheck, Target, UserCog, UserRound, Users, Wrench, X, type LucideIcon } from "lucide-react";
+
+const itemIcons: Record<string, LucideIcon> = {
+  "/dashboard": Home, "/ai": Bot, "/properties": Building, "/sale-owners": KeyRound, "/buildings": Building2,
+  "/supply-requests": FileText, "/listing-requests": ClipboardCheck, "/reservations": CalendarCheck,
+  "/owners": Users, "/contracts": FileText, "/renewals": Bell, "/invoices": Receipt, "/reminders": CalendarClock,
+  "/maintenance": Wrench, "/service-partners": Handshake, "/tasks": ListChecks, "/activities": History,
+  "/team-chat": MessagesSquare, "/goals": Target, "/clients": UserRound, "/marketing": Megaphone,
+  "/settings": Settings, "/partners": Handshake, "/services": LayoutGrid, "/whatsapp-link": MessageCircle,
+  "/employees": UserCog, "/roles": ShieldCheck, "/activity-log": History, "/error-log": FileWarning, "/backup": Archive,
+};
 import { useState, type ReactNode } from "react";
 
 import logoAsset from "@/assets/rashudi-logo-navbar.png.asset.json";
@@ -70,17 +80,12 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                         )}
                       >
                         <span className="flex min-w-0 items-center gap-2.5 text-right">
-                          {group.label ? (
-                            <span
-                              className={cn(
-                                "size-1.5 shrink-0 rounded-full",
-                                active ? "bg-primary" : "bg-border",
-                              )}
-                            />
-                          ) : null}
-                          {!group.label && Icon ? (
-                            <Icon className="size-[18px] shrink-0 text-primary/70" />
-                          ) : null}
+                          {(() => {
+                            const ItemIcon = itemIcons[item.to] ?? (!group.label ? Icon : undefined);
+                            return ItemIcon ? (
+                              <ItemIcon className={cn("size-[18px] shrink-0", active ? "text-primary" : "text-primary/60")} />
+                            ) : null;
+                          })()}
                           <span>{t(item.label)}</span>
                         </span>
                         <span className="flex shrink-0 items-center gap-2">
