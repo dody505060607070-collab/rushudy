@@ -5,7 +5,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/kit/Chip";
-import { DataTable } from "@/components/kit/DataTable";
 import { EmptyState } from "@/components/kit/LiveTable";
 import { Field, GhostButton, Modal, PrimaryButton, inputClass, textareaClass } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
@@ -161,51 +160,36 @@ function ServicesPage() {
           </button>
         </div>
 
-        <DataTable<Row>
-          rows={rows}
-          searchPlaceholder="بحث بالخدمة"
-          dragLabel="خدمة"
-          emptyState={
-            <EmptyState
-              text="لا توجد خدمات مضافة"
-              hint="اضغط «إضافة خدمة» لتظهر في صفحة الخدمات بالموقع."
-            />
-          }
-          columns={[
-            { header: "الخدمة", cell: (r) => r.title, className: "font-semibold" },
-            { header: "الوصف", cell: (r) => r.description ?? "—" },
-            { header: "الترتيب", cell: (r) => r.sort_order ?? 0, value: (r) => r.sort_order ?? 0 },
-            {
-              header: "الحالة",
-              cell: (r) => (
-                <button type="button" onClick={() => toggleActive.mutate(r)}>
-                  <Chip tone={r.is_active ? "success" : "neutral"}>
-                    {r.is_active ? "معروضة" : "مخفية"}
-                  </Chip>
-                </button>
-              ),
-            },
-            {
-              header: "إجراءات",
-              cell: (r) => (
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => startEdit(r)} aria-label="تعديل">
-                    <Pencil className="size-4 text-muted-foreground hover:text-primary" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm(`حذف الخدمة «${r.title}»؟`)) remove.mutate(r.id);
-                    }}
-                    aria-label="حذف"
-                  >
-                    <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
+        {rows.length === 0 ? (
+          <EmptyState text="لا توجد خدمات مضافة" hint="اضغط «إضافة خدمة» لتظهر في صفحة الخدمات بالموقع." />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {[...rows].sort((x, y) => (x.sort_order ?? 0) - (y.sort_order ?? 0)).map((r) => (
+              <div key={r.id} className="rounded-2xl border border-border bg-card p-5 shadow-card">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="grid size-14 place-items-center rounded-full bg-[color:var(--warning)]/12 text-[color:var(--warning)]"><Sparkles className="size-6" /></span>
+                  <div className="text-center">
+                    <span className="inline-grid min-w-10 place-items-center rounded-lg border border-border px-2 py-1 text-[13px] font-bold">{r.sort_order ?? 0}</span>
+                    <p className="mt-0.5 text-[10.5px] text-muted-foreground">ترتيب العرض</p>
+                  </div>
+                  <button type="button" onClick={() => toggleActive.mutate(r)} className={`inline-flex items-center gap-2 text-[12px] font-bold ${r.is_active ? "text-success" : "text-muted-foreground"}`}>
+                    {r.is_active ? "مرئي في الموقع" : "مخفي"}
+                    <span className={`relative h-6 w-11 rounded-full transition-colors ${r.is_active ? "bg-success" : "bg-border"}`}>
+                      <span className={`absolute top-0.5 size-5 rounded-full bg-card shadow transition-all ${r.is_active ? "start-0.5" : "start-[22px]"}`} />
+                    </span>
                   </button>
                 </div>
-              ),
-            },
-          ]}
-        />
+                <h3 className="mt-4 text-[17px] font-extrabold text-foreground">{r.title}</h3>
+                <p className="mt-1 line-clamp-3 min-h-[3.6em] text-[13px] leading-relaxed text-muted-foreground">{r.description ?? "—"}</p>
+                <div className="mt-4 flex items-center gap-2">
+                  <a href="/services" target="_blank" rel="noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-[13px] font-bold text-primary-foreground hover:opacity-90"><Eye className="size-4" /> عرض في الموقع</a>
+                  <button type="button" onClick={() => startEdit(r)} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-[13px] font-bold hover:bg-muted"><Pencil className="size-4" /> تعديل</button>
+                  <button type="button" aria-label="حذف" onClick={() => { if (confirm(`حذف الخدمة «${r.title}»؟`)) remove.mutate(r.id); }} className="grid size-10 place-items-center rounded-xl bg-destructive/10"><Trash2 className="size-4 text-destructive" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <Modal
