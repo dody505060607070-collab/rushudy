@@ -1,13 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BadgeDollarSign, Copy, Home, Link2, MessageCircle, Pencil, Phone, Plus, Search, Trash2, Unlink, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { BadgeDollarSign, BellRing, CheckCircle2, Clock, Copy, Home, Link2, MessageCircle, Pencil, Phone, Plus, Search, Send, Trash2, Unlink, Users, XCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Field, GhostButton, Modal, PrimaryButton, inputClass, textareaClass } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import { describeDbError } from "@/lib/db-errors";
+import { getOwnerFollowupStatus, saveOwnerFollowupConfig, sendOwnerFollowupNow } from "@/lib/owner-followup.functions";
 
 export const Route = createFileRoute("/_authenticated/sale-owners")({
   head: () => ({
@@ -43,8 +45,31 @@ const norm = (v: string) => v.toLowerCase().replace(/[أإآ]/g, "ا").replace(/
 const ROLE = "sale_owner";
 const empty = { full_name: "", phone: "", whatsapp: "", national_id: "", notes: "", email: "", address: "" };
 
+function useCountdown(target: string | null) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  if (!target) return null;
+  const diff = new Date(target).getTime() - Date.now();
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, passed: true };
+  const minutes = Math.floor(diff / 60_000) % 60;
+  const hours = Math.floor(diff / 3_600_000) % 24;
+  const days = Math.floor(diff / 86_400_000);
+  return { days, hours, minutes, passed: false };
+}
+
+function fmtDateTime(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("ar-SA", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", hour12: true });
+}
+
 function SaleOwnersPage() {
   const qc = useQueryClient();
+  const fetchFollowup = useServerFn(getOwnerFollowupStatus);
+  const saveFollowup = useServerFn(saveOwnerFollowupConfig);
+  const sendFollowupNow = useServerFn(sendOwnerFollowupNow);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Owner | null>(null);
   const [form, setForm] = useState(empty);
@@ -112,6 +137,53 @@ function SaleOwnersPage() {
     qc.invalidateQueries({ queryKey: ["sale-owners"] });
     qc.invalidateQueries({ queryKey: ["sale-owner-props"] });
   };
+
+  const followup = useQuery({
+    queryKey: ["owner-followup-status"],
+    queryFn: () => fetchFollowup(),
+  });
+  const [templateDraft, setTemplateDraft] = useState<string | null>(null);
+  const template = templateDraft ?? followup.data?.template ?? "";
+  const countdown = useCountdown(followup.data?.enabled ? followup.data?.nextRun ?? null : null);
+
+  const toggleEnabled = useMutation({
+    mutationFn: (enabled: boolean) => saveFollowup({ data: { enabled } }),
+    onSuccess: () => {
+      toast.success("تم تحديث حالة التفعيل");
+      qc.invalidateQueries({ queryKey: ["owner-followup-status"] });
+    },
+    onError: (e) => toast.error(describeDbError(e)),
+  });
+
+  const saveTemplate = useMutation({
+    mutationFn: (tpl: string) => saveFollowup({ data: { template: tpl } }),
+    onSuccess: () => {
+      toast.success("تم حفظ القالب");
+      setTemplateDraft(null);
+      qc.invalidateQueries({ queryKey: ["owner-followup-status"] });
+    },
+    onError: (e) => toast.error(describeDbError(e)),
+  });
+
+  const sendAll = useMutation({
+    mutationFn: () => sendFollowupNow({ data: {} }),
+    onSuccess: (res) => {
+      const sent = res?.sent ?? 0;
+      const failed = res?.failed ?? 0;
+      toast.success(`تم الإرسال: ${sent} ناجحة${failed ? ` • ${failed} فاشلة` : ""}`);
+      qc.invalidateQueries({ queryKey: ["owner-followup-status"] });
+    },
+    onError: (e) => toast.error(describeDbError(e)),
+  });
+
+  const sendOne = useMutation({
+    mutationFn: (contactId: string) => sendFollowupNow({ data: { contactId } }),
+    onSuccess: () => {
+      toast.success("تم إرسال الرسالة");
+      qc.invalidateQueries({ queryKey: ["owner-followup-status"] });
+    },
+    onError: (e) => toast.error(describeDbError(e)),
+  });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -210,6 +282,23 @@ function SaleOwnersPage() {
         ]}
       />
 
+      <OwnerFollowupPanel
+        status={followup.data}
+        isLoading={followup.isLoading}
+        countdown={countdown}
+        template={template}
+        templateDirty={templateDraft !== null}
+        onTemplateChange={setTemplateDraft}
+        onSaveTemplate={() => saveTemplate.mutate(template)}
+        onResetTemplate={() => followup.data && setTemplateDraft(followup.data.defaultTemplate)}
+        onToggle={(v) => toggleEnabled.mutate(v)}
+        onSendAll={() => sendAll.mutate()}
+        sendAllPending={sendAll.isPending}
+        saveTemplatePending={saveTemplate.isPending}
+        togglePending={toggleEnabled.isPending}
+        ownersCount={owners.data?.length ?? 0}
+      />
+
       <div className="surface-card flex flex-wrap items-center gap-3 p-3">
         <div className="flex flex-wrap gap-2">
           {([
@@ -285,6 +374,18 @@ function SaleOwnersPage() {
                     {hasAvail ? <span className="rounded-lg bg-success/15 px-2.5 py-1 text-[11.5px] font-bold text-success">● متاح للبيع</span> : null}
                     {allSold ? <span className="rounded-lg bg-[color:var(--warning)]/15 px-2.5 py-1 text-[11.5px] font-bold text-[color:var(--warning)]">● مباع بالكامل</span> : null}
                   </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/40 px-3 py-2">
+                  <OwnerFollowupBadge entry={followup.data?.last?.[o.id]} />
+                  <button
+                    type="button"
+                    disabled={sendOne.isPending}
+                    onClick={() => window.confirm(`إرسال رسالة المتابعة الآن إلى ${o.full_name}؟`) && sendOne.mutate(o.id)}
+                    className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-[11.5px] font-bold text-foreground hover:bg-muted disabled:opacity-50"
+                  >
+                    <Send className="size-3.5" /> إرسال الآن
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 border-y border-border py-3">
@@ -390,6 +491,174 @@ function Stat({ label, value }: { label: string; value: number | string }) {
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="text-sm text-muted-foreground">{label}</div>
       <div className="text-2xl font-bold text-foreground">{value}</div>
+    </div>
+  );
+}
+
+type FollowupLastEntry = { result: string; reason: string | null; at: string; auto: boolean } | undefined;
+type FollowupStatus = {
+  enabled: boolean;
+  template: string;
+  defaultTemplate: string;
+  lastRunAt: string | null;
+  nextRun: string;
+  last: Record<string, FollowupLastEntry>;
+} | undefined;
+
+function OwnerFollowupBadge({ entry }: { entry: FollowupLastEntry }) {
+  if (!entry) return <span className="rounded-md bg-muted px-2 py-1 text-[11px] font-bold text-muted-foreground">لم تُرسل بعد</span>;
+  if (entry.result === "sent")
+    return (
+      <span title={fmtDateTime(entry.at)} className="rounded-md bg-success/15 px-2 py-1 text-[11px] font-bold text-success">
+        وصلت • {fmtDateTime(entry.at)}
+      </span>
+    );
+  return (
+    <span title={entry.reason ?? "فشل الإرسال"} className="rounded-md bg-destructive/15 px-2 py-1 text-[11px] font-bold text-destructive">
+      فشلت
+    </span>
+  );
+}
+
+function OwnerFollowupPanel({
+  status,
+  isLoading,
+  countdown,
+  template,
+  templateDirty,
+  onTemplateChange,
+  onSaveTemplate,
+  onResetTemplate,
+  onToggle,
+  onSendAll,
+  sendAllPending,
+  saveTemplatePending,
+  togglePending,
+  ownersCount,
+}: {
+  status: FollowupStatus;
+  isLoading: boolean;
+  countdown: { days: number; hours: number; minutes: number; passed: boolean } | null;
+  template: string;
+  templateDirty: boolean;
+  onTemplateChange: (v: string) => void;
+  onSaveTemplate: () => void;
+  onResetTemplate: () => void;
+  onToggle: (v: boolean) => void;
+  onSendAll: () => void;
+  sendAllPending: boolean;
+  saveTemplatePending: boolean;
+  togglePending: boolean;
+  ownersCount: number;
+}) {
+  const last = status?.last ?? {};
+  const counts = useMemo(() => {
+    let sent = 0;
+    let failed = 0;
+    for (const v of Object.values(last)) {
+      if (!v) continue;
+      if (v.result === "sent") sent += 1;
+      else failed += 1;
+    }
+    return { sent, failed, pending: Math.max(ownersCount - sent - failed, 0) };
+  }, [last, ownersCount]);
+
+  return (
+    <div className="surface-card space-y-5 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-2-soft text-accent-2"><BellRing className="size-5" /></span>
+          <div>
+            <h2 className="text-[16px] font-extrabold text-foreground">رسالة المتابعة كل 14 يومًا</h2>
+            <p className="text-[12px] text-muted-foreground">تُرسل تلقائيًا لكل ملاك البيع عبر واتساب يوم الجمعة الساعة 4:00 م بتوقيت الرياض.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={togglePending || isLoading}
+          onClick={() => onToggle(!(status?.enabled ?? true))}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-bold transition-colors disabled:opacity-50 ${
+            status?.enabled ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          <span className={`relative h-5 w-9 rounded-full transition-colors ${status?.enabled ? "bg-success" : "bg-border"}`}>
+            <span className={`absolute top-0.5 size-4 rounded-full bg-white transition-all ${status?.enabled ? "right-0.5" : "right-4"}`} />
+          </span>
+          {status?.enabled ? "مفعّلة" : "موقوفة"}
+        </button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
+        <div className="rounded-xl border border-border bg-muted/30 p-4">
+          <div className="mb-2 flex items-center gap-2 text-[12px] font-bold text-muted-foreground">
+            <Clock className="size-4" /> الموعد القادم
+          </div>
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">جارٍ التحميل…</p>
+          ) : !status?.enabled ? (
+            <p className="text-[15px] font-extrabold text-muted-foreground">موقوفة — لن تُرسل</p>
+          ) : countdown ? (
+            <div className="flex items-end gap-3">
+              {[
+                { v: countdown.days, l: "يوم" },
+                { v: countdown.hours, l: "ساعة" },
+                { v: countdown.minutes, l: "دقيقة" },
+              ].map((x) => (
+                <div key={x.l} className="text-center">
+                  <div className="text-[26px] font-extrabold leading-none text-primary">{x.v}</div>
+                  <div className="text-[11px] text-muted-foreground">{x.l}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <p className="mt-2 text-[12.5px] text-foreground">الجمعة … الساعة 4:00 م — {status ? fmtDateTime(status.nextRun) : "—"}</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">آخر تشغيل: {status?.lastRunAt ? fmtDateTime(status.lastRunAt) : "لم يُنفَّذ بعد"}</p>
+        </div>
+
+        <div className="flex flex-col justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <div className="flex items-center justify-center gap-1 text-success"><CheckCircle2 className="size-4" /><span className="text-[18px] font-extrabold">{counts.sent}</span></div>
+              <div className="text-[11px] text-muted-foreground">وصلت</div>
+            </div>
+            <div>
+              <div className="flex items-center justify-center gap-1 text-destructive"><XCircle className="size-4" /><span className="text-[18px] font-extrabold">{counts.failed}</span></div>
+              <div className="text-[11px] text-muted-foreground">فشلت</div>
+            </div>
+            <div>
+              <div className="flex items-center justify-center gap-1 text-muted-foreground"><Clock className="size-4" /><span className="text-[18px] font-extrabold">{counts.pending}</span></div>
+              <div className="text-[11px] text-muted-foreground">لم تُرسل</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={sendAllPending}
+            onClick={() => window.confirm(`سيتم إرسال رسالة المتابعة الآن إلى ${ownersCount} من ملاك البيع. متابعة؟`) && onSendAll()}
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-[13px] font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            <Send className="size-4" /> {sendAllPending ? "جارٍ الإرسال…" : "إرسال الآن لكل ملاك البيع"}
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-[13px] font-bold text-foreground">نص الرسالة</label>
+          <span className="text-[11px] text-muted-foreground">{template.length} حرف</span>
+        </div>
+        <textarea
+          className={`${textareaClass} min-h-[110px]`}
+          value={template}
+          onChange={(e) => onTemplateChange(e.target.value)}
+          dir="rtl"
+        />
+        <div className="flex justify-end gap-2">
+          <GhostButton onClick={onResetTemplate} disabled={isLoading}>استرجاع القالب الافتراضي</GhostButton>
+          <PrimaryButton onClick={onSaveTemplate} disabled={!templateDirty || saveTemplatePending}>
+            {saveTemplatePending ? "جارٍ الحفظ…" : "حفظ القالب"}
+          </PrimaryButton>
+        </div>
+      </div>
     </div>
   );
 }

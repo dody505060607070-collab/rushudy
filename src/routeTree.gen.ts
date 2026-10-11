@@ -49,6 +49,7 @@ import { Route as AuthenticatedPropertiesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPropertyFormRouteImport } from './routes/_authenticated/property-form'
 import { Route as AuthenticatedRemindersRouteImport } from './routes/_authenticated/reminders'
 import { Route as AuthenticatedRenewalsRouteImport } from './routes/_authenticated/renewals'
+import { Route as AuthenticatedRentOwnersRouteImport } from './routes/_authenticated/rent-owners'
 import { Route as AuthenticatedReservationsRouteImport } from './routes/_authenticated/reservations'
 import { Route as AuthenticatedReserveRouteImport } from './routes/_authenticated/reserve'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
@@ -299,6 +300,11 @@ const AuthenticatedRemindersRoute = AuthenticatedRemindersRouteImport.update({
 const AuthenticatedRenewalsRoute = AuthenticatedRenewalsRouteImport.update({
   id: '/renewals',
   path: '/renewals',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRentOwnersRoute = AuthenticatedRentOwnersRouteImport.update({
+  id: '/rent-owners',
+  path: '/rent-owners',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReservationsRoute =
@@ -591,6 +597,7 @@ export interface FileRoutesByFullPath {
   '/property-form': typeof AuthenticatedPropertyFormRoute
   '/reminders': typeof AuthenticatedRemindersRoute
   '/renewals': typeof AuthenticatedRenewalsRoute
+  '/rent-owners': typeof AuthenticatedRentOwnersRoute
   '/reservations': typeof AuthenticatedReservationsRoute
   '/reserve': typeof AuthenticatedReserveRoute
   '/roles': typeof AuthenticatedRolesRoute
@@ -676,6 +683,7 @@ export interface FileRoutesByTo {
   '/property-form': typeof AuthenticatedPropertyFormRoute
   '/reminders': typeof AuthenticatedRemindersRoute
   '/renewals': typeof AuthenticatedRenewalsRoute
+  '/rent-owners': typeof AuthenticatedRentOwnersRoute
   '/reservations': typeof AuthenticatedReservationsRoute
   '/reserve': typeof AuthenticatedReserveRoute
   '/roles': typeof AuthenticatedRolesRoute
@@ -765,6 +773,7 @@ export interface FileRoutesById {
   '/_authenticated/property-form': typeof AuthenticatedPropertyFormRoute
   '/_authenticated/reminders': typeof AuthenticatedRemindersRoute
   '/_authenticated/renewals': typeof AuthenticatedRenewalsRoute
+  '/_authenticated/rent-owners': typeof AuthenticatedRentOwnersRoute
   '/_authenticated/reservations': typeof AuthenticatedReservationsRoute
   '/_authenticated/reserve': typeof AuthenticatedReserveRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
@@ -854,6 +863,7 @@ export interface FileRouteTypes {
     | '/property-form'
     | '/reminders'
     | '/renewals'
+    | '/rent-owners'
     | '/reservations'
     | '/reserve'
     | '/roles'
@@ -939,6 +949,7 @@ export interface FileRouteTypes {
     | '/property-form'
     | '/reminders'
     | '/renewals'
+    | '/rent-owners'
     | '/reservations'
     | '/reserve'
     | '/roles'
@@ -1027,6 +1038,7 @@ export interface FileRouteTypes {
     | '/_authenticated/property-form'
     | '/_authenticated/reminders'
     | '/_authenticated/renewals'
+    | '/_authenticated/rent-owners'
     | '/_authenticated/reservations'
     | '/_authenticated/reserve'
     | '/_authenticated/roles'
@@ -1382,6 +1394,13 @@ declare module '@tanstack/react-router' {
       path: '/renewals'
       fullPath: '/renewals'
       preLoaderRoute: typeof AuthenticatedRenewalsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rent-owners': {
+      id: '/_authenticated/rent-owners'
+      path: '/rent-owners'
+      fullPath: '/rent-owners'
+      preLoaderRoute: typeof AuthenticatedRentOwnersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/reservations': {
@@ -1746,6 +1765,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPropertyFormRoute: typeof AuthenticatedPropertyFormRoute
   AuthenticatedRemindersRoute: typeof AuthenticatedRemindersRoute
   AuthenticatedRenewalsRoute: typeof AuthenticatedRenewalsRoute
+  AuthenticatedRentOwnersRoute: typeof AuthenticatedRentOwnersRoute
   AuthenticatedReservationsRoute: typeof AuthenticatedReservationsRoute
   AuthenticatedReserveRoute: typeof AuthenticatedReserveRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
@@ -1795,6 +1815,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPropertyFormRoute: AuthenticatedPropertyFormRoute,
   AuthenticatedRemindersRoute: AuthenticatedRemindersRoute,
   AuthenticatedRenewalsRoute: AuthenticatedRenewalsRoute,
+  AuthenticatedRentOwnersRoute: AuthenticatedRentOwnersRoute,
   AuthenticatedReservationsRoute: AuthenticatedReservationsRoute,
   AuthenticatedReserveRoute: AuthenticatedReserveRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
