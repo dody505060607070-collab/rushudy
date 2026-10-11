@@ -88,6 +88,7 @@ function TasksPage() {
   const [type, setType] = useState("all");
   const [status, setStatus] = useState("all");
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"board" | "table">("board");
   const [form, setForm] = useState<FormState>(emptyForm);
   const queryClient = useQueryClient();
 

@@ -320,19 +320,22 @@ export function TeamChatPage() {
           </div>
         ) : null}
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-muted/20 p-4">
           {rows.map((m) => {
             const mine = m.sender_id === chatUserId;
             const parent = m.reply_to ? byId.get(m.reply_to) : null;
             return (
-              <div key={m.id} className={cn("flex gap-2", mine ? "justify-start" : "justify-end")}>
+              <div key={m.id} className={cn("flex items-start gap-2", mine ? "flex-row" : "flex-row-reverse")}>
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-[12px] font-bold text-primary">
+                  {(m.sender?.full_name ?? "؟").slice(0, 1)}
+                </span>
                 <div
                   className={cn(
-                    "max-w-[78%] rounded-2xl px-3 py-2 text-[13.5px]",
-                    mine ? "bg-primary text-primary-foreground" : "bg-accent text-foreground",
+                    "max-w-[78%] rounded-2xl px-3 py-2 text-[13.5px] shadow-sm",
+                    mine ? "bg-primary text-primary-foreground" : "border border-border bg-card text-foreground",
                   )}
                 >
-                  <p className="mb-1 text-[11px] opacity-75">
+                  <p className="mb-1 text-[11.5px] font-bold opacity-80">
                     {m.sender?.full_name ?? "—"}
                     {m.sender?.job_title ? ` • ${m.sender.job_title}` : ""}
                   </p>
