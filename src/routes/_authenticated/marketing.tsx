@@ -543,7 +543,29 @@ function MarketingPage() {
         ]}
       />
 
-      <div className="surface-card flex flex-wrap items-center justify-between gap-3 p-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="المسوقون النشطون" value={metrics.active} icon={Users} hint={`من إجمالي ${data.marketers.length} مسوق`} />
+        <StatCard label="العملاء المنسوبون" value={metrics.leads} icon={UserCheck} hint={`${metrics.open} قيد المتابعة`} />
+        <StatCard label="الصفقات المغلقة" value={metrics.won} icon={BadgeCheck} hint={`نسبة إغلاق ${metrics.closeRate.toFixed(0)}%`} />
+        <StatCard label="قيمة الصفقات" value={metrics.wonValue} suffix="ر.س" icon={Banknote} hint="إجمالي الصفقات المؤكدة" />
+      </div>
+
+      <div className="surface-card flex flex-wrap items-center justify-between gap-3 p-2.5">
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setTab(item.value)}
+              className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition ${
+                tab === item.value ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-card text-foreground hover:bg-muted/60"
+              }`}
+            >
+              <item.icon className="size-4" />
+              {item.label}
+            </button>
+          ))}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
             <Filter className="size-3.5" /> الفترة
@@ -563,16 +585,19 @@ function MarketingPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            className={`${inputClass} w-56 pe-9`}
+            placeholder="ابحث باسم مسوق أو عميل أو جوال…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              className={`${inputClass} w-56 pe-9`}
-              placeholder="ابحث باسم مسوق أو عميل أو جوال…"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
           <Button variant="outline" onClick={exportCsv}>
             <Download />
             تصدير التقرير
@@ -588,33 +613,6 @@ function MarketingPage() {
             إضافة مسوق
           </Button>
         </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="زيارات روابط المسوقين" value={metrics.visits} icon={Activity} hint={`${metrics.uniqueVisitors.toLocaleString("ar-EG")} زائر مختلف`} />
-        <StatCard label="نسبة التحويل إلى عميل" value={metrics.conversion} suffix="%" icon={Target} hint="العملاء ÷ الزيارات" />
-        <StatCard label="نسبة إغلاق الصفقات" value={metrics.closeRate} suffix="%" icon={TrendingUp} hint={`${metrics.won} صفقة من ${metrics.leads} عميل`} />
-        <StatCard label="خط الأنابيب المفتوح" value={metrics.pipelineValue} suffix="ر.س" icon={Flame} hint={`${metrics.open} عميل قيد المتابعة`} />
-        <StatCard label="عمولات متوقعة" value={metrics.expected} suffix="ر.س" icon={BarChart3} />
-        <StatCard label="عمولات مستحقة/معتمدة" value={metrics.due} suffix="ر.س" icon={Banknote} />
-        <StatCard label="عمولات مدفوعة" value={metrics.paid} suffix="ر.س" icon={BadgeCheck} />
-        <StatCard label="مشاركات عقارات للمسوقين" value={metrics.shares} icon={Link2} hint="إرسال يدوي فقط" />
-      </div>
-
-      <div className="surface-card flex flex-wrap gap-2 p-2.5">
-        {tabs.map((item) => (
-          <button
-            key={item.value}
-            type="button"
-            onClick={() => setTab(item.value)}
-            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition ${
-              tab === item.value ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-card text-foreground hover:bg-muted/60"
-            }`}
-          >
-            <item.icon className="size-4" />
-            {item.label}
-          </button>
-        ))}
       </div>
 
       {dashboard.isLoading ? (
