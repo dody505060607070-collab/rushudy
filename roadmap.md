@@ -5,4 +5,4 @@
 - [x] Public property order: new first, featured pinned, quick control
 - [x] Delete button for supply requests / requests
 - [x] Check notifications + automation health
-- [x] UI redesign per design images (all pages done)
+- [ ] UI redesign per design images (done: most pages incl. partners, services; remaining: buildings, tasks, activities, team-chat, marketing, settings)
