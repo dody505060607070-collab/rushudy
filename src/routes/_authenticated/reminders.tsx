@@ -180,10 +180,10 @@ function RemindersPage() {
         ]}
       />
 
-      <section className="space-y-3">
+      <section className="surface-card space-y-3 p-4">
         <div className="flex items-center gap-2">
-          <BellRing className="size-4 text-primary" />
-          <h2 className="text-[14px] font-bold text-foreground">المتابعات النشطة</h2>
+          <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground"><BellRing className="size-4" /></span>
+          <h2 className="text-[16px] font-bold text-foreground">المتابعات النشطة</h2>
         </div>
         <StatusLegend />
         <DataTable<FollowupRow>
@@ -271,10 +271,10 @@ function RemindersPage() {
         />
       </section>
 
-      <section className="space-y-3">
+      <section className="surface-card space-y-3 p-4">
         <div className="flex items-center gap-2">
           <MessageSquare className="size-4 text-primary" />
-          <h2 className="text-[14px] font-bold text-foreground">سجل التواصل</h2>
+          <h2 className="text-[16px] font-bold text-foreground">سجل التواصل</h2>
         </div>
         <StatusLegend />
         <DataTable<LogRow>
