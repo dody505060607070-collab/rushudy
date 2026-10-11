@@ -85,6 +85,8 @@ function OwnersPage() {
   const [kind, setKind] = useState<"all" | "rent" | "sale">("all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overZone, setOverZone] = useState<"rent" | "sale" | null>(null);
+  const [cardSearch, setCardSearch] = useState("");
+  const [showBoard, setShowBoard] = useState(false);
 
   const { data, isLoading } = useTableRows<Row>({
     table: "contacts",
@@ -253,7 +255,19 @@ function OwnersPage() {
         ]}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {([["all", "كل الملاك"], ["rent", "ملاك الإيجار"], ["sale", "ملاك البيع"]] as const).map(([k, l]) => (
+          <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-full px-4 py-1.5 text-[12.5px] font-bold ${kind === k ? "brand-tile" : "border border-border bg-card text-muted-foreground"}`}>{l}</button>
+        ))}
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            className="h-10 w-full max-w-xs rounded-xl border border-border bg-card px-3 pe-9 text-[13px] outline-none focus:border-primary"
+            placeholder="البحث باسم المالك أو رقم الجوال ..."
+            value={cardSearch}
+            onChange={(e) => setCardSearch(e.target.value)}
+          />
+        </div>
         <Link
           to="/owner-form"
           search={{ id: "" }}
@@ -262,62 +276,6 @@ function OwnersPage() {
           <Plus className="size-4" />
           إضافة مالك جديد
         </Link>
-      </div>
-
-
-      <section className="grid gap-4 md:grid-cols-2">
-        {(["rent", "sale"] as const).map((zone) => {
-          const list = zone === "sale" ? saleRows : rentRows;
-          return (
-            <div
-              key={zone}
-              onDragOver={(e) => { e.preventDefault(); setOverZone(zone); }}
-              onDragLeave={() => setOverZone((z) => (z === zone ? null : z))}
-              onDrop={(e) => { e.preventDefault(); dropTo(zone); }}
-              className={`surface-card p-4 transition-colors ${overZone === zone ? "ring-2 ring-primary bg-accent" : ""}`}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-[15px] font-bold">{zone === "sale" ? "ملاك البيع" : "ملاك الإيجار"}</h2>
-                <Chip tone={zone === "sale" ? "gold" : "primary"}>{list.length}</Chip>
-              </div>
-              <p className="mb-3 text-[11.5px] text-muted-foreground">
-                {zone === "sale"
-                  ? "تصلهم رسالة المتابعة كل 14 يومًا يوم الجمعة الساعة 4 العصر."
-                  : "اسحب أي مالك وأفلته هنا لنقله إلى الإيجار."}
-              </p>
-              <ul className="max-h-72 space-y-1.5 overflow-y-auto">
-                {list.map((r) => (
-                  <li
-                    key={r.id}
-                    draggable
-                    onDragStart={() => setDragId(r.id)}
-                    onDragEnd={() => { setDragId(null); setOverZone(null); }}
-                    className={`flex cursor-grab items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-[13px] active:cursor-grabbing ${dragId === r.id ? "opacity-50" : ""}`}
-                  >
-                    <GripVertical className="size-4 shrink-0 text-muted-foreground" />
-                    <Link to="/owners/$ownerId" params={{ ownerId: r.id }} className="min-w-0 flex-1 truncate font-semibold hover:text-primary">{r.full_name}</Link>
-                    <span dir="ltr" className="text-[11.5px] text-muted-foreground">{r.phone ?? ""}</span>
-                    <button
-                      type="button"
-                      title={zone === "sale" ? "نقل إلى الإيجار" : "نقل إلى البيع"}
-                      onClick={() => moveOwner.mutate({ row: r, to: zone === "sale" ? "rent" : "sale" })}
-                      className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary"
-                    >
-                      <ArrowLeftRight className="size-4" />
-                    </button>
-                  </li>
-                ))}
-                {!list.length ? <li className="rounded-xl border border-dashed border-border py-6 text-center text-[12px] text-muted-foreground">أفلت مالكًا هنا</li> : null}
-              </ul>
-            </div>
-          );
-        })}
-      </section>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {([["all", "كل الملاك"], ["rent", "ملاك الإيجار"], ["sale", "ملاك البيع"]] as const).map(([k, l]) => (
-          <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-full px-4 py-1.5 text-[12.5px] font-bold ${kind === k ? "brand-tile" : "border border-border bg-card text-muted-foreground"}`}>{l}</button>
-        ))}
       </div>
       {!isLoading && rows.length > 0 ? (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
