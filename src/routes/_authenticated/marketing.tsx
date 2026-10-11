@@ -553,9 +553,9 @@ function MarketingPage() {
               key={item.value}
               type="button"
               onClick={() => setPeriod(item.value)}
-              className={`rounded-md border px-3 py-1.5 text-xs font-bold transition ${
+              className={`rounded-xl border px-4 py-2 text-xs font-bold transition ${
                 period === item.value
-                  ? "border-primary bg-primary text-primary-foreground"
+                  ? "border-primary bg-primary text-primary-foreground shadow-md"
                   : "border-border bg-card text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -601,14 +601,14 @@ function MarketingPage() {
         <StatCard label="مشاركات عقارات للمسوقين" value={metrics.shares} icon={Link2} hint="إرسال يدوي فقط" />
       </div>
 
-      <div className="surface-card flex flex-wrap gap-2 p-2">
+      <div className="surface-card flex flex-wrap gap-2 p-2.5">
         {tabs.map((item) => (
           <button
             key={item.value}
             type="button"
             onClick={() => setTab(item.value)}
-            className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-bold transition ${
-              tab === item.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/60"
+            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition ${
+              tab === item.value ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-card text-foreground hover:bg-muted/60"
             }`}
           >
             <item.icon className="size-4" />
