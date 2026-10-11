@@ -1,7 +1,7 @@
 import { uploadMedia, mediaUrl } from "@/lib/media";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, MessagesSquare, Paperclip, Pencil, Pin, Reply, Search, Send, Smile, Trash2, Users } from "lucide-react";
+import { Info, Loader2, MessagesSquare, Paperclip, Pencil, Pin, Reply, Search, Send, Smile, Trash2, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
