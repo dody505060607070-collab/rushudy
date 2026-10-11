@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Ban, History, Pencil, Plus, Trash2, UserCog } from "lucide-react";
+import { Ban, CalendarDays, History, Mail, Pencil, Phone, Plus, Trash2, User, UserCog, UserX, Users, X } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/kit/Chip";
@@ -64,6 +65,8 @@ function EmployeesPage() {
   });
 
   const rows = list.data ?? [];
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const sel = rows.find((r) => r.id === selectedId) ?? null;
 
   return (
     <>
@@ -72,12 +75,13 @@ function EmployeesPage() {
         subtitle="حسابات الفريق وبيانات الدخول والصلاحيات وملاحظات الإدارة."
         icon={UserCog}
         stats={[
-          { label: "إجمالي الموظفين", value: String(rows.length) },
-          { label: "نشِط", value: String(rows.filter((r) => r.is_active).length) },
-          { label: "موقوف", value: String(rows.filter((r) => !r.is_active).length) },
+          { label: "إجمالي الموظفين", value: String(rows.length), icon: Users },
+          { label: "نشِط", value: String(rows.filter((r) => r.is_active).length), icon: User },
+          { label: "الموظفون الموقوفون", value: String(rows.filter((r) => !r.is_active).length), icon: UserX },
         ]}
       />
 
+      <div className={sel ? "grid gap-4 xl:grid-cols-[1fr_340px]" : ""}>
       <div className="surface-card p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[14px] font-bold text-foreground">قائمة الموظفين</h2>
@@ -102,7 +106,12 @@ function EmployeesPage() {
             />
           }
           columns={[
-            { header: "الموظف", cell: (r) => r.full_name, className: "font-semibold" },
+            { header: "الموظف", cell: (r) => (
+              <button type="button" onClick={() => setSelectedId(r.id)} className="flex items-center gap-2.5 text-start font-semibold hover:text-primary">
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary"><User className="size-4" /></span>
+                {r.full_name}
+              </button>
+            ) },
             { header: "البريد", cell: (r) => <span dir="ltr">{r.email ?? "—"}</span> },
             { header: "الجوال", cell: (r) => <span dir="ltr">{r.phone ?? "—"}</span> },
             { header: "الواتساب", cell: (r) => <span dir="ltr">{r.whatsapp ?? "—"}</span> },
@@ -155,6 +164,41 @@ function EmployeesPage() {
             },
           ]}
         />
+      </div>
+      {sel ? (
+        <aside className="surface-card h-fit space-y-4 p-5 xl:sticky xl:top-4">
+          <div className="flex items-start justify-between">
+            <div><h2 className="text-[17px] font-bold">بيانات الموظف</h2><p className="text-[12px] text-muted-foreground">معلومات الحساب</p></div>
+            <button type="button" onClick={() => setSelectedId(null)} className="grid size-9 place-items-center rounded-full border border-border hover:bg-muted" aria-label="إغلاق"><X className="size-4" /></button>
+          </div>
+          <div className="grid place-items-center gap-2 rounded-2xl bg-muted/40 py-5 text-center">
+            <span className="grid size-20 place-items-center rounded-full bg-primary/10 text-primary"><User className="size-9" /></span>
+            <Chip tone={sel.is_active ? "success" : "neutral"}>{sel.is_active ? "نشط" : "موقوف"}</Chip>
+            <p className="text-[17px] font-bold">{sel.full_name}</p>
+            <p className="text-[13px] text-muted-foreground">{sel.job_title ?? "موظف"}</p>
+          </div>
+          <div className="divide-y divide-border rounded-2xl border border-border text-[13px]">
+            {[
+              { i: Mail, l: "البريد", v: sel.email ?? "—" },
+              { i: Phone, l: "الجوال", v: sel.phone ?? "—" },
+              { i: Phone, l: "الواتساب", v: sel.whatsapp ?? "—" },
+              { i: CalendarDays, l: "تاريخ الانضمام", v: formatDate(sel.hire_date) },
+            ].map((x) => (
+              <div key={x.l} className="flex items-center justify-between gap-2 px-4 py-3">
+                <span className="flex items-center gap-2 text-muted-foreground"><x.i className="size-4" />{x.l}</span>
+                <span dir="ltr" className="font-semibold">{x.v}</span>
+              </div>
+            ))}
+          </div>
+          <Link to="/employee-form" search={{ id: sel.id }} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-[14px] font-bold text-primary-foreground hover:opacity-90"><Pencil className="size-4" /> تعديل بيانات الموظف</Link>
+          <button
+            type="button"
+            disabled={remove.isPending || !sel.is_active}
+            onClick={() => { if (window.confirm(`إيقاف حساب ${sel.full_name}؟ لن يستطيع الدخول للنظام.`)) remove.mutate({ userId: sel.id, mode: "disable" }); }}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/40 py-3 text-[14px] font-bold text-destructive hover:bg-destructive/5 disabled:opacity-40"
+          ><Ban className="size-4" /> إيقاف الحساب</button>
+        </aside>
+      ) : null}
       </div>
     </>
   );
