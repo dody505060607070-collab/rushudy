@@ -91,7 +91,7 @@ function GoalsIndexPage() {
   const totalPoints = rows.reduce((s, r) => s + r.points, 0);
 
   const shiftMonth = (delta: number) => {
-    const [y, m] = month.split("-").map(Number);
+    const [y = 2026, m = 1] = month.split("-").map(Number);
     const d = new Date(y, m - 1 + delta, 1);
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
   };

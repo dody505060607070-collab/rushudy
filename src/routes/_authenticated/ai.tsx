@@ -114,7 +114,7 @@ function AiPage() {
               <p className="mb-3 text-[12px] text-muted-foreground">جرّب أحد هذه الاقتراحات لبدء المحادثة</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {suggestions.map((s, i) => {
-                  const Icon = suggestionIcons[i % suggestionIcons.length];
+                  const Icon = suggestionIcons[i % suggestionIcons.length] ?? FileText;
                   return (
                     <button
                       key={s}
