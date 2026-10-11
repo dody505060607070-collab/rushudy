@@ -366,6 +366,42 @@ function ContractsPage() {
         </button>
       </div>
 
+      {(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const soon = rows
+          .filter((r) => r.status === "active" && r.end_date)
+          .map((r) => ({
+            r,
+            days: Math.ceil((new Date(r.end_date as string).getTime() - today.getTime()) / 86400000),
+          }))
+          .filter((x) => x.days >= 0 && x.days <= 30)
+          .sort((a, b) => a.days - b.days);
+        if (!soon.length) return null;
+        return (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-warning/40 bg-warning/10 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <Bell className="size-5 text-warning" />
+              <div>
+                <p className="text-[14px] font-bold text-foreground">
+                  {soon.length} عقود سوف تنتهي خلال 30 يوم
+                </p>
+                <p className="text-[12px] text-muted-foreground">
+                  ننصح بمراجعة العقود التالية وتجهيز إجراءات التجديد في الوقت المناسب.
+                </p>
+              </div>
+            </div>
+            <a
+              href="#upcoming-renewals"
+              className="inline-flex h-9 items-center rounded-full border border-primary/40 bg-card px-4 text-[12px] font-semibold text-primary hover:bg-primary/5"
+            >
+              عرض العقود
+            </a>
+          </div>
+        );
+      })()}
+
+
       <Pills
         variant="card"
         defaultKey="all"
