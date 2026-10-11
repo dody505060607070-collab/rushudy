@@ -5,4 +5,4 @@
 - [x] Public property order: new first, featured pinned, quick control
 - [x] Delete button for supply requests / requests
 - [x] Check notifications + automation health
-- [x] UI redesign per design images (done: most pages incl. partners, services; remaining: buildings, marketing, settings)
+- [ ] UI redesign: rework pages that differ from designs (team-chat 3 columns, activities details panel, clients details panel, marketing layout, reservations details panel, owners cards order, tasks filters)
