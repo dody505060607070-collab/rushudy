@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, RefreshCw, Smartphone, Unlink } from "lucide-react";
+import { Loader2, MessageCircle, MonitorSmartphone, QrCode, RefreshCw, Smartphone, Unlink } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

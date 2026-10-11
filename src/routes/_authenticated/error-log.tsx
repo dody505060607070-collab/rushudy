@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TriangleAlert } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Clock3, ShieldCheck, TriangleAlert } from "lucide-react";
+
+import { supabase } from "@/integrations/supabase/client";
 
 import { LiveTable, formatDate } from "@/components/kit/LiveTable";
 import { PageHero } from "@/components/kit/PageHero";
@@ -26,12 +29,29 @@ export const Route = createFileRoute("/_authenticated/error-log")({
 });
 
 function ErrorLogPage() {
+  const stats = useQuery({
+    queryKey: ["error-log-stats"],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 7 * 86400000).toISOString();
+      const [all, week, last] = await Promise.all([
+        supabase.from("error_log").select("id", { count: "exact", head: true }),
+        supabase.from("error_log").select("id", { count: "exact", head: true }).gte("created_at", since),
+        supabase.from("error_log").select("created_at").order("created_at", { ascending: false }).limit(1),
+      ]);
+      return { all: all.count ?? 0, week: week.count ?? 0, last: last.data?.[0]?.created_at ?? null };
+    },
+  });
   return (
     <>
       <PageHero
         title="سجل الأخطاء"
         subtitle="كل فشل حقيقي يُسجَّل هنا بسببه، ولا يُعرض أي نجاح وهمي في النظام."
         icon={TriangleAlert}
+        stats={[
+          { value: String(stats.data?.week ?? 0), label: "أخطاء آخر 7 أيام", icon: TriangleAlert },
+          { value: String(stats.data?.all ?? 0), label: "إجمالي الأخطاء المسجلة", icon: ShieldCheck },
+          { value: stats.data?.last ? formatDate(stats.data.last) : "—", label: "آخر حدوث خطأ", icon: Clock3 },
+        ]}
       />
 
       <LiveTable<Row>
