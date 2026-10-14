@@ -374,3 +374,24 @@
 @utility stripes {
   background-image: repeating-linear-gradient(135deg, color-mix(in oklab, var(--color-muted-foreground) 35%, transparent) 0 2px, transparent 2px 8px);
 }
+
+/* Hide Lovable badge everywhere */
+#lovable-badge,
+#lovable-badge *,
+[id^="lovable-badge"],
+[id*="lovable-badge"],
+[class*="lovable-badge"],
+[class*="LovableBadge"],
+[data-lovable-badge],
+a[href*="lovable.dev"][target="_blank"],
+iframe[src*="lovable.dev/badge"],
+iframe[title*="Lovable"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
