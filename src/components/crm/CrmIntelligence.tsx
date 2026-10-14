@@ -77,7 +77,7 @@ export function CrmIntelligence() {
     queryKey: ["crm-intelligence", range],
     staleTime: 10_000,
     refetchInterval: 30_000,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     queryFn: async () => {
       const results = await Promise.all([
@@ -113,7 +113,7 @@ export function CrmIntelligence() {
   const traffic = useQuery({
     queryKey: ["crm-traffic", range],
     refetchInterval: 15_000,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_crm_traffic_stats", { _days: days });
       if (error) throw error;
