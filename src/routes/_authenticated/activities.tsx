@@ -295,7 +295,7 @@ export function ActivitiesPage() {
                       </Chip>
                     </div>
                     <p className="mt-1 truncate text-[12px] text-muted-foreground">
-                      المكلَّف: {a.employee?.full_name ?? "—"} • {typeLabels[a.activity_type] ?? a.activity_type}
+                      وضعها: {(employees.data ?? []).find((e) => e.id === a.created_by)?.full_name ?? "الإدارة"} • وُضعت لـ: {a.employee?.full_name ?? "—"} • {typeLabels[a.activity_type] ?? a.activity_type}
                     </p>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
                       {new Date(a.created_at).toLocaleDateString("ar-SA")}
