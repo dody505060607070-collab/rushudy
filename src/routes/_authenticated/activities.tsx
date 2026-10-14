@@ -326,7 +326,7 @@ export function ActivitiesPage() {
         {/* عمود تفاصيل النشاط (يسار) */}
         <div className="min-w-0">
           {active ? (
-            <DetailsPanel activity={active} onRegisterNew={() => setOpen(true)} />
+            <DetailsPanel creatorName={(employees.data ?? []).find((e) => e.id === active.created_by)?.full_name ?? "الإدارة"} activity={active} onRegisterNew={() => setOpen(true)} />
           ) : (
             <div className="surface-card grid h-full min-h-56 place-items-center p-8 text-center text-[13px] text-muted-foreground">
               تفاصيل النشاط تظهر هنا بعد اختياره.
@@ -602,7 +602,7 @@ function ChatPanel({
   );
 }
 
-function DetailsPanel({ activity, onRegisterNew }: { activity: Activity; onRegisterNew: () => void }) {
+function DetailsPanel({ activity, onRegisterNew, creatorName }: { activity: Activity; onRegisterNew: () => void; creatorName: string }) {
   const closed = activity.status === "closed";
   const shortId = activity.id.slice(0, 8).toUpperCase();
 
@@ -617,7 +617,11 @@ function DetailsPanel({ activity, onRegisterNew }: { activity: Activity; onRegis
           <span className="font-mono text-[12.5px] text-foreground">#ACT-{shortId}</span>
         </DetailRow>
 
-        <DetailRow icon={UserRound} label="الموظف المسؤول">
+        <DetailRow icon={UserRound} label="وضع المهمة">
+          <p className="truncate text-[13px] font-bold text-foreground">{creatorName}</p>
+        </DetailRow>
+
+        <DetailRow icon={UserRound} label="وُضعت المهمة لـ">
           <div className="flex items-center gap-2">
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-[12px] font-bold text-primary">
               {(activity.employee?.full_name ?? "؟").slice(0, 1)}
