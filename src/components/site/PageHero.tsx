@@ -27,16 +27,16 @@ export function PageHero({
   height = "md",
 }: PageHeroProps) {
   return (
-    <section className={`relative isolate flex items-end overflow-hidden ${heights[height]}`}>
+    <section className={`relative isolate flex items-end overflow-hidden bg-foreground ${heights[height]}`}>
       {video ? (
         <video
           src={video}
-          poster={image}
           autoPlay
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="auto"
+          aria-hidden
           className="absolute inset-0 -z-10 size-full object-cover"
         />
       ) : (
