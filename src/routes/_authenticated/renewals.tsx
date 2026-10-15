@@ -38,6 +38,15 @@ type Row = {
   property: { name: string; code: string } | null;
 };
 
+function renewalWaLink(row: Row) {
+  let phone = (row.tenant?.phone ?? "").replace(/\D/g, "");
+  if (phone.startsWith("00")) phone = phone.slice(2);
+  if (phone.startsWith("05")) phone = "966" + phone.slice(1);
+  else if (phone.startsWith("5") && phone.length === 9) phone = "966" + phone;
+  const text = `السلام عليكم ${row.tenant?.full_name ?? ""}،\nنود إبلاغكم بأن عقد الإيجار رقم ${row.contract_number}${row.property?.name ? ` (${row.property.name})` : ""} ينتهي بتاريخ ${formatDate(row.end_date)}.\nنرجو إفادتنا هل ترغبون في تجديد العقد أم لا؟\nشكرًا لكم — الرشودي للعقارات`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+}
+
 function daysLeft(end: string | null) {
   if (!end) return null;
   const diff = new Date(end).getTime() - new Date().setHours(0, 0, 0, 0);
@@ -222,7 +231,7 @@ function RenewalsPage() {
                           <Link
                             to="/contracts/$contractId"
                             params={{ contractId: row.id }}
-                            className={`inline-flex h-9 items-center justify-center rounded-lg text-[12.5px] font-semibold ${btn} ${reminderId ? "" : "col-span-2"}`}
+                            className={`inline-flex h-9 items-center justify-center rounded-lg text-[12.5px] font-semibold ${btn}`}
                           >
                             بدء المتابعة
                           </Link>
@@ -234,7 +243,23 @@ function RenewalsPage() {
                             >
                               <MessageCircle className="size-4" /> مراسلة المستأجر
                             </Link>
-                          ) : null}
+                          ) : (
+                            <a
+                              href={renewalWaLink(row)}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-disabled={!row.tenant?.phone}
+                              onClick={(e) => {
+                                if (!row.tenant?.phone) {
+                                  e.preventDefault();
+                                  alert("لا يوجد رقم جوال للمستأجر في هذا العقد.");
+                                }
+                              }}
+                              className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-border text-[12px] font-semibold hover:bg-muted"
+                            >
+                              <MessageCircle className="size-4" /> مراسلة المستأجر
+                            </a>
+                          )}
                         </div>
                       </article>
                     );
