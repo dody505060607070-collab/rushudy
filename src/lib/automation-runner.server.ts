@@ -135,7 +135,7 @@ async function hasOutstandingPayment(
       .eq("id", ref.contractId)
       .maybeSingle();
     if (!contract) return false;
-    if (["cancelled", "terminated", "ended", "expired", "closed"].includes(String(contract.status))) return false;
+    if (["cancelled", "terminated", "ended", "expired", "holdover", "closed"].includes(String(contract.status))) return false;
 
     const { data: payments } = await db
       .from("contract_payments")

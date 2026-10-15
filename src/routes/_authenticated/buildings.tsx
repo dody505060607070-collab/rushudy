@@ -176,7 +176,7 @@ function BuildingsPage() {
           "id, contract_number, property_id, tenant_id, status, tenant:tenant_id(full_name, phone)",
         )
         .not("property_id", "is", null)
-        .in("status", ["active", "draft"])
+        .in("status", ["active", "draft", "holdover"])
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as UnitContract[];
@@ -722,7 +722,11 @@ function BuildingsPage() {
                                 العقد {contract.contract_number}
                               </Link>
                               <Chip tone={contract.status === "active" ? "success" : "warning"}>
-                                {contract.status === "active" ? "ساري" : "مسودة"}
+                                {contract.status === "active"
+                                  ? "ساري"
+                                  : contract.status === "holdover"
+                                    ? "منتهي – بدون عقد"
+                                    : "مسودة"}
                               </Chip>
                             </div>
                             <p className="mt-2 text-[12px] text-muted-foreground">
