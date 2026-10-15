@@ -31,6 +31,7 @@ import {
   textareaClass,
 } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
+import { SortOrderDialog } from "@/components/kit/SortOrderDialog";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
 import { describeDbError } from "@/lib/db-errors";
@@ -377,6 +378,7 @@ function BuildingsPage() {
   });
 
   const rows = buildings.data ?? [];
+  const [sortOpen, setSortOpen] = useState(false);
 
   return (
     <>
@@ -397,7 +399,25 @@ function BuildingsPage() {
         <Link to="/properties" className="text-[13px] font-semibold text-primary hover:underline">
           الانتقال لإدارة العقارات
         </Link>
+        <button
+          type="button"
+          onClick={() => setSortOpen(true)}
+          className="rounded-md border border-primary px-4 py-2 text-[13px] font-semibold text-primary hover:bg-primary/5"
+        >
+          ترتيب العمارات في الموقع
+        </button>
       </div>
+      <SortOrderDialog
+        open={sortOpen}
+        onClose={() => setSortOpen(false)}
+        table="buildings"
+        title="ترتيب ظهور العمارات"
+        items={rows.map((r) => ({ id: r.id, title: r.name, subtitle: [r.code, r.city, r.district].filter(Boolean).join(" · "), sort_order: r.sort_order }))}
+        onSaved={() => {
+          void qc.invalidateQueries({ queryKey: ["buildings", "admin"] });
+          void qc.invalidateQueries({ queryKey: ["public-buildings"] });
+        }}
+      />
 
       {buildings.isLoading ? (
         <div className="grid gap-4">
