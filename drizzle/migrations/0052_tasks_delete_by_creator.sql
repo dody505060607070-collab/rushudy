@@ -1,0 +1,1 @@
+create policy tasks_delete_by_creator on public.tasks for delete to authenticated using (assigned_by = auth.uid());
