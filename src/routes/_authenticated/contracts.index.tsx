@@ -234,12 +234,17 @@ function ContractsPage() {
         owner_id: form.owner_id || null,
         tenant_id: form.tenant_id || null,
         property_id: form.property_id || null,
+        // عند تعديل عقد بدون تغيير العقار نحافظ على ربطه بالوحدة والعمارة حتى لا تنفصل الوحدة عن عقدها.
         unit_id:
-          unitProperties.data?.find((property) => property.id === form.property_id)?.unit_id ??
-          null,
+          editing && (form.property_id || null) === (editing.property_id ?? null)
+            ? (editing.unit_id ?? null)
+            : (unitProperties.data?.find((property) => property.id === form.property_id)?.unit_id ??
+              null),
         building_id:
-          unitProperties.data?.find((property) => property.id === form.property_id)?.building_id ??
-          null,
+          editing && (form.property_id || null) === (editing.property_id ?? null)
+            ? (editing.building_id ?? null)
+            : (unitProperties.data?.find((property) => property.id === form.property_id)
+                ?.building_id ?? null),
         start_date: form.start_date || null,
         end_date: form.end_date || null,
         annual_rent: form.annual_rent ? Number(form.annual_rent) : null,
