@@ -372,6 +372,13 @@
       "when": 1792074229440,
       "tag": "0052_tasks_delete_by_creator",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1792097642624,
+      "tag": "0053_manual_listing_order",
+      "breakpoints": true
     }
   ]
 }
