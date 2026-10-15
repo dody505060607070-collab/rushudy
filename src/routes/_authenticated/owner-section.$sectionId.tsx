@@ -144,12 +144,15 @@ function OwnerSectionPage() {
             <div className="mt-3 grid gap-3 xl:grid-cols-2">
               {list.map((unit) => {
                 const contract = contractOfUnit.get(unit.id);
+                const holdover = !contract
+                  ? contracts.find((c) => c.unit_id === unit.id && c.status === "holdover")
+                  : null;
                 return (
                   <article key={unit.id} className="rounded-md border border-border p-3">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="text-[13.5px] font-bold">وحدة رقم {unit.unit_number}</h3>
-                      <Chip tone={contract ? "success" : "neutral"}>
-                        {contract ? "مؤجرة" : "شاغرة"}
+                      <Chip tone={contract ? "success" : holdover ? "warning" : "neutral"}>
+                        {contract ? "مؤجرة" : holdover ? "بدون عقد" : "شاغرة"}
                       </Chip>
                     </div>
                     <p className="mt-1 text-[12px] text-muted-foreground">

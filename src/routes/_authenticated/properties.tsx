@@ -32,6 +32,7 @@ import {
   textareaClass,
 } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
+import { SortOrderDialog } from "@/components/kit/SortOrderDialog";
 import { Pills } from "@/components/kit/Pills";
 import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
@@ -152,7 +153,10 @@ function PropertiesPage() {
   });
 
   // وحدات العمارات تُدار من صفحة العمارات فقط حتى لا تختلط بقائمة العقارات المستقلة.
-  const rows = (data ?? []).filter((row) => !row.building_id);
+  const rows = (data ?? [])
+    .filter((row) => !row.building_id)
+    .sort((a, b) => (a.sort_order ?? 1e9) - (b.sort_order ?? 1e9));
+  const [sortOpen, setSortOpen] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
   const [gridSearch, setGridSearch] = useState("");
   const covers = useQuery({
@@ -322,6 +326,24 @@ function PropertiesPage() {
           { value: String(counts.visible), label: "عقار ظاهر" },
           { value: String(counts.review), label: "بانتظار المراجعة" },
         ]}
+      />
+
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setSortOpen(true)}
+          className="rounded-md border border-primary px-4 py-2 text-[13px] font-semibold text-primary hover:bg-primary/5"
+        >
+          ترتيب العقارات في الموقع
+        </button>
+      </div>
+      <SortOrderDialog
+        open={sortOpen}
+        onClose={() => setSortOpen(false)}
+        table="properties"
+        title="ترتيب ظهور العقارات"
+        items={rows.map((r) => ({ id: r.id, title: r.name, subtitle: [r.code, r.city, r.district].filter(Boolean).join(" · "), sort_order: r.sort_order }))}
+        onSaved={() => queryClient.invalidateQueries({ queryKey: ["properties"] })}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">

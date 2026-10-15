@@ -509,7 +509,15 @@ function OwnerDetailPage() {
 
   const contractByUnit = new Map<string, any>();
   const contractByProperty = new Map<string, any>();
+  const holdoverByUnit = new Map<string, any>();
+  const holdoverByProperty = new Map<string, any>();
   for (const c of data.contracts) {
+    if (c.status === "holdover") {
+      if (c.unit_id && !holdoverByUnit.has(c.unit_id)) holdoverByUnit.set(c.unit_id, c);
+      if (c.property_id && !holdoverByProperty.has(c.property_id))
+        holdoverByProperty.set(c.property_id, c);
+      continue;
+    }
     if (c.status !== "active") continue;
     if (c.unit_id && !contractByUnit.has(c.unit_id)) contractByUnit.set(c.unit_id, c);
     if (c.property_id && !contractByProperty.has(c.property_id))
@@ -979,8 +987,13 @@ function OwnerDetailPage() {
               ) : (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {unitBoard.map(({ unit, contract, remaining }) => {
+                    const holdover = !contract ? holdoverByUnit.get(unit.id) : null;
                     const occupied = unit.status === "occupied" || Boolean(contract);
-                    const accent = occupied ? "border-destructive/50" : "border-success/50";
+                    const accent = holdover
+                      ? "border-warning/60"
+                      : occupied
+                        ? "border-destructive/50"
+                        : "border-success/50";
                     return (
                       <article
                         key={unit.id}
@@ -993,15 +1006,15 @@ function OwnerDetailPage() {
                             </p>
                             <p className="text-base font-bold">{unit.unit_number}</p>
                           </div>
-                          <Chip tone={occupied ? "danger" : "success"}>
-                            {occupied ? "مشغولة" : "شاغرة"}
+                          <Chip tone={holdover ? "warning" : occupied ? "danger" : "success"}>
+                            {holdover ? "بدون عقد" : occupied ? "مشغولة" : "شاغرة"}
                           </Chip>
                         </div>
 
                         <div className="mt-3 border-t border-border pt-3 text-[12.5px]">
                           <p className="flex items-center gap-2 font-semibold">
                             <UserRound className="size-3.5 text-muted-foreground" />
-                            {contract?.tenant?.full_name ?? "لا يوجد مستأجر"}
+                            {contract?.tenant?.full_name ?? holdover?.tenant?.full_name ?? "لا يوجد مستأجر"}
                           </p>
                           <p className="mt-1 text-[11.5px] text-muted-foreground">
                             تسجيل الدخول:{" "}
@@ -1299,6 +1312,8 @@ function OwnerDetailPage() {
                                     <h4 className="text-[13.5px] font-bold">{item.title}</h4>
                                     {contract ? (
                                       <Chip tone="success">مؤجرة</Chip>
+                                    ) : (item.assetType === "unit" ? holdoverByUnit : holdoverByProperty).get(item.key) ? (
+                                      <Chip tone="warning">بدون عقد</Chip>
                                     ) : (
                                       <Chip tone="neutral">شاغرة</Chip>
                                     )}
