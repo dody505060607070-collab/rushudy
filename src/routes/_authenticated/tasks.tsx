@@ -372,6 +372,7 @@ function TasksPage() {
                   <article key={r.id} onClick={() => navigate({ to: "/task-form", search: { id: r.id } })} className="cursor-pointer space-y-2 rounded-xl border border-border bg-card p-3 transition-shadow hover:shadow-md">
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="text-[14px] font-bold">{r.title}</h4>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); if (window.confirm(`حذف المهمة "${r.title}"؟`)) remove.mutate(r.id); }} className="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold text-destructive hover:bg-destructive/10">حذف</button>
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${toneBadgeClass[rowTone(r.status, r.due_date)]}`}>{taskStatusLabels[r.status] ?? r.status}</span>
                     </div>
                     {r.property?.name ? <p className="text-[12px] text-muted-foreground">🏠 {r.property.name}</p> : null}
