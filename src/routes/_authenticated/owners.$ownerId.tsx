@@ -1014,7 +1014,7 @@ function OwnerDetailPage() {
                         <div className="mt-3 border-t border-border pt-3 text-[12.5px]">
                           <p className="flex items-center gap-2 font-semibold">
                             <UserRound className="size-3.5 text-muted-foreground" />
-                            {contract?.tenant?.full_name ?? "لا يوجد مستأجر"}
+                            {contract?.tenant?.full_name ?? holdover?.tenant?.full_name ?? "لا يوجد مستأجر"}
                           </p>
                           <p className="mt-1 text-[11.5px] text-muted-foreground">
                             تسجيل الدخول:{" "}

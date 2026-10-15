@@ -19,7 +19,8 @@ export const reservationStatusLabels: Record<string, string> = {
 export const contractStatusLabels: Record<string, string> = {
   draft: "مسودة",
   active: "ساري",
-  expired: "منتهي",
+  expired: "منتهي – خرج المستأجر (شاغر)",
+  holdover: "منتهي – ما زال ساكنًا (بدون عقد)",
   terminated: "منهي",
   renewed: "مُجدّد",
 };
