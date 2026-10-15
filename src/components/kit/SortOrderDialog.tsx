@@ -36,7 +36,7 @@ export function SortOrderDialog({
     if (to < 0 || to >= list.length || from === to) return;
     const next = [...list];
     const [it] = next.splice(from, 1);
-    next.splice(to, 0, it);
+    if (it) next.splice(to, 0, it);
     setList(next);
   };
 
