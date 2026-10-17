@@ -26,7 +26,7 @@ export function NotificationsBell() {
   const list = useQuery({
     queryKey: ["my-notifications", userId],
     enabled: Boolean(userId),
-    refetchInterval: 20000,
+    refetchInterval: 90_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notifications")

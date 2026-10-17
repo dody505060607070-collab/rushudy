@@ -203,7 +203,7 @@ function DashboardPage() {
 
   const operations = useQuery({
     queryKey: ["dashboard-operations", todayIso],
-    refetchInterval: 30_000,
+    refetchInterval: 180_000,
     queryFn: async () => {
       const dayStart = `${todayIso}T00:00:00.000Z`;
       const [sessions, reservations, activities] = await Promise.all([
@@ -217,7 +217,7 @@ function DashboardPage() {
 
   const board = useQuery({
     queryKey: ["dashboard-board"],
-    refetchInterval: 60_000,
+    refetchInterval: 300_000,
     queryFn: async () => {
       const [units, reservations] = await Promise.all([
         supabase.from("units").select("unit_type, status"),

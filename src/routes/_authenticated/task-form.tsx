@@ -308,7 +308,7 @@ function TaskFormPage() {
   const reminderState = useQuery({
     queryKey: ["task-reminder-state", id],
     enabled: Boolean(id),
-    refetchInterval: 60_000,
+    refetchInterval: 180_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("task_reminder_state")

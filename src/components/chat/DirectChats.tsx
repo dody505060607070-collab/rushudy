@@ -38,7 +38,7 @@ export function DirectChats() {
 
   const threads = useQuery({
     queryKey: ["direct-threads"],
-    refetchInterval: 6000,
+    refetchInterval: 20_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("direct_threads")
@@ -72,7 +72,7 @@ export function DirectChats() {
   const messages = useQuery({
     queryKey: ["direct-messages", activeThread?.id],
     enabled: Boolean(activeThread?.id),
-    refetchInterval: 4000,
+    refetchInterval: 12_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("direct_messages")

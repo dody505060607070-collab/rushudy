@@ -76,7 +76,7 @@ export function CrmIntelligence() {
   const query = useQuery({
     queryKey: ["crm-intelligence", range],
     staleTime: 10_000,
-    refetchInterval: 30_000,
+    refetchInterval: 180_000,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     queryFn: async () => {
@@ -112,7 +112,7 @@ export function CrmIntelligence() {
   // 1000 rows per request, so fetching raw visits froze the counts on old data.
   const traffic = useQuery({
     queryKey: ["crm-traffic", range],
-    refetchInterval: 15_000,
+    refetchInterval: 180_000,
     refetchIntervalInBackground: false,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_crm_traffic_stats", { _days: days });

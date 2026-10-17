@@ -33,7 +33,7 @@ export function KillSwitchGate({ children }: { children: ReactNode }) {
     void refresh();
     const id = window.setInterval(() => {
       if (document.visibilityState === "visible") void refresh();
-    }, 60_000);
+    }, 300_000);
     const handleVisibility = () => {
       if (document.visibilityState === "visible") void refresh();
     };
