@@ -86,7 +86,7 @@ export function TeamChatPage() {
   const messages = useQuery({
     queryKey: ["group-messages", activeChannel, chatUserId],
     enabled: Boolean(chatUserId),
-    refetchInterval: 4000,
+    refetchInterval: 12_000,
     queryFn: async () => {
       const { data, error } = await mithraa
         .from("group_messages")

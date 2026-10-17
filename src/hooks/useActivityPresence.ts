@@ -42,7 +42,7 @@ export function useActivityPresence() {
         _path: window.location.pathname,
         _device: device,
       });
-    }, 60_000);
+    }, 180_000);
     return () => {
       active = false;
       window.clearInterval(heartbeat);

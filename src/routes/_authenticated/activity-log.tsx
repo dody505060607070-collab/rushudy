@@ -33,7 +33,7 @@ function ActivityLogPage() {
   const query = useQuery({
     queryKey: ["employee-monitoring", range],
     enabled: isSuperAdmin,
-    refetchInterval: 30_000,
+    refetchInterval: 180_000,
     queryFn: async () => {
       const [profiles, sessions, events, taskHistory] = await Promise.all([
         supabase.from("profiles").select("id, full_name, job_title, is_active").eq("org", "rashoudi").order("full_name"),
@@ -52,7 +52,7 @@ function ActivityLogPage() {
   const summaries = useMemo(() => (rows?.profiles ?? []).map((profile) => {
     const ownSessions = (rows?.sessions ?? []).filter((session) => session.user_id === profile.id);
     const latest = ownSessions[0];
-    const online = Boolean(latest && !latest.ended_at && Date.now() - new Date(latest.last_seen_at).getTime() < 130000);
+    const online = Boolean(latest && !latest.ended_at && Date.now() - new Date(latest.last_seen_at).getTime() < 400000);
     return { ...profile, latest, online, total: ownSessions.reduce((sum, session) => sum + session.duration_seconds, 0), events: (rows?.events ?? []).filter((event) => event.actor_id === profile.id).length };
   }), [rows]);
 

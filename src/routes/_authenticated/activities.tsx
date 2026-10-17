@@ -450,7 +450,7 @@ function ChatPanel({
 
   const messages = useQuery({
     queryKey: ["activity-messages", activity.id],
-    refetchInterval: 5000,
+    refetchInterval: 60_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("activity_messages")
