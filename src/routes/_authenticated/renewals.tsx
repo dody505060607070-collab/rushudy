@@ -36,14 +36,23 @@ type Row = {
   tenant: { full_name: string; phone: string | null } | null;
   owner: { full_name: string } | null;
   property: { name: string; code: string } | null;
+  unit: { unit_number: string | null; building: { name: string | null; code: string | null } | null } | null;
 };
+
+function propertyLabel(row: Row) {
+  if (row.property?.name) return row.property.name;
+  const b = row.unit?.building?.name;
+  const u = row.unit?.unit_number;
+  if (b && u) return `${b} – وحدة ${u}`;
+  return b ?? (u ? `وحدة ${u}` : null);
+}
 
 function renewalWaLink(row: Row) {
   let phone = (row.tenant?.phone ?? "").replace(/\D/g, "");
   if (phone.startsWith("00")) phone = phone.slice(2);
   if (phone.startsWith("05")) phone = "966" + phone.slice(1);
   else if (phone.startsWith("5") && phone.length === 9) phone = "966" + phone;
-  const text = `السلام عليكم ${row.tenant?.full_name ?? ""}،\nنود إبلاغكم بأن عقد الإيجار رقم ${row.contract_number}${row.property?.name ? ` (${row.property.name})` : ""} ينتهي بتاريخ ${formatDate(row.end_date)}.\nنرجو إفادتنا هل ترغبون في تجديد العقد أم لا؟\nشكرًا لكم — الرشودي للعقارات`;
+  const text = `السلام عليكم ${row.tenant?.full_name ?? ""}،\nنود إبلاغكم بأن عقد الإيجار رقم ${row.contract_number}${propertyLabel(row) ? ` (${propertyLabel(row)})` : ""} ينتهي بتاريخ ${formatDate(row.end_date)}.\nنرجو إفادتنا هل ترغبون في تجديد العقد أم لا؟\nشكرًا لكم — الرشودي للعقارات`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
@@ -82,7 +91,7 @@ function RenewalsPage() {
       const { data, error } = await supabase
         .from("contracts")
         .select(
-          "id, contract_number, end_date, annual_rent, total_value, status, tenant:tenant_id(full_name, phone), owner:owner_id(full_name), property:property_id(name, code)",
+          "id, contract_number, end_date, annual_rent, total_value, status, tenant:tenant_id(full_name, phone), owner:owner_id(full_name), property:property_id(name, code), unit:unit_id(unit_number, building:building_id(name, code))",
         )
         .not("end_date", "is", null)
         .order("end_date");
@@ -223,7 +232,7 @@ function RenewalsPage() {
                           </div>
                           <div className="rounded-lg bg-muted/50 px-2 py-1.5">
                             <p className="text-muted-foreground">العقار</p>
-                            <b className="block truncate">{row.property?.name ?? "—"}</b>
+                            <b className="block truncate">{propertyLabel(row) ?? "—"}</b>
                           </div>
                         </div>
                         <p className="text-[11.5px] text-muted-foreground">ينتهي: {formatDate(row.end_date)}</p>
