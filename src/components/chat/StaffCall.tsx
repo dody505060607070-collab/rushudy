@@ -345,8 +345,8 @@ export function StaffCall() {
       {micHelp ? (
         <div className="fixed inset-0 z-[110] grid place-items-center bg-foreground/40 p-4" dir="rtl">
           <div className="w-full max-w-sm rounded-2xl bg-popover p-5 text-popover-foreground shadow-2xl">
-            <h3 className="mb-2 flex items-center gap-2 text-[15px] font-extrabold"><MicOff className="size-5 text-destructive" /> {MIC_TEXT[micHelp.kind]?.title ?? MIC_TEXT.other!.title}</h3>
-            <p className="mb-3 text-[12.5px] text-muted-foreground">{MIC_TEXT[micHelp.kind]?.body ?? MIC_TEXT.other!.body}</p>
+            <h3 className="mb-2 flex items-center gap-2 text-[15px] font-extrabold"><MicOff className="size-5 text-destructive" /> {MIC_TEXT[micHelp.kind]?.title ?? MIC_TEXT["other"]!.title}</h3>
+            <p className="mb-3 text-[12.5px] text-muted-foreground">{MIC_TEXT[micHelp.kind]?.body ?? MIC_TEXT["other"]!.body}</p>
             {micHelp.kind === "denied" ? (
               <ul className="mb-3 space-y-2 text-[12px]">
                 <li className="rounded-lg bg-muted p-2"><b>أندرويد (كروم):</b> اضغط القفل 🔒 جنب عنوان الموقع ← الأذونات ← الميكروفون ← سماح.</li>
