@@ -343,7 +343,7 @@ export function StaffCall() {
           <span className="grid size-9 place-items-center rounded-full bg-success text-primary-foreground sm:hidden" aria-label="في مكالمة">
             <Phone className="size-4 animate-pulse" />
           </span>
-          <div className="fixed inset-x-0 bottom-0 z-[100] border-t border-border bg-popover px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 text-popover-foreground shadow-[0_-8px_30px_-12px_hsl(var(--foreground)/0.35)] sm:hidden" dir="rtl">
+          <div className="fixed inset-x-0 bottom-0 z-[100] border-t border-border bg-popover px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 text-popover-foreground shadow-2xl sm:hidden" dir="rtl">
             <div className="mb-3 flex min-w-0 items-center gap-3">
               <span className={cn("grid size-11 shrink-0 place-items-center rounded-full text-primary-foreground", members.length ? "bg-success" : "animate-pulse bg-primary")}>
                 <Phone className="size-5" />
