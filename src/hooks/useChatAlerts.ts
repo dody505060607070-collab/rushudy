@@ -3,7 +3,6 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
-import { mithraa } from "@/integrations/mithraa/client";
 import { useCurrentUser } from "@/hooks/useAuth";
 
 let sharedCtx: AudioContext | null = null;
@@ -188,9 +187,7 @@ function systemNotify(title: string, body: string) {
 async function senderName(id: string | null | undefined) {
   if (!id) return "زميل";
   const { data } = await supabase.from("profiles").select("full_name").eq("id", id).maybeSingle();
-  if (data?.full_name) return data.full_name;
-  const { data: m } = await mithraa.from("profiles").select("full_name").eq("id", id).maybeSingle();
-  return (m?.full_name as string | undefined) ?? "زميل";
+  return data?.full_name ?? "زميل";
 }
 
 /** إشعار وصوت لأي رسالة جديدة في شات الموظفين أو محادثات الأنشطة. */
@@ -236,19 +233,6 @@ export function useChatAlerts() {
       qc.invalidateQueries({ queryKey: ["nav-counts"] });
     };
 
-    const groupChannel = mithraa
-      .channel("chat-alerts-group")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "group_messages" },
-        (payload) => {
-          const row = payload.new as { sender_id: string; body: string | null; channel: string };
-          if (row.channel === "mithraa") return;
-          void notify(row.sender_id, row.body, row.channel === "shared" ? "الشات المشترك" : "شات الموظفين", row.channel);
-        },
-      )
-      .subscribe();
-
     const channel = supabase
       .channel("chat-alerts")
 
@@ -272,7 +256,6 @@ export function useChatAlerts() {
 
     return () => {
       void supabase.removeChannel(channel);
-      void mithraa.removeChannel(groupChannel);
     };
   }, [qc, isSuperAdmin]);
 }
