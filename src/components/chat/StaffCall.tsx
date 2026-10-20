@@ -324,18 +324,50 @@ export function StaffCall() {
       <div ref={audioBox} className="pointer-events-none fixed size-px overflow-hidden opacity-0" aria-hidden />
       {roomId ? (
         <>
-          <span className="rounded-full bg-primary-foreground/15 px-2.5 py-1 text-[11px] text-primary-foreground" title={members.map((m) => m.name).join("، ")}>
-            {members.length ? members.map((m) => m.name).join("، ") : "يرن… في انتظار الرد"}
+          {/* كمبيوتر: أزرار المكالمة في الشريط العلوي */}
+          <div className="hidden items-center gap-1 sm:flex">
+            <span className="max-w-48 truncate rounded-full bg-primary-foreground/15 px-2.5 py-1 text-[11px] text-primary-foreground" title={members.map((m) => m.name).join("، ")}>
+              {members.length ? members.map((m) => m.name).join("، ") : "يرن… في انتظار الرد"}
+            </span>
+            <button type="button" title={muted ? "إلغاء الكتم" : "كتم الصوت"} onClick={toggleMute} className={cn(btn, muted && "bg-destructive/80")}>
+              {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+            </button>
+            <button type="button" title="إضافة شخص للمكالمة" onClick={() => setPickerOpen(true)} className={btn}>
+              <UserPlus className="size-4" />
+            </button>
+            <button type="button" title="إنهاء المكالمة" onClick={leave} className="grid size-9 place-items-center rounded-full bg-destructive text-destructive-foreground">
+              <PhoneOff className="size-4" />
+            </button>
+          </div>
+          {/* موبايل: علامة صغيرة فوق + شريط كبير تحت */}
+          <span className="grid size-9 place-items-center rounded-full bg-success text-primary-foreground sm:hidden" aria-label="في مكالمة">
+            <Phone className="size-4 animate-pulse" />
           </span>
-          <button type="button" title={muted ? "إلغاء الكتم" : "كتم الصوت"} onClick={toggleMute} className={cn(btn, muted && "bg-destructive/80")}>
-            {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
-          </button>
-          <button type="button" title="إضافة شخص للمكالمة" onClick={() => setPickerOpen(true)} className={btn}>
-            <UserPlus className="size-4" />
-          </button>
-          <button type="button" title="إنهاء المكالمة" onClick={leave} className="grid size-9 place-items-center rounded-full bg-destructive text-destructive-foreground">
-            <PhoneOff className="size-4" />
-          </button>
+          <div className="fixed inset-x-0 bottom-0 z-[100] border-t border-border bg-popover px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 text-popover-foreground shadow-2xl sm:hidden" dir="rtl">
+            <div className="mb-3 flex min-w-0 items-center gap-3">
+              <span className={cn("grid size-11 shrink-0 place-items-center rounded-full text-primary-foreground", members.length ? "bg-success" : "animate-pulse bg-primary")}>
+                <Phone className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-extrabold">{members.length ? members.map((m) => m.name).join("، ") : "جارٍ الاتصال"}</p>
+                <p className="text-[12px] text-muted-foreground">{members.length ? "المكالمة شغالة" : "يرن… في انتظار الرد"}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <button type="button" onClick={toggleMute} className={cn("flex flex-col items-center gap-1 rounded-2xl py-2.5 text-[12px] font-bold", muted ? "bg-destructive/15 text-destructive" : "bg-muted text-foreground")}>
+                {muted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
+                {muted ? "إلغاء الكتم" : "كتم"}
+              </button>
+              <button type="button" onClick={() => setPickerOpen(true)} className="flex flex-col items-center gap-1 rounded-2xl bg-muted py-2.5 text-[12px] font-bold text-foreground">
+                <UserPlus className="size-5" />
+                إضافة
+              </button>
+              <button type="button" onClick={leave} className="flex flex-col items-center gap-1 rounded-2xl bg-destructive py-2.5 text-[12px] font-bold text-destructive-foreground">
+                <PhoneOff className="size-5" />
+                إنهاء
+              </button>
+            </div>
+          </div>
         </>
       ) : (
         <button type="button" title="اتصال بموظف" disabled={joining} onClick={() => setPickerOpen(true)} className={btn} aria-label="اتصال">
@@ -344,26 +376,30 @@ export function StaffCall() {
       )}
 
       {pickerOpen ? (
-        <div className="absolute end-0 top-11 z-50 w-72 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-xl">
+        <>
+        <button type="button" aria-label="إغلاق" onClick={() => setPickerOpen(false)} className="fixed inset-0 z-[115] bg-foreground/40 sm:hidden" />
+        <div dir="rtl" className="fixed inset-x-0 bottom-0 z-[120] flex max-h-[80vh] flex-col rounded-t-3xl border border-border bg-popover p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-popover-foreground shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:end-0 sm:top-11 sm:z-50 sm:w-72 sm:rounded-2xl sm:p-3">
+          <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-muted sm:hidden" />
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-[13px] font-bold">{roomId ? "إضافة للمكالمة" : "اختر من تتصل به"}</p>
+            <p className="text-[15px] font-bold sm:text-[13px]">{roomId ? "إضافة للمكالمة" : "اختر من تتصل به"}</p>
             <button type="button" onClick={() => setPickerOpen(false)} className="text-muted-foreground" aria-label="إغلاق">
               <X className="size-4" />
             </button>
           </div>
-          <div className="max-h-64 space-y-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto sm:max-h-64 sm:flex-none">
             {(staff.data ?? [])
               .filter((p) => !members.some((m) => m.id === p.id))
               .map((p) => (
-                <label key={p.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted">
+                <label key={p.id} className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-3 hover:bg-muted sm:gap-2 sm:rounded-lg sm:py-1.5">
                   <input
                     type="checkbox"
+                    className="size-5 shrink-0 sm:size-4"
                     checked={picked.includes(p.id)}
                     onChange={(e) => setPicked((cur) => (e.target.checked ? [...cur, p.id] : cur.filter((x) => x !== p.id)))}
                   />
                   <span className="min-w-0">
-                    <span className="block truncate text-[12.5px] font-semibold">{p.full_name}</span>
-                    {p.job_title ? <span className="block truncate text-[10.5px] text-muted-foreground">{p.job_title}</span> : null}
+                    <span className="block truncate text-[14px] font-semibold sm:text-[12.5px]">{p.full_name}</span>
+                    {p.job_title ? <span className="block truncate text-[12px] text-muted-foreground sm:text-[10.5px]">{p.job_title}</span> : null}
                   </span>
                 </label>
               ))}
@@ -373,11 +409,12 @@ export function StaffCall() {
             type="button"
             disabled={!picked.length || joining}
             onClick={() => void startOrAdd()}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2 text-[13px] font-bold text-primary-foreground disabled:opacity-50"
+            className="mt-3 flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-[15px] sm:mt-2 sm:py-2 sm:text-[13px] font-bold text-primary-foreground disabled:opacity-50"
           >
             <Phone className="size-4" /> {roomId ? "إضافة" : "اتصال"} {picked.length ? `(${picked.length})` : ""}
           </button>
         </div>
+        </>
       ) : null}
 
       {needsTap && roomId ? (
@@ -387,7 +424,7 @@ export function StaffCall() {
             audioBox.current?.querySelectorAll("audio").forEach((a) => void a.play().catch(() => undefined));
             setNeedsTap(false);
           }}
-          className="fixed inset-x-0 bottom-6 z-[100] mx-auto w-fit rounded-full bg-primary px-5 py-3 text-[13px] font-bold text-primary-foreground shadow-2xl"
+          className="fixed inset-x-0 bottom-36 z-[105] sm:bottom-6 mx-auto w-fit rounded-full bg-primary px-5 py-3 text-[13px] font-bold text-primary-foreground shadow-2xl"
         >
           اضغط هنا لتشغيل صوت المكالمة
         </button>
@@ -430,21 +467,44 @@ export function StaffCall() {
       ) : null}
 
       {incoming ? (
-        <div className="fixed inset-x-0 top-4 z-[100] mx-auto flex w-[min(92vw,22rem)] items-center gap-3 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-2xl">
-          <span className="grid size-10 shrink-0 animate-pulse place-items-center rounded-full bg-success text-primary-foreground">
-            <PhoneIncoming className="size-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-bold">{incoming.fromName}</p>
-            <p className="text-[11px] text-muted-foreground">مكالمة واردة</p>
+        <>
+          {/* موبايل: شاشة مكالمة كاملة */}
+          <div dir="rtl" className="fixed inset-0 z-[130] flex flex-col items-center justify-between bg-primary px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-20 text-primary-foreground sm:hidden">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <span className="grid size-24 animate-pulse place-items-center rounded-full bg-primary-foreground/15">
+                <PhoneIncoming className="size-11" />
+              </span>
+              <p className="max-w-full truncate text-2xl font-extrabold">{incoming.fromName}</p>
+              <p className="text-[15px] text-primary-foreground/80">مكالمة واردة…</p>
+            </div>
+            <div className="flex w-full max-w-xs items-center justify-between">
+              <button type="button" onClick={decline} className="flex flex-col items-center gap-2 text-[14px] font-bold" aria-label="رفض">
+                <span className="grid size-16 place-items-center rounded-full bg-destructive text-destructive-foreground"><PhoneOff className="size-7" /></span>
+                رفض
+              </button>
+              <button type="button" onClick={() => void accept()} className="flex flex-col items-center gap-2 text-[14px] font-bold" aria-label="رد">
+                <span className="grid size-16 animate-bounce place-items-center rounded-full bg-success text-primary-foreground"><Phone className="size-7" /></span>
+                رد
+              </button>
+            </div>
           </div>
-          <button type="button" onClick={() => void accept()} className="grid size-9 place-items-center rounded-full bg-success text-primary-foreground" aria-label="رد">
-            <Phone className="size-4" />
-          </button>
-          <button type="button" onClick={decline} className="grid size-9 place-items-center rounded-full bg-destructive text-destructive-foreground" aria-label="رفض">
-            <PhoneOff className="size-4" />
-          </button>
-        </div>
+          {/* كمبيوتر: تنبيه صغير فوق */}
+          <div className="fixed inset-x-0 top-4 z-[100] mx-auto hidden w-[22rem] items-center gap-3 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-2xl sm:flex">
+            <span className="grid size-10 shrink-0 animate-pulse place-items-center rounded-full bg-success text-primary-foreground">
+              <PhoneIncoming className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-bold">{incoming.fromName}</p>
+              <p className="text-[11px] text-muted-foreground">مكالمة واردة</p>
+            </div>
+            <button type="button" onClick={() => void accept()} className="grid size-9 place-items-center rounded-full bg-success text-primary-foreground" aria-label="رد">
+              <Phone className="size-4" />
+            </button>
+            <button type="button" onClick={decline} className="grid size-9 place-items-center rounded-full bg-destructive text-destructive-foreground" aria-label="رفض">
+              <PhoneOff className="size-4" />
+            </button>
+          </div>
+        </>
       ) : null}
     </div>
   );
