@@ -24,6 +24,8 @@ export function StaffCall() {
   const [incoming, setIncoming] = useState<Invite | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
+  const [micHelp, setMicHelp] = useState<null | { kind: string; retryRoom: string | null; targets: string[] }>(null);
+  const [needsTap, setNeedsTap] = useState(false);
 
   const peers = useRef(new Map<string, Peer>());
   const local = useRef<MediaStream | null>(null);
@@ -105,9 +107,11 @@ export function StaffCall() {
         el = document.createElement("audio");
         el.id = `call-audio-${id}`;
         el.autoplay = true;
+        el.setAttribute("playsinline", "true");
         audioBox.current?.appendChild(el);
       }
       el.srcObject = e.streams[0] ?? null;
+      void el.play().catch(() => setNeedsTap(true));
     };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === "failed" || pc.connectionState === "closed") closePeer(id);
@@ -133,14 +137,30 @@ export function StaffCall() {
   const invite = (rid: string, to: string[]) =>
     ring.current?.send({ type: "broadcast", event: "invite", payload: { room: rid, from: userId, fromName: myName, to } });
 
-  const join = async (rid: string) => {
+  /** يطلب الميكروفون فورًا عند الضغط (شرط أندرويد وآيفون). */
+  const getMic = async () => {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      const err = new Error("unsupported");
+      err.name = "Unsupported";
+      throw err;
+    }
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    } catch (e) {
+      // بعض الأجهزة ترفض الإعدادات الإضافية — نعيد بطلب بسيط
+      if ((e as Error).name === "OverconstrainedError" || (e as Error).name === "TypeError") {
+        return navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+      throw e;
+    }
+  };
+
+  const join = async (rid: string, targets: string[] = []) => {
     if (!userId || roomRef.current) return false;
     setJoining(true);
     try {
-      const [{ iceServers }, stream] = await Promise.all([
-        getCallIceServers(),
-        navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }),
-      ]);
+      const stream = await getMic();
+      const { iceServers } = await getCallIceServers();
       ice.current = iceServers as RTCIceServer[];
       local.current = stream;
 
@@ -201,9 +221,14 @@ export function StaffCall() {
       return true;
     } catch (e) {
       leave();
-      toast.error(
-        (e as Error).name === "NotAllowedError" ? "اسمح للمتصفح باستخدام الميكروفون" : `تعذّر بدء المكالمة: ${(e as Error).message}`,
-      );
+      const n = (e as Error).name;
+      const kind =
+        n === "NotAllowedError" || n === "SecurityError" ? "denied"
+        : n === "NotFoundError" ? "nodevice"
+        : n === "NotReadableError" ? "busy"
+        : n === "Unsupported" ? "unsupported"
+        : "other";
+      setMicHelp({ kind, retryRoom: rid, targets });
       return false;
     } finally {
       setJoining(false);
@@ -221,7 +246,7 @@ export function StaffCall() {
       return;
     }
     const rid = crypto.randomUUID();
-    if (await join(rid)) void invite(rid, targets);
+    if (await join(rid, targets)) void invite(rid, targets);
   };
 
   const accept = async () => {
@@ -245,7 +270,7 @@ export function StaffCall() {
 
   return (
     <div className="relative flex items-center gap-1">
-      <div ref={audioBox} className="hidden" />
+      <div ref={audioBox} className="pointer-events-none fixed size-px overflow-hidden opacity-0" aria-hidden />
       {roomId ? (
         <>
           <span className="rounded-full bg-primary-foreground/15 px-2.5 py-1 text-[11px] text-primary-foreground" title={members.map((m) => m.name).join("، ")}>
@@ -304,6 +329,55 @@ export function StaffCall() {
         </div>
       ) : null}
 
+      {needsTap && roomId ? (
+        <button
+          type="button"
+          onClick={() => {
+            audioBox.current?.querySelectorAll("audio").forEach((a) => void a.play().catch(() => undefined));
+            setNeedsTap(false);
+          }}
+          className="fixed inset-x-0 bottom-6 z-[100] mx-auto w-fit rounded-full bg-primary px-5 py-3 text-[13px] font-bold text-primary-foreground shadow-2xl"
+        >
+          اضغط هنا لتشغيل صوت المكالمة
+        </button>
+      ) : null}
+
+      {micHelp ? (
+        <div className="fixed inset-0 z-[110] grid place-items-center bg-foreground/40 p-4" dir="rtl">
+          <div className="w-full max-w-sm rounded-2xl bg-popover p-5 text-popover-foreground shadow-2xl">
+            <h3 className="mb-2 flex items-center gap-2 text-[15px] font-extrabold"><MicOff className="size-5 text-destructive" /> {MIC_TEXT[micHelp.kind]?.title ?? MIC_TEXT.other!.title}</h3>
+            <p className="mb-3 text-[12.5px] text-muted-foreground">{MIC_TEXT[micHelp.kind]?.body ?? MIC_TEXT.other!.body}</p>
+            {micHelp.kind === "denied" ? (
+              <ul className="mb-3 space-y-2 text-[12px]">
+                <li className="rounded-lg bg-muted p-2"><b>أندرويد (كروم):</b> اضغط القفل 🔒 جنب عنوان الموقع ← الأذونات ← الميكروفون ← سماح.</li>
+                <li className="rounded-lg bg-muted p-2"><b>آيفون (سفاري):</b> اضغط «aA» جنب العنوان ← إعدادات موقع الويب ← الميكروفون ← سماح. أو: الإعدادات ← سفاري ← الميكروفون.</li>
+                <li className="rounded-lg bg-muted p-2"><b>لو التطبيق مثبّت على الشاشة:</b> إعدادات الجوال ← التطبيقات ← المتصفح ← الأذونات ← الميكروفون ← سماح.</li>
+                <li className="rounded-lg bg-muted p-2"><b>كمبيوتر:</b> اضغط القفل 🔒 جنب العنوان ← الميكروفون ← سماح، ثم حدّث الصفحة.</li>
+              </ul>
+            ) : null}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const h = micHelp;
+                  setMicHelp(null);
+                  if (!h.retryRoom) return;
+                  void join(h.retryRoom, h.targets).then((ok) => {
+                    if (ok && h.targets.length) void invite(h.retryRoom!, h.targets);
+                  });
+                }}
+                className="flex-1 rounded-xl bg-primary py-2 text-[13px] font-bold text-primary-foreground"
+              >
+                حاول مرة أخرى
+              </button>
+              <button type="button" onClick={() => setMicHelp(null)} className="rounded-xl border border-border px-4 py-2 text-[13px]">
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {incoming ? (
         <div className="fixed inset-x-0 top-4 z-[100] mx-auto flex w-[min(92vw,22rem)] items-center gap-3 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-2xl">
           <span className="grid size-10 shrink-0 animate-pulse place-items-center rounded-full bg-success text-primary-foreground">
@@ -324,3 +398,11 @@ export function StaffCall() {
     </div>
   );
 }
+
+const MIC_TEXT: Record<string, { title: string; body: string }> = {
+  denied: { title: "الميكروفون مقفول", body: "المتصفح منع الميكروفون. افتحه بالخطوات دي ثم اضغط «حاول مرة أخرى»:" },
+  nodevice: { title: "لا يوجد ميكروفون", body: "لم نجد ميكروفون في الجهاز. وصّل سماعة بها مايك أو جرّب جهازًا آخر." },
+  busy: { title: "الميكروفون مشغول", body: "تطبيق آخر يستخدم الميكروفون الآن (مكالمة أو تسجيل). اقفله ثم حاول مرة أخرى." },
+  unsupported: { title: "المتصفح لا يدعم المكالمات", body: "افتح النظام من كروم أو سفاري مباشرة (وليس من داخل واتساب أو فيسبوك) ثم حاول مرة أخرى." },
+  other: { title: "تعذّر تشغيل الميكروفون", body: "حدث خطأ أثناء تشغيل الميكروفون. اضغط «حاول مرة أخرى»." },
+};
