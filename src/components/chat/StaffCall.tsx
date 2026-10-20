@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Mic, MicOff, Phone, PhoneIncoming, PhoneOff, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { playRingback, playRingtone, unlockCallAudio } from "@/lib/call-tones";
+
+const RING_TIMEOUT = 45_000;
 import { toast } from "sonner";
 
 import { useCurrentUser } from "@/hooks/useAuth";
@@ -34,6 +37,8 @@ export function StaffCall() {
   const ice = useRef<RTCIceServer[]>([]);
   const audioBox = useRef<HTMLDivElement>(null);
   const roomRef = useRef<string | null>(null);
+  const pending = useRef<string[]>([]);
+  const leaveRef = useRef<() => void>(() => {});
   roomRef.current = roomId;
 
   const staff = useQuery({
@@ -60,8 +65,12 @@ export function StaffCall() {
         setIncoming(inv);
       })
       .on("broadcast", { event: "decline" }, ({ payload }) => {
-        const p = payload as { room: string; name: string };
-        if (p.room === roomRef.current) toast.message(`${p.name} رفض المكالمة`);
+        const p = payload as { room: string; name: string; from?: string };
+        if (p.room !== roomRef.current) return;
+        toast.message(`${p.name} رفض المكالمة`);
+        pending.current = pending.current.filter((id) => id !== p.from);
+        // كل اللي اتصلنا بيهم رفضوا ومحدش في المكالمة → ننهيها
+        if (pending.current.length === 0 && peers.current.size === 0) leaveRef.current();
       })
       .on("broadcast", { event: "cancel" }, ({ payload }) => {
         const p = payload as { room: string };
