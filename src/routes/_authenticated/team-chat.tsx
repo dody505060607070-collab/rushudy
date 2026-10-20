@@ -6,7 +6,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { DirectChats } from "@/components/chat/DirectChats";
-import { StaffCall } from "@/components/chat/StaffCall";
 import { PageHero } from "@/components/kit/PageHero";
 import { PrimaryButton, inputClass } from "@/components/kit/Modal";
 import { useCurrentUser } from "@/hooks/useAuth";
@@ -115,7 +114,7 @@ export function TeamChatPage() {
     const q = search.trim();
     return q ? all.filter((m) => (m.body ?? "").includes(q)) : all;
   }, [all, search]);
-  const channelLabel = activeChannel === "shared" ? "الشات المشترك" : "فريق الرشودي";
+  const channelLabel = "فريق الرشودي";
   const initialsOf = (name: string) =>
     name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("") || "؟";
   const dayLabel = (iso: string) => {
@@ -273,7 +272,6 @@ export function TeamChatPage() {
               {label}
             </button>
           ))}
-          <div className="ms-auto"><StaffCall /></div>
         </nav>
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
