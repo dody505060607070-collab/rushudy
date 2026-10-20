@@ -24,16 +24,21 @@ type WhatsAppResult =
   | { ok: false; error: string; needsTemplate?: boolean };
 
 /** إعداد Evolution API (الجسر المجاني على الـVPS). */
-function evoConfig() {
+/** الخط 1 = الرقم الأساسي (كل الأتمتة). الخط 2 = رقم رسائل ملاك البيع كل أسبوعين فقط. */
+export type WaLine = 1 | 2;
+function evoConfig(line: WaLine = 1) {
   const url = process.env["WHATSAPP_API_URL"];
   const key = process.env["WHATSAPP_API_KEY"];
-  const instance = process.env["WHATSAPP_INSTANCE"] ?? "mithra2";
+  const instance =
+    line === 2
+      ? (process.env["WHATSAPP_INSTANCE_2"] ?? "rashoudi_owners")
+      : (process.env["WHATSAPP_INSTANCE"] ?? "mithra2");
   if (!url || !key) return null;
   return { url: url.replace(/\/$/, ""), key, instance };
 }
 
-async function evoFetch(path: string, init?: RequestInit) {
-  const cfg = evoConfig();
+async function evoFetch(path: string, init?: RequestInit, line: WaLine = 1) {
+  const cfg = evoConfig(line);
   if (!cfg) throw new Error("إعدادات واتساب غير مكتملة");
   return fetch(`${cfg.url}${path}`, {
     ...init,
@@ -46,11 +51,11 @@ async function evoFetch(path: string, init?: RequestInit) {
 }
 
 /** ينشئ الـ instance الخاصة بهذا الموقع تلقائيًا لو مش موجودة. */
-export async function cloudEnsureInstance(): Promise<void> {
-  const cfg = evoConfig();
+export async function cloudEnsureInstance(line: WaLine = 1): Promise<void> {
+  const cfg = evoConfig(line);
   if (!cfg) return;
   try {
-    const res = await evoFetch(`/instance/connectionState/${cfg.instance}`);
+    const res = await evoFetch(`/instance/connectionState/${cfg.instance}`, undefined, line);
     if (res.ok) return;
     await evoFetch(`/instance/create`, {
       method: "POST",
@@ -59,21 +64,21 @@ export async function cloudEnsureInstance(): Promise<void> {
         integration: "WHATSAPP-BAILEYS",
         qrcode: true,
       }),
-    });
+    }, line);
   } catch {
     /* تجاهل — هيتم الإبلاغ عند المحاولة التالية */
   }
 }
 
 /** إرسال عبر Evolution API من الرقم المرتبط بالـQR. */
-async function bridgeSend(to: string, body: string): Promise<WhatsAppResult | null> {
-  const cfg = evoConfig();
+async function bridgeSend(to: string, body: string, line: WaLine = 1): Promise<WhatsAppResult | null> {
+  const cfg = evoConfig(line);
   if (!cfg) return null;
   try {
     const res = await evoFetch(`/message/sendText/${cfg.instance}`, {
       method: "POST",
       body: JSON.stringify({ number: toE164(to).replace("+", ""), text: body }),
-    });
+    }, line);
     const data = (await res.json().catch(() => ({}))) as {
       key?: { id?: string };
       message?: string;
@@ -87,12 +92,12 @@ async function bridgeSend(to: string, body: string): Promise<WhatsAppResult | nu
 }
 
 /** إرسال رسالة واتساب عبر الرقم المرتبط (Evolution API). */
-export async function whatsappSend(input: { to: string; body: string }): Promise<WhatsAppResult> {
+export async function whatsappSend(input: { to: string; body: string; line?: WaLine }): Promise<WhatsAppResult> {
   const to = toE164(input.to);
   if (!to.startsWith("+") || to.length < 8) {
     return { ok: false, error: `رقم الجوال غير صالح: ${input.to}` };
   }
-  const result = await bridgeSend(to, input.body);
+  const result = await bridgeSend(to, input.body, input.line ?? 1);
   if (!result) {
     return { ok: false, error: "خدمة واتساب غير مُعدّة — تأكد من إعدادات الربط" };
   }
@@ -173,16 +178,18 @@ export const checkWhatsAppConfig = createServerFn({ method: "GET" })
   });
 
 /** حالة ربط واتساب + رمز QR للمسح (Evolution API). */
-export const getWhatsAppLinkStatus = createServerFn({ method: "GET" })
+export const getWhatsAppLinkStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const cfg = evoConfig();
+  .inputValidator((input: unknown) => z.object({ line: z.union([z.literal(1), z.literal(2)]).default(1) }).parse(input ?? {}))
+  .handler(async ({ data: input }) => {
+    const line = input.line as WaLine;
+    const cfg = evoConfig(line);
     if (!cfg) {
       return { configured: false, connection: "closed" as const, qr: null, me: null, error: null };
     }
     try {
-      await cloudEnsureInstance();
-      const stateRes = await evoFetch(`/instance/connectionState/${cfg.instance}`);
+      await cloudEnsureInstance(line);
+      const stateRes = await evoFetch(`/instance/connectionState/${cfg.instance}`, undefined, line);
       const stateData = (await stateRes.json().catch(() => ({}))) as {
         instance?: { state?: string };
         message?: string;
@@ -191,7 +198,7 @@ export const getWhatsAppLinkStatus = createServerFn({ method: "GET" })
       if (state === "open") {
         let me: string | null = null;
         try {
-          const listRes = await evoFetch(`/instance/fetchInstances`);
+          const listRes = await evoFetch(`/instance/fetchInstances`, undefined, line);
           const list = (await listRes.json().catch(() => [])) as Array<{
             name?: string;
             instance?: { instanceName?: string; owner?: string };
@@ -207,7 +214,7 @@ export const getWhatsAppLinkStatus = createServerFn({ method: "GET" })
         return { configured: true, connection: "open" as const, qr: null, me, error: null };
       }
 
-      const qrRes = await evoFetch(`/instance/connect/${cfg.instance}`);
+      const qrRes = await evoFetch(`/instance/connect/${cfg.instance}`, undefined, line);
       const qrData = (await qrRes.json().catch(() => ({}))) as {
         base64?: string;
         code?: string;
@@ -238,11 +245,13 @@ export const getWhatsAppLinkStatus = createServerFn({ method: "GET" })
 /** فصل الرقم المرتبط وإظهار رمز QR جديد. */
 export const unlinkWhatsApp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const cfg = evoConfig();
+  .inputValidator((input: unknown) => z.object({ line: z.union([z.literal(1), z.literal(2)]).default(1) }).parse(input ?? {}))
+  .handler(async ({ data: input }) => {
+    const line = input.line as WaLine;
+    const cfg = evoConfig(line);
     if (!cfg) return { ok: false, error: "خدمة واتساب غير مُعدّة" };
     try {
-      const res = await evoFetch(`/instance/logout/${cfg.instance}`, { method: "DELETE" });
+      const res = await evoFetch(`/instance/logout/${cfg.instance}`, { method: "DELETE" }, line);
       return { ok: res.ok, error: res.ok ? null : `WhatsApp ${res.status}` };
     } catch (e) {
       return { ok: false, error: (e as Error).message };

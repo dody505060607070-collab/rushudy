@@ -238,6 +238,14 @@ export function useChatAlerts() {
 
       .on(
         "postgres_changes",
+        { event: "INSERT", schema: "public", table: "group_messages" },
+        (payload) => {
+          const row = payload.new as { sender_id: string; body: string | null; channel: string };
+          void notify(row.sender_id, row.body, "شات الموظفين", row.channel);
+        },
+      )
+      .on(
+        "postgres_changes",
         { event: "INSERT", schema: "public", table: "activity_messages" },
         (payload) => {
           const row = payload.new as { sender_id: string; body: string | null };
