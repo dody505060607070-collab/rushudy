@@ -73,7 +73,7 @@ export async function sendOwnerFollowup(opts: { contactId?: string | undefined; 
     let reason: string | null = null;
     let sid: string | null = null;
     try {
-      const r = await whatsappSend({ to: phone, body: cfg.template });
+      const r = await whatsappSend({ to: phone, body: cfg.template, line: 2 });
       ok = r.ok;
       if (r.ok) sid = r.sid ?? null;
       else reason = r.error;
