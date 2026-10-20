@@ -110,6 +110,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
 import { AiDock } from "./AiDock";
 import { NotificationsBell } from "./NotificationsBell";
+import { StaffCall } from "@/components/chat/StaffCall";
 import { PushToggle } from "./PushToggle";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -146,6 +147,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
           <LanguageToggle className="border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" />
           <ThemeToggle showLabel className="hidden border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 sm:inline-flex" />
+          <StaffCall />
           <NotificationsBell />
           <PushToggle />
         </div>
