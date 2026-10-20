@@ -7,6 +7,9 @@ import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getCallIceServers } from "@/lib/calls.functions";
 import { cn } from "@/lib/utils";
+import { playRingback, playRingtone, unlockCallAudio } from "@/lib/call-tones";
+
+const RING_TIMEOUT = 45_000;
 
 type RealtimeChannel = ReturnType<typeof supabase.channel>;
 type Peer = { pc: RTCPeerConnection; name: string };
@@ -34,6 +37,8 @@ export function StaffCall() {
   const ice = useRef<RTCIceServer[]>([]);
   const audioBox = useRef<HTMLDivElement>(null);
   const roomRef = useRef<string | null>(null);
+  const pending = useRef<string[]>([]);
+  const leaveRef = useRef<() => void>(() => {});
   roomRef.current = roomId;
 
   const staff = useQuery({
@@ -60,8 +65,12 @@ export function StaffCall() {
         setIncoming(inv);
       })
       .on("broadcast", { event: "decline" }, ({ payload }) => {
-        const p = payload as { room: string; name: string };
-        if (p.room === roomRef.current) toast.message(`${p.name} رفض المكالمة`);
+        const p = payload as { room: string; name: string; from?: string };
+        if (p.room !== roomRef.current) return;
+        toast.message(`${p.name} رفض المكالمة`);
+        pending.current = pending.current.filter((id) => id !== p.from);
+        // كل اللي اتصلنا بيهم رفضوا ومحدش في المكالمة → ننهيها
+        if (pending.current.length === 0 && peers.current.size === 0) leaveRef.current();
       })
       .on("broadcast", { event: "cancel" }, ({ payload }) => {
         const p = payload as { room: string };
@@ -122,20 +131,62 @@ export function StaffCall() {
   };
 
   const leave = useCallback(() => {
+    // لو محدش رد لسه: نوقف الرنين عند الطرف الآخر
+    if (roomRef.current && peers.current.size === 0) {
+      void ring.current?.send({ type: "broadcast", event: "cancel", payload: { room: roomRef.current } });
+    }
+    pending.current = [];
     for (const id of [...peers.current.keys()]) closePeer(id);
     local.current?.getTracks().forEach((t) => t.stop());
     local.current = null;
     if (room.current) void supabase.removeChannel(room.current);
     room.current = null;
+    roomRef.current = null;
     setRoomId(null);
     setMuted(false);
     setMembers([]);
   }, [closePeer]);
+  leaveRef.current = leave;
 
   useEffect(() => () => leave(), [leave]);
 
-  const invite = (rid: string, to: string[]) =>
-    ring.current?.send({ type: "broadcast", event: "invite", payload: { room: rid, from: userId, fromName: myName, to } });
+  // المتصل: صوت رنين لحد ما حد يرد، ولو محدش رد خلال 45 ثانية تنتهي المكالمة
+  const ringing = !!roomId && members.length === 0;
+  useEffect(() => {
+    if (!ringing) return;
+    const stop = playRingback();
+    const t = window.setTimeout(() => {
+      toast.message("لم يتم الرد على المكالمة");
+      leaveRef.current();
+    }, RING_TIMEOUT);
+    return () => {
+      stop();
+      window.clearTimeout(t);
+    };
+  }, [ringing]);
+
+  // المستقبِل: نغمة مكالمة واردة، وتختفي بعد 45 ثانية لو ما ردّش
+  useEffect(() => {
+    if (!incoming) return;
+    const stop = playRingtone();
+    const t = window.setTimeout(() => setIncoming(null), RING_TIMEOUT);
+    return () => {
+      stop();
+      window.clearTimeout(t);
+    };
+  }, [incoming]);
+
+  // الموبايل لا يشغّل أي صوت قبل أول لمسة على الصفحة
+  useEffect(() => {
+    const on = () => unlockCallAudio();
+    window.addEventListener("pointerdown", on, { once: true });
+    return () => window.removeEventListener("pointerdown", on);
+  }, []);
+
+  const invite = (rid: string, to: string[]) => {
+    pending.current = [...new Set([...pending.current, ...to])];
+    return ring.current?.send({ type: "broadcast", event: "invite", payload: { room: rid, from: userId, fromName: myName, to } });
+  };
 
   /** يطلب الميكروفون فورًا عند الضغط (شرط أندرويد وآيفون). */
   const getMic = async () => {
@@ -256,7 +307,7 @@ export function StaffCall() {
   };
 
   const decline = () => {
-    if (incoming) void ring.current?.send({ type: "broadcast", event: "decline", payload: { room: incoming.room, name: myName } });
+    if (incoming) void ring.current?.send({ type: "broadcast", event: "decline", payload: { room: incoming.room, name: myName, from: userId } });
     setIncoming(null);
   };
 
@@ -274,7 +325,7 @@ export function StaffCall() {
       {roomId ? (
         <>
           <span className="rounded-full bg-primary-foreground/15 px-2.5 py-1 text-[11px] text-primary-foreground" title={members.map((m) => m.name).join("، ")}>
-            {members.length ? members.map((m) => m.name).join("، ") : "جارٍ الاتصال…"}
+            {members.length ? members.map((m) => m.name).join("، ") : "يرن… في انتظار الرد"}
           </span>
           <button type="button" title={muted ? "إلغاء الكتم" : "كتم الصوت"} onClick={toggleMute} className={cn(btn, muted && "bg-destructive/80")}>
             {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
