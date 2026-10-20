@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getCallIceServers } from "@/lib/calls.functions";
+import { sendPushToUsers } from "@/lib/push.functions";
 import { cn } from "@/lib/utils";
 import { playRingback, playRingtone, unlockCallAudio } from "@/lib/call-tones";
 
@@ -165,6 +166,23 @@ export function StaffCall() {
     };
   }, [ringing]);
 
+  // فتح النظام من إشعار المكالمة → نعرض شاشة الرد
+  useEffect(() => {
+    if (!userId) return;
+    const u = new URL(window.location.href);
+    const rid = u.searchParams.get("call");
+    if (!rid) return;
+    const at = Number(u.searchParams.get("at") ?? 0);
+    const from = u.searchParams.get("from") ?? "زميل";
+    u.searchParams.delete("call"); u.searchParams.delete("from"); u.searchParams.delete("at");
+    window.history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+    if (Date.now() - at > RING_TIMEOUT + 15_000) {
+      toast.message(`فاتتك مكالمة من ${from}`);
+      return;
+    }
+    if (!roomRef.current) setIncoming({ room: rid, from: "", fromName: from, to: [userId] });
+  }, [userId]);
+
   // المستقبِل: نغمة مكالمة واردة، وتختفي بعد 45 ثانية لو ما ردّش
   useEffect(() => {
     if (!incoming) return;
@@ -185,6 +203,11 @@ export function StaffCall() {
 
   const invite = (rid: string, to: string[]) => {
     pending.current = [...new Set([...pending.current, ...to])];
+    // إشعار على الموبايل حتى لو النظام مقفول أو الشاشة مطفية
+    const q = new URLSearchParams({ call: rid, from: myName, at: String(Date.now()) });
+    void sendPushToUsers({
+      data: { userIds: to, title: "📞 مكالمة واردة", body: `${myName} يتصل بك — اضغط للرد`, url: `/team-chat?${q}`, tag: `call-${rid}` },
+    }).catch(() => undefined);
     return ring.current?.send({ type: "broadcast", event: "invite", payload: { room: rid, from: userId, fromName: myName, to } });
   };
 

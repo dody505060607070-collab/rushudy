@@ -1,4 +1,4 @@
-/* Mithra push notifications service worker (messaging only, no app caching) */
+/* Rashoudi push notifications service worker (messaging only, no app caching) */
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
@@ -23,11 +23,22 @@ self.addEventListener("push", (event) => {
     data: { url: payload.url || "/dashboard" },
   };
 
+  // مكالمة واردة: تفضل ظاهرة مع اهتزاز طويل زي المكالمة
+  if (String(options.tag).startsWith("call-")) {
+    options.requireInteraction = true;
+    options.vibrate = [800, 400, 800, 400, 800, 400, 800, 400, 800];
+    options.actions = [
+      { action: "answer", title: "رد" },
+      { action: "decline", title: "رفض" },
+    ];
+  }
+
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  if (event.action === "decline") return;
   const target = (event.notification.data && event.notification.data.url) || "/dashboard";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
