@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Mic, MicOff, Phone, PhoneIncoming, PhoneOff, UserPlus, X } from "lucide-react";
+import { Mic, MicOff, Minimize2, Phone, PhoneIncoming, PhoneOff, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -30,6 +30,7 @@ export function StaffCall() {
   const [picked, setPicked] = useState<string[]>([]);
   const [micHelp, setMicHelp] = useState<null | { kind: string; retryRoom: string | null; targets: string[] }>(null);
   const [needsTap, setNeedsTap] = useState(false);
+  const [minimized, setMinimized] = useState(false);
 
   const peers = useRef(new Map<string, Peer>());
   const local = useRef<MediaStream | null>(null);
@@ -145,6 +146,7 @@ export function StaffCall() {
     roomRef.current = null;
     setRoomId(null);
     setMuted(false);
+    setMinimized(false);
     setMembers([]);
   }, [closePeer]);
   leaveRef.current = leave;
@@ -362,35 +364,55 @@ export function StaffCall() {
               <PhoneOff className="size-4" />
             </button>
           </div>
-          {/* موبايل: علامة صغيرة فوق + شريط كبير تحت */}
-          <span className="grid size-9 place-items-center rounded-full bg-success text-primary-foreground sm:hidden" aria-label="في مكالمة">
+          {/* موبايل: علامة صغيرة فوق تفتح شاشة المكالمة */}
+          <button type="button" onClick={() => setMinimized(false)} className="grid size-9 place-items-center rounded-full bg-success text-primary-foreground sm:hidden" aria-label="فتح المكالمة">
             <Phone className="size-4 animate-pulse" />
-          </span>
-          <div className="fixed inset-x-0 bottom-0 z-[100] border-t border-border bg-popover px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 text-popover-foreground shadow-2xl sm:hidden" dir="rtl">
-            <div className="mb-3 flex min-w-0 items-center gap-3">
-              <span className={cn("grid size-11 shrink-0 place-items-center rounded-full text-primary-foreground", members.length ? "bg-success" : "animate-pulse bg-primary")}>
-                <Phone className="size-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-extrabold">{members.length ? members.map((m) => m.name).join("، ") : "جارٍ الاتصال"}</p>
-                <p className="text-[12px] text-muted-foreground">{members.length ? "المكالمة شغالة" : "يرن… في انتظار الرد"}</p>
+          </button>
+          {minimized ? (
+            /* موبايل: المكالمة مصغّرة كأيقونة عائمة */
+            <button
+              type="button"
+              onClick={() => setMinimized(false)}
+              aria-label="تكبير المكالمة"
+              className="fixed bottom-24 start-4 z-[100] flex items-center gap-2 rounded-full bg-success py-2 pe-4 ps-2 text-primary-foreground shadow-2xl sm:hidden"
+            >
+              <span className="grid size-10 place-items-center rounded-full bg-primary-foreground/20"><Phone className="size-5 animate-pulse" /></span>
+              <span className="max-w-36 truncate text-[13px] font-bold">{members.length ? members.map((m) => m.name).join("، ") : "يرن…"}</span>
+            </button>
+          ) : (
+            /* موبايل: شاشة مكالمة كاملة */
+            <div dir="rtl" className="fixed inset-0 z-[100] flex flex-col bg-primary px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-primary-foreground sm:hidden">
+              <div className="flex items-center justify-between">
+                <button type="button" onClick={() => setMinimized(true)} className="flex items-center gap-1 rounded-full bg-primary-foreground/15 px-3 py-2 text-[13px] font-bold" aria-label="تصغير">
+                  <Minimize2 className="size-4" /> تصغير
+                </button>
+                <span className="text-[13px] text-primary-foreground/80">{members.length ? "المكالمة شغالة" : "يرن… في انتظار الرد"}</span>
+              </div>
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+                <span className={cn("grid size-28 place-items-center rounded-full bg-primary-foreground/15 text-4xl font-extrabold", !members.length && "animate-pulse")}>
+                  {members.length ? (members[0]!.name.trim()[0] ?? "؟") : <Phone className="size-12" />}
+                </span>
+                <p className="max-w-full break-words text-2xl font-extrabold">{members.length ? members.map((m) => m.name).join("، ") : "جارٍ الاتصال"}</p>
+                <p className="text-[15px] text-primary-foreground/80">{members.length ? `${members.length + 1} في المكالمة` : "بنتصل…"}</p>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <button type="button" onClick={toggleMute} className="flex flex-col items-center gap-2 text-[13px] font-bold">
+                  <span className={cn("grid size-16 place-items-center rounded-full", muted ? "bg-primary-foreground text-primary" : "bg-primary-foreground/15")}>
+                    {muted ? <MicOff className="size-7" /> : <Mic className="size-7" />}
+                  </span>
+                  {muted ? "إلغاء الكتم" : "كتم"}
+                </button>
+                <button type="button" onClick={() => setPickerOpen(true)} className="flex flex-col items-center gap-2 text-[13px] font-bold">
+                  <span className="grid size-16 place-items-center rounded-full bg-primary-foreground/15"><UserPlus className="size-7" /></span>
+                  إضافة شخص
+                </button>
+                <button type="button" onClick={leave} className="flex flex-col items-center gap-2 text-[13px] font-bold">
+                  <span className="grid size-16 place-items-center rounded-full bg-destructive text-destructive-foreground"><PhoneOff className="size-7" /></span>
+                  إنهاء
+                </button>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <button type="button" onClick={toggleMute} className={cn("flex flex-col items-center gap-1 rounded-2xl py-2.5 text-[12px] font-bold", muted ? "bg-destructive/15 text-destructive" : "bg-muted text-foreground")}>
-                {muted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
-                {muted ? "إلغاء الكتم" : "كتم"}
-              </button>
-              <button type="button" onClick={() => setPickerOpen(true)} className="flex flex-col items-center gap-1 rounded-2xl bg-muted py-2.5 text-[12px] font-bold text-foreground">
-                <UserPlus className="size-5" />
-                إضافة
-              </button>
-              <button type="button" onClick={leave} className="flex flex-col items-center gap-1 rounded-2xl bg-destructive py-2.5 text-[12px] font-bold text-destructive-foreground">
-                <PhoneOff className="size-5" />
-                إنهاء
-              </button>
-            </div>
-          </div>
+          )}
         </>
       ) : (
         <button type="button" title="اتصال بموظف" disabled={joining} onClick={() => setPickerOpen(true)} className={btn} aria-label="اتصال">
