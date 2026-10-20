@@ -55,7 +55,7 @@ export async function cloudEnsureInstance(line: WaLine = 1): Promise<void> {
   const cfg = evoConfig(line);
   if (!cfg) return;
   try {
-    const res = await evoFetch(`/instance/connectionState/${cfg.instance}`);
+    const res = await evoFetch(`/instance/connectionState/${cfg.instance}`, undefined, line);
     if (res.ok) return;
     await evoFetch(`/instance/create`, {
       method: "POST",
@@ -64,7 +64,7 @@ export async function cloudEnsureInstance(line: WaLine = 1): Promise<void> {
         integration: "WHATSAPP-BAILEYS",
         qrcode: true,
       }),
-    });
+    }, line);
   } catch {
     /* تجاهل — هيتم الإبلاغ عند المحاولة التالية */
   }

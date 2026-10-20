@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, MessageCircle, MonitorSmartphone, QrCode, RefreshCw, Smartphone, Unlink } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,15 +33,16 @@ function WhatsAppLinkPage() {
   const qc = useQueryClient();
   const fetchStatus = useServerFn(getWhatsAppLinkStatus);
   const unlink = useServerFn(unlinkWhatsApp);
+  const [line, setLine] = useState<1 | 2>(1);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["whatsapp-link-status"],
-    queryFn: () => fetchStatus(),
+    queryKey: ["whatsapp-link-status", line],
+    queryFn: () => fetchStatus({ data: { line } }),
     refetchInterval: 5000,
   });
 
   const unlinkMutation = useMutation({
-    mutationFn: () => unlink(),
+    mutationFn: () => unlink({ data: { line } }),
     onSuccess: (res) => {
       if (res.ok) toast.success("تم فصل الرقم — امسح رمز QR جديد");
       else toast.error(res.error ?? "تعذر الفصل");
@@ -59,6 +61,23 @@ function WhatsAppLinkPage() {
           <p className="text-[13px] text-muted-foreground">اربط الرقم مرة واحدة بمسح رمز QR، وبعدها كل زر «إرسال» يرسل الرسالة فورًا من نفس الرقم.</p>
         </div>
       </header>
+
+      <div className="flex flex-wrap gap-2">
+        {([
+          [1, "الرقم الأساسي", "كل الرسائل والتذكيرات كما هي"],
+          [2, "رقم ملاك البيع", "رسالة الجمعة 4 العصر كل أسبوعين فقط"],
+        ] as const).map(([v, t, d]) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setLine(v)}
+            className={`rounded-2xl border px-4 py-2 text-start ${line === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}
+          >
+            <span className="block text-[13px] font-bold">{t}</span>
+            <span className={`block text-[11px] ${line === v ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{d}</span>
+          </button>
+        ))}
+      </div>
 
       <section className="surface-card grid gap-6 p-6 lg:grid-cols-[1fr_340px]">
         <div className="space-y-4">
