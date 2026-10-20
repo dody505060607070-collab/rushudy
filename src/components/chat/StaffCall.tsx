@@ -1,15 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { Mic, MicOff, Phone, PhoneIncoming, PhoneOff, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { playRingback, playRingtone, unlockCallAudio } from "@/lib/call-tones";
-
-const RING_TIMEOUT = 45_000;
 import { toast } from "sonner";
 
 import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getCallIceServers } from "@/lib/calls.functions";
 import { cn } from "@/lib/utils";
+import { playRingback, playRingtone, unlockCallAudio } from "@/lib/call-tones";
+
+const RING_TIMEOUT = 45_000;
 
 type RealtimeChannel = ReturnType<typeof supabase.channel>;
 type Peer = { pc: RTCPeerConnection; name: string };
@@ -183,8 +183,10 @@ export function StaffCall() {
     return () => window.removeEventListener("pointerdown", on);
   }, []);
 
-  const invite = (rid: string, to: string[]) =>
-    ring.current?.send({ type: "broadcast", event: "invite", payload: { room: rid, from: userId, fromName: myName, to } });
+  const invite = (rid: string, to: string[]) => {
+    pending.current = [...new Set([...pending.current, ...to])];
+    return ring.current?.send({ type: "broadcast", event: "invite", payload: { room: rid, from: userId, fromName: myName, to } });
+  };
 
   /** يطلب الميكروفون فورًا عند الضغط (شرط أندرويد وآيفون). */
   const getMic = async () => {
@@ -305,7 +307,7 @@ export function StaffCall() {
   };
 
   const decline = () => {
-    if (incoming) void ring.current?.send({ type: "broadcast", event: "decline", payload: { room: incoming.room, name: myName } });
+    if (incoming) void ring.current?.send({ type: "broadcast", event: "decline", payload: { room: incoming.room, name: myName, from: userId } });
     setIncoming(null);
   };
 
@@ -323,7 +325,7 @@ export function StaffCall() {
       {roomId ? (
         <>
           <span className="rounded-full bg-primary-foreground/15 px-2.5 py-1 text-[11px] text-primary-foreground" title={members.map((m) => m.name).join("، ")}>
-            {members.length ? members.map((m) => m.name).join("، ") : "جارٍ الاتصال…"}
+            {members.length ? members.map((m) => m.name).join("، ") : "يرن… في انتظار الرد"}
           </span>
           <button type="button" title={muted ? "إلغاء الكتم" : "كتم الصوت"} onClick={toggleMute} className={cn(btn, muted && "bg-destructive/80")}>
             {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
