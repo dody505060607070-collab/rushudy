@@ -49,7 +49,8 @@ const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "SAMEORIGIN",
   "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=(self), payment=(), usb=()",
+  // microphone=(self) مطلوب لمكالمات الموظفين — "()" كان يمنع المايك نهائيًا بدون أي سؤال.
+  "Permissions-Policy": "camera=(), microphone=(self), geolocation=(self), payment=(), usb=()",
   "Cross-Origin-Opener-Policy": "same-origin",
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
   "X-Permitted-Cross-Domain-Policies": "none",
