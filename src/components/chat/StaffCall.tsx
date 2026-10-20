@@ -122,17 +122,57 @@ export function StaffCall() {
   };
 
   const leave = useCallback(() => {
+    // لو محدش رد لسه: نوقف الرنين عند الطرف الآخر
+    if (roomRef.current && peers.current.size === 0) {
+      void ring.current?.send({ type: "broadcast", event: "cancel", payload: { room: roomRef.current } });
+    }
+    pending.current = [];
     for (const id of [...peers.current.keys()]) closePeer(id);
     local.current?.getTracks().forEach((t) => t.stop());
     local.current = null;
     if (room.current) void supabase.removeChannel(room.current);
     room.current = null;
+    roomRef.current = null;
     setRoomId(null);
     setMuted(false);
     setMembers([]);
   }, [closePeer]);
+  leaveRef.current = leave;
 
   useEffect(() => () => leave(), [leave]);
+
+  // المتصل: صوت رنين لحد ما حد يرد، ولو محدش رد خلال 45 ثانية تنتهي المكالمة
+  const ringing = !!roomId && members.length === 0;
+  useEffect(() => {
+    if (!ringing) return;
+    const stop = playRingback();
+    const t = window.setTimeout(() => {
+      toast.message("لم يتم الرد على المكالمة");
+      leaveRef.current();
+    }, RING_TIMEOUT);
+    return () => {
+      stop();
+      window.clearTimeout(t);
+    };
+  }, [ringing]);
+
+  // المستقبِل: نغمة مكالمة واردة، وتختفي بعد 45 ثانية لو ما ردّش
+  useEffect(() => {
+    if (!incoming) return;
+    const stop = playRingtone();
+    const t = window.setTimeout(() => setIncoming(null), RING_TIMEOUT);
+    return () => {
+      stop();
+      window.clearTimeout(t);
+    };
+  }, [incoming]);
+
+  // الموبايل لا يشغّل أي صوت قبل أول لمسة على الصفحة
+  useEffect(() => {
+    const on = () => unlockCallAudio();
+    window.addEventListener("pointerdown", on, { once: true });
+    return () => window.removeEventListener("pointerdown", on);
+  }, []);
 
   const invite = (rid: string, to: string[]) =>
     ring.current?.send({ type: "broadcast", event: "invite", payload: { room: rid, from: userId, fromName: myName, to } });
