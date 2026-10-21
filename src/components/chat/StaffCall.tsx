@@ -365,7 +365,7 @@ export function StaffCall() {
             </button>
           </div>
           {/* موبايل: علامة صغيرة فوق تفتح شاشة المكالمة */}
-          <button type="button" onClick={() => setMinimized(false)} className="grid size-9 place-items-center rounded-full bg-success text-primary-foreground sm:hidden" aria-label="فتح المكالمة">
+          <button type="button" onClick={() => setMinimized(false)} className="grid size-9 place-items-center rounded-full bg-primary-foreground/20 text-primary-foreground ring-2 ring-gold sm:hidden" aria-label="فتح المكالمة">
             <Phone className="size-4 animate-pulse" />
           </button>
           {minimized ? (
@@ -374,7 +374,7 @@ export function StaffCall() {
               type="button"
               onClick={() => setMinimized(false)}
               aria-label="تكبير المكالمة"
-              className="fixed bottom-24 start-4 z-[100] flex items-center gap-2 rounded-full bg-success py-2 pe-4 ps-2 text-primary-foreground shadow-2xl sm:hidden"
+              className="fixed bottom-24 start-4 z-[100] flex items-center gap-2 rounded-full bg-primary py-2 pe-4 ps-2 text-primary-foreground shadow-2xl sm:hidden"
             >
               <span className="grid size-10 place-items-center rounded-full bg-primary-foreground/20"><Phone className="size-5 animate-pulse" /></span>
               <span className="max-w-36 truncate text-[13px] font-bold">{members.length ? members.map((m) => m.name).join("، ") : "يرن…"}</span>

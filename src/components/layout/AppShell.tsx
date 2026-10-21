@@ -130,7 +130,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="relative z-10 flex items-center gap-1 md:gap-2">
           <button
             type="button"
-            className="grid size-9 place-items-center rounded-full bg-primary-foreground/15 text-[13px] font-bold text-primary-foreground"
+            className="hidden size-9 place-items-center rounded-full bg-primary-foreground/15 text-[13px] font-bold text-primary-foreground lg:grid"
             aria-label="الحساب"
             title={profile?.full_name ?? ""}
           >
@@ -139,17 +139,21 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={handleSignOut}
-            className="grid size-9 place-items-center rounded-full text-primary-foreground/80 transition-colors hover:bg-primary-foreground/15 hover:text-primary-foreground"
+            className="hidden size-9 place-items-center rounded-full text-primary-foreground/80 transition-colors hover:bg-primary-foreground/15 hover:text-primary-foreground lg:grid"
             aria-label="تسجيل الخروج"
             title="تسجيل الخروج"
           >
             <LogOut className="size-[18px]" />
           </button>
-          <LanguageToggle className="border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" />
-          <ThemeToggle showLabel className="hidden border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 sm:inline-flex" />
+          <span className="hidden lg:contents">
+            <LanguageToggle className="border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" />
+            <ThemeToggle showLabel className="border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" />
+          </span>
           <StaffCall />
           <NotificationsBell />
-          <PushToggle />
+          <span className="hidden lg:contents">
+            <PushToggle />
+          </span>
         </div>
 
         <Link
@@ -161,7 +165,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             alt="الرشودي للعقارات"
             width={360}
             height={112}
-            className="h-10 w-auto max-w-[180px] object-contain md:h-16 md:max-w-[270px]"
+            className="h-9 w-auto max-w-[140px] object-contain sm:h-11 sm:max-w-[190px] md:h-16 md:max-w-[240px]"
           />
         </Link>
 
@@ -199,6 +203,16 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setOpen(false)}
             />
             <div className="absolute inset-y-0 end-0 w-[280px] overflow-y-auto bg-sidebar shadow-xl">
+              <div dir="rtl" className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-4">
+                <span className="grid size-9 place-items-center rounded-full bg-primary/10 text-[13px] font-bold text-primary">{initial}</span>
+                <span className="min-w-0 flex-1 truncate text-[13px] font-bold">{profile?.full_name ?? "—"}</span>
+                <LanguageToggle />
+                <ThemeToggle />
+                <PushToggle />
+                <button type="button" onClick={handleSignOut} className="flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[12px] font-semibold text-destructive">
+                  <LogOut className="size-4" /> خروج
+                </button>
+              </div>
               <SidebarNav onNavigate={() => setOpen(false)} />
             </div>
           </div>
