@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Fix owner overdue/installment view navigation.
+- [ ] Invoice: restrict contracts to selected owner and add owner asset selection; verify related screens.
 - [x] Tasks: show assignee and who assigned
 - [x] Supply requests: broker phone + optional name
 - [x] Requests list: employee name visible
