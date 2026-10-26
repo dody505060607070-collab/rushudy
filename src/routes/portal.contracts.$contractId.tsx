@@ -44,7 +44,7 @@ function ContractDetail() {
     queryFn: () => getPortalContract({ data: { contractId } }),
   });
 
-  const c = data.contract as unknown as {
+  const c = data?.contract as unknown as {
     contract_number: string;
     status: string;
     start_date: string | null;
