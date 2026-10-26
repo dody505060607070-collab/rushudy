@@ -44,11 +44,7 @@ function ContractDetail() {
     queryFn: () => getPortalContract({ data: { contractId } }),
   });
 
-  if (isLoading) return <p className="text-sm text-muted-foreground">جاري التحميل…</p>;
-  if (error) return <p className="text-sm text-destructive">{(error as Error).message}</p>;
-  if (!data) return null;
-
-  const c = data.contract as unknown as {
+  const c = data?.contract as unknown as {
     contract_number: string;
     status: string;
     start_date: string | null;
@@ -60,10 +56,14 @@ function ContractDetail() {
     property: { name: string; city: string | null; district: string | null } | null;
     unit: { unit_number: string | null; unit_type: string | null } | null;
   };
+  const signatures = useQuery({ queryKey: ["portal-contract-signatures", contractId], enabled: Boolean(data), queryFn: async () => { const { data: rows, error: signatureError } = await supabase.from("contract_signatures").select("id,signer_name,image_data,signed_at").eq("contract_id", contractId).order("signed_at", { ascending: false }); if (signatureError) throw signatureError; return rows ?? []; } });
+  const sign = useMutation({ mutationFn: async () => { if (!signerName.trim() || !signature) throw new Error("اكتب اسمك وأضف توقيعك"); const { data: auth } = await supabase.auth.getUser(); if (!auth.user) throw new Error("يجب تسجيل الدخول"); const { error: signError } = await supabase.from("contract_signatures").insert({ contract_id: contractId, signer_name: signerName.trim(), signer_role: "tenant", image_data: signature, created_by: auth.user.id }); if (signError) throw signError; }, onSuccess: () => { setSignature(""); setSignerName(""); void queryClient.invalidateQueries({ queryKey: ["portal-contract-signatures", contractId] }); toast.success("تم توقيع العقد بنجاح"); }, onError: (signError) => toast.error(signError instanceof Error ? signError.message : "تعذّر التوقيع") });
+
+  if (isLoading) return <p className="text-sm text-muted-foreground">جاري التحميل…</p>;
+  if (error) return <p className="text-sm text-destructive">{(error as Error).message}</p>;
+  if (!data) return null;
   const totalDue = data.payments.reduce((s, p) => s + Number(p.amount_due), 0);
   const totalPaid = data.payments.reduce((s, p) => s + Number(p.amount_paid), 0);
-  const signatures = useQuery({ queryKey: ["portal-contract-signatures", contractId], queryFn: async () => { const { data: rows, error: signatureError } = await supabase.from("contract_signatures").select("id,signer_name,image_data,signed_at").eq("contract_id", contractId).order("signed_at", { ascending: false }); if (signatureError) throw signatureError; return rows ?? []; } });
-  const sign = useMutation({ mutationFn: async () => { if (!signerName.trim() || !signature) throw new Error("اكتب اسمك وأضف توقيعك"); const { data: auth } = await supabase.auth.getUser(); if (!auth.user) throw new Error("يجب تسجيل الدخول"); const { error: signError } = await supabase.from("contract_signatures").insert({ contract_id: contractId, signer_name: signerName.trim(), signer_role: "tenant", image_data: signature, created_by: auth.user.id }); if (signError) throw signError; }, onSuccess: () => { setSignature(""); setSignerName(""); void queryClient.invalidateQueries({ queryKey: ["portal-contract-signatures", contractId] }); toast.success("تم توقيع العقد بنجاح"); }, onError: (signError) => toast.error(signError instanceof Error ? signError.message : "تعذّر التوقيع") });
 
   return (
     <div className="space-y-5">
@@ -155,7 +155,7 @@ function ContractDetail() {
             </thead>
             <tbody className="divide-y divide-border">
               {data.payments.map((p) => {
-                const chip = statusChip[p.status] ?? statusChip["pending"]!;
+                const chip = statusChip[p.status] ?? { label: "قادمة", cls: "bg-muted text-muted-foreground" };
                 const rest = Number(p.amount_due) - Number(p.amount_paid);
                 return (
                   <tr key={p.id} className={p.status === "paid" ? "bg-success/5" : rest > 0 && p.due_date < new Date().toISOString().slice(0, 10) ? "bg-destructive/5" : ""}>

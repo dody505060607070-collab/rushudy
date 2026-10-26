@@ -1,4 +1,7 @@
 # Roadmap
+- [x] Fix owner installment page hook-order crash; admin owner and reminder pages smoke-checked.
+- [ ] Verify installment success with an owner session (blocked: current session has no linked client portal account).
+- [x] Invoice: restrict contracts to selected owner and add owner asset selection; saved, reopened and deleted a test invoice successfully.
 - [x] Tasks: show assignee and who assigned
 - [x] Supply requests: broker phone + optional name
 - [x] Requests list: employee name visible

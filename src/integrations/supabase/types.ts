@@ -1446,6 +1446,7 @@ export type Database = {
           attachment_name: string | null
           attachment_path: string | null
           attachments: Json
+          building_id: string | null
           contact_id: string | null
           contract_id: string | null
           created_at: string
@@ -1455,9 +1456,11 @@ export type Database = {
           invoice_number: string
           issue_date: string
           notes: string | null
+          property_id: string | null
           status: string
           subtotal: number
           total: number
+          unit_id: string | null
           updated_at: string
           vat_amount: number
         }
@@ -1465,6 +1468,7 @@ export type Database = {
           attachment_name?: string | null
           attachment_path?: string | null
           attachments?: Json
+          building_id?: string | null
           contact_id?: string | null
           contract_id?: string | null
           created_at?: string
@@ -1474,9 +1478,11 @@ export type Database = {
           invoice_number: string
           issue_date?: string
           notes?: string | null
+          property_id?: string | null
           status?: string
           subtotal?: number
           total?: number
+          unit_id?: string | null
           updated_at?: string
           vat_amount?: number
         }
@@ -1484,6 +1490,7 @@ export type Database = {
           attachment_name?: string | null
           attachment_path?: string | null
           attachments?: Json
+          building_id?: string | null
           contact_id?: string | null
           contract_id?: string | null
           created_at?: string
@@ -1493,13 +1500,22 @@ export type Database = {
           invoice_number?: string
           issue_date?: string
           notes?: string | null
+          property_id?: string | null
           status?: string
           subtotal?: number
           total?: number
+          unit_id?: string | null
           updated_at?: string
           vat_amount?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_contact_id_fkey"
             columns: ["contact_id"]
@@ -1512,6 +1528,20 @@ export type Database = {
             columns: ["contract_id"]
             isOneToOne: false
             referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]

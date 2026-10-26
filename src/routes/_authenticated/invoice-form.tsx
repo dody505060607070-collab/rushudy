@@ -10,6 +10,7 @@ import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import { invoiceStatusLabels } from "@/lib/labels";
 import { mediaUrl, uploadMedia } from "@/lib/media";
+import { forInvoiceOwner, invoiceAssetLinks, invoiceAssetValue, type InvoiceAsset } from "@/lib/invoice-scope";
 
 const itemTypes: { value: string; label: string; vat: string }[] = [
   { value: "rent", label: "إيجار", vat: "15" },
@@ -44,19 +45,33 @@ function InvoiceFormPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const today = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState({ invoice_number: "", contact_id: ownerId, contract_id: "", issue_date: today, due_date: "", status: "unpaid", vat_rate: "15", notes: "" });
+  const [form, setForm] = useState({ invoice_number: "", contact_id: ownerId, contract_id: "", asset: "", issue_date: today, due_date: "", status: "unpaid", vat_rate: "15", notes: "" });
   const [items, setItems] = useState<Item[]>([blankItem()]);
   const [files, setFiles] = useState<File[]>([]);
   const set = (patch: Partial<typeof form>) => setForm((previous) => ({ ...previous, ...patch }));
   const options = useQuery({ queryKey: ["invoice-form-options"], queryFn: async () => {
-    const [contacts, contracts, settings] = await Promise.all([
+    const [contacts, settings] = await Promise.all([
       supabase.from("contacts").select("id, full_name, phone").order("full_name").limit(5000),
-      supabase.from("contracts").select("id, contract_number, owner_id").order("created_at", { ascending: false }).limit(500),
       supabase.from("app_settings").select("vat_rate, company_name, address").eq("id", true).maybeSingle(),
     ]);
     if (contacts.error) throw contacts.error;
-    if (contracts.error) throw contracts.error;
-    return { contacts: contacts.data ?? [], contracts: contracts.data ?? [], settings: settings.data };
+    return { contacts: contacts.data ?? [], settings: settings.data };
+  }});
+  const ownerOptions = useQuery({ queryKey: ["invoice-owner-options", form.contact_id], enabled: Boolean(form.contact_id), queryFn: async () => {
+    const owner = form.contact_id;
+    const [contracts, buildings, properties, units] = await Promise.all([
+      supabase.from("contracts").select("id, contract_number, owner_id").eq("owner_id", owner).order("created_at", { ascending: false }).limit(5000),
+      supabase.from("buildings").select("id, name, owner_id").eq("owner_id", owner).order("name").limit(5000),
+      supabase.from("properties").select("id, name, code, owner_id").eq("owner_id", owner).order("name").limit(5000),
+      supabase.from("units").select("id, unit_number, owner_id, building:building_id(name)").eq("owner_id", owner).order("unit_number").limit(5000),
+    ]);
+    for (const result of [contracts, buildings, properties, units]) if (result.error) throw result.error;
+    const assets: InvoiceAsset[] = [
+      ...(buildings.data ?? []).map((row) => ({ id: row.id, owner_id: row.owner_id, label: `عمارة: ${row.name}`, kind: "building" as const })),
+      ...(properties.data ?? []).map((row) => ({ id: row.id, owner_id: row.owner_id, label: `عقار: ${row.name || row.code}`, kind: "property" as const })),
+      ...(units.data ?? []).map((row) => ({ id: row.id, owner_id: row.owner_id, label: `وحدة: ${row.unit_number}${row.building?.name ? ` — ${row.building.name}` : ""}`, kind: "unit" as const })),
+    ];
+    return { contracts: forInvoiceOwner(contracts.data ?? [], owner), assets: forInvoiceOwner(assets, owner) };
   }});
   const existing = useQuery({ queryKey: ["invoice-edit", id], enabled: Boolean(id), queryFn: async () => {
     const [invoice, invoiceItems] = await Promise.all([supabase.from("invoices").select("*").eq("id", id).single(), supabase.from("invoice_items").select("description, quantity, unit_price, vat_rate, item_type").eq("invoice_id", id).order("sort_order")]);
@@ -65,15 +80,18 @@ function InvoiceFormPage() {
     return { invoice: invoice.data, items: invoiceItems.data ?? [] };
   }});
   useEffect(() => { if (!id && options.data?.settings) set({ vat_rate: String(options.data.settings.vat_rate ?? 15) }); }, [id, options.data?.settings]);
-  useEffect(() => { const data = existing.data; if (!data) return; setForm({ invoice_number: data.invoice.invoice_number, contact_id: data.invoice.contact_id ?? "", contract_id: data.invoice.contract_id ?? "", issue_date: data.invoice.issue_date, due_date: data.invoice.due_date ?? "", status: data.invoice.status, vat_rate: data.invoice.subtotal ? String((Number(data.invoice.vat_amount) / Number(data.invoice.subtotal)) * 100) : "0", notes: data.invoice.notes ?? "" }); setItems(data.items.length ? data.items.map((item) => ({ description: item.description, quantity: String(item.quantity), unit_price: String(item.unit_price), vat_rate: String(item.vat_rate ?? 0), item_type: item.item_type ?? "other" })) : [blankItem()]); }, [existing.data]);
+  useEffect(() => { const data = existing.data; if (!data) return; setForm({ invoice_number: data.invoice.invoice_number, contact_id: data.invoice.contact_id ?? "", contract_id: data.invoice.contract_id ?? "", asset: invoiceAssetValue(data.invoice), issue_date: data.invoice.issue_date, due_date: data.invoice.due_date ?? "", status: data.invoice.status, vat_rate: data.invoice.subtotal ? String((Number(data.invoice.vat_amount) / Number(data.invoice.subtotal)) * 100) : "0", notes: data.invoice.notes ?? "" }); setItems(data.items.length ? data.items.map((item) => ({ description: item.description, quantity: String(item.quantity), unit_price: String(item.unit_price), vat_rate: String(item.vat_rate ?? 0), item_type: item.item_type ?? "other" })) : [blankItem()]); }, [existing.data]);
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + lineBase(item), 0), [items]);
   const vat = useMemo(() => items.reduce((sum, item) => sum + lineVat(item), 0), [items]);
   const total = subtotal + vat;
   const save = useMutation({ mutationFn: async (addAnother: boolean) => {
     if (!form.contact_id) throw new Error("اختر المالك أو العميل");
+    if (ownerOptions.isPending || ownerOptions.isError) throw new Error("انتظر تحميل عقود ومباني المالك أو أعد المحاولة");
+    if (form.contract_id && !ownerOptions.data?.contracts.some((row) => row.id === form.contract_id)) throw new Error("العقد المختار لا يتبع المالك");
+    if (form.asset && !ownerOptions.data?.assets.some((row) => `${row.kind}:${row.id}` === form.asset)) throw new Error("المبنى أو العقار المختار لا يتبع المالك");
     const validItems = items.filter((item) => item.description.trim() && Number(item.quantity) > 0);
     if (!validItems.length) throw new Error("أضف بند فاتورة واحدًا على الأقل");
-    const payload = { invoice_number: form.invoice_number.trim() || `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`, contact_id: form.contact_id, contract_id: form.contract_id || null, issue_date: form.issue_date, due_date: form.due_date || null, status: form.status, subtotal, vat_amount: vat, total, notes: form.notes.trim() || null };
+    const payload = { ...invoiceAssetLinks(form.asset), invoice_number: form.invoice_number.trim() || `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`, contact_id: form.contact_id, contract_id: form.contract_id || null, issue_date: form.issue_date, due_date: form.due_date || null, status: form.status, subtotal, vat_amount: vat, total, notes: form.notes.trim() || null };
     let invoiceId = id;
     if (id) { const update = await supabase.from("invoices").update(payload).eq("id", id); if (update.error) throw update.error; const remove = await supabase.from("invoice_items").delete().eq("invoice_id", id); if (remove.error) throw remove.error; }
     else { const insert = await supabase.from("invoices").insert(payload).select("id").single(); if (insert.error) throw insert.error; invoiceId = insert.data.id; }
@@ -81,7 +99,7 @@ function InvoiceFormPage() {
     if (inserted.error) throw inserted.error;
     if (files.length && invoiceId) {
       const cur = await supabase.from("invoices").select("attachments").eq("id", invoiceId).maybeSingle();
-      const list = (Array.isArray(cur.data?.attachments) ? cur.data!.attachments : []) as { path: string; name: string }[];
+      const list = (Array.isArray(cur.data?.attachments) ? cur.data?.attachments : []) as { path: string; name: string }[];
       for (const f of files) {
         const path = `invoices/${invoiceId}/${Date.now()}-${f.name.replace(/[^\w.\-]+/g, "_")}`;
         await uploadMedia("internal-files", path, f);
@@ -103,16 +121,18 @@ function InvoiceFormPage() {
     }
     setFiles([]);
     return { invoiceId, addAnother };
-  }, onSuccess: ({ invoiceId, addAnother }) => { queryClient.invalidateQueries({ queryKey: ["invoices"] }); toast.success(id ? "تم تحديث الفاتورة" : "تم إنشاء الفاتورة"); if (addAnother) { setForm({ invoice_number: "", contact_id: ownerId, contract_id: "", issue_date: today, due_date: "", status: "unpaid", vat_rate: form.vat_rate, notes: "" }); setItems([blankItem()]); } else void navigate({ to: "/invoices/$invoiceId", params: { invoiceId } }); }, onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الحفظ") });
+  }, onSuccess: ({ invoiceId, addAnother }) => { queryClient.invalidateQueries({ queryKey: ["invoices"] }); toast.success(id ? "تم تحديث الفاتورة" : "تم إنشاء الفاتورة"); if (addAnother) { setForm({ invoice_number: "", contact_id: ownerId, contract_id: "", asset: "", issue_date: today, due_date: "", status: "unpaid", vat_rate: form.vat_rate, notes: "" }); setItems([blankItem()]); } else void navigate({ to: "/invoices/$invoiceId", params: { invoiceId } }); }, onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الحفظ") });
 
   return <>
     <PageHero title={id ? "تعديل الفاتورة" : "الفواتير"} subtitle="إدارة الفواتير وحالات إصدارها وسدادها" icon={ReceiptText} />
     <div className="flex items-center justify-between"><Link to="/invoices" className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[13px] font-semibold"><ArrowRight className="size-4" />رجوع للفواتير</Link><span className="text-[12px] text-muted-foreground">الفواتير / {id ? "تعديل" : "إضافة"}</span></div>
     <Section title="بيانات الفاتورة" icon={ReceiptText}><div className="grid gap-4 sm:grid-cols-2">
-      <Field label="المالك / العميل"><ContactSearch contacts={options.data?.contacts ?? []} value={form.contact_id} onChange={(contact_id) => set({ contact_id })} /></Field>
+      <Field label="المالك / العميل"><ContactSearch contacts={options.data?.contacts ?? []} value={form.contact_id} onChange={(contact_id) => set({ contact_id, contract_id: "", asset: "" })} /></Field>
       <Field label="الحالة"><select className={inputClass} value={form.status} onChange={(event) => set({ status: event.target.value })}>{Object.entries(invoiceStatusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></Field>
       <Field label="رقم الفاتورة" hint="يُنشأ تلقائيًا إذا تُرك فارغًا"><input className={inputClass} dir="ltr" value={form.invoice_number} onChange={(event) => set({ invoice_number: event.target.value })} /></Field>
-      <Field label="العقد المرتبط"><select className={inputClass} value={form.contract_id} onChange={(event) => set({ contract_id: event.target.value })}><option value="">بدون عقد</option>{(options.data?.contracts ?? []).filter((contract) => !form.contact_id || contract.owner_id === form.contact_id).map((contract) => <option key={contract.id} value={contract.id}>{contract.contract_number}</option>)}</select></Field>
+      <Field label="العقد المرتبط"><select aria-label="العقد المرتبط" disabled={!form.contact_id || ownerOptions.isPending || ownerOptions.isError} className={inputClass} value={form.contract_id} onChange={(event) => set({ contract_id: event.target.value })}><option value="">بدون عقد</option>{(ownerOptions.data?.contracts ?? []).map((contract) => <option key={contract.id} value={contract.id}>{contract.contract_number}</option>)}</select></Field>
+      <Field label="المبنى / العقار / الوحدة"><select aria-label="المبنى / العقار / الوحدة" className={inputClass} disabled={!form.contact_id || ownerOptions.isPending || ownerOptions.isError} value={form.asset} onChange={(event) => set({ asset: event.target.value })}><option value="">بدون ارتباط</option>{(ownerOptions.data?.assets ?? []).map((asset) => <option key={`${asset.kind}:${asset.id}`} value={`${asset.kind}:${asset.id}`}>{asset.label}</option>)}</select></Field>
+      {ownerOptions.isError ? <p className="text-sm text-destructive">تعذّر تحميل عقود ومباني المالك؛ اختر المالك مرة أخرى للمحاولة.</p> : null}
       <Field label="تاريخ الفاتورة"><input type="date" className={inputClass} value={form.issue_date} onChange={(event) => set({ issue_date: event.target.value })} /></Field>
       <Field label="تاريخ الاستحقاق"><input type="date" className={inputClass} value={form.due_date} onChange={(event) => set({ due_date: event.target.value })} /></Field>
     </div></Section>
