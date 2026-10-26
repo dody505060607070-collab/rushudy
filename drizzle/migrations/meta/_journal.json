@@ -386,6 +386,13 @@
       "when": 1792098305366,
       "tag": "0054_sync_unit_status_with_contract",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1793042348313,
+      "tag": "0055_invoice_asset_links",
+      "breakpoints": true
     }
   ]
 }
