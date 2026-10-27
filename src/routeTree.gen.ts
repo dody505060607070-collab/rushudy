@@ -96,6 +96,7 @@ import { Route as PortalInvoicesInvoiceIdRouteImport } from './routes/portal.inv
 import { Route as PortalServicesIndexRouteImport } from './routes/portal.services.index'
 import { Route as PortalServicesPartnerCodeRouteImport } from './routes/portal.services.$partnerCode'
 import { Route as ApiPublicFilesSplatRouteImport } from './routes/api/public/files/$'
+import { Route as ApiPublicJobsOwnerFollowupBatchRouteImport } from './routes/api/public/jobs/owner-followup-batch'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -556,6 +557,12 @@ const ApiPublicFilesSplatRoute = ApiPublicFilesSplatRouteImport.update({
   path: '/api/public/files/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicJobsOwnerFollowupBatchRoute =
+  ApiPublicJobsOwnerFollowupBatchRouteImport.update({
+    id: '/api/public/jobs/owner-followup-batch',
+    path: '/api/public/jobs/owner-followup-batch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -644,6 +651,7 @@ export interface FileRoutesByFullPath {
   '/portal/invoices/': typeof PortalInvoicesIndexRoute
   '/portal/services/': typeof PortalServicesIndexRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
+  '/api/public/jobs/owner-followup-batch': typeof ApiPublicJobsOwnerFollowupBatchRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -730,6 +738,7 @@ export interface FileRoutesByTo {
   '/portal/invoices': typeof PortalInvoicesIndexRoute
   '/portal/services': typeof PortalServicesIndexRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
+  '/api/public/jobs/owner-followup-batch': typeof ApiPublicJobsOwnerFollowupBatchRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -820,6 +829,7 @@ export interface FileRoutesById {
   '/portal/invoices/': typeof PortalInvoicesIndexRoute
   '/portal/services/': typeof PortalServicesIndexRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
+  '/api/public/jobs/owner-followup-batch': typeof ApiPublicJobsOwnerFollowupBatchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -910,6 +920,7 @@ export interface FileRouteTypes {
     | '/portal/invoices/'
     | '/portal/services/'
     | '/api/public/files/$'
+    | '/api/public/jobs/owner-followup-batch'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -996,6 +1007,7 @@ export interface FileRouteTypes {
     | '/portal/invoices'
     | '/portal/services'
     | '/api/public/files/$'
+    | '/api/public/jobs/owner-followup-batch'
   id:
     | '__root__'
     | '/'
@@ -1085,6 +1097,7 @@ export interface FileRouteTypes {
     | '/portal/invoices/'
     | '/portal/services/'
     | '/api/public/files/$'
+    | '/api/public/jobs/owner-followup-batch'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1112,6 +1125,7 @@ export interface RootRouteChildren {
   PropertiesCodeRoute: typeof PropertiesCodeRoute
   ApiPublicN8nRoute: typeof ApiPublicN8nRoute
   ApiPublicFilesSplatRoute: typeof ApiPublicFilesSplatRoute
+  ApiPublicJobsOwnerFollowupBatchRoute: typeof ApiPublicJobsOwnerFollowupBatchRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1725,6 +1739,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFilesSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/jobs/owner-followup-batch': {
+      id: '/api/public/jobs/owner-followup-batch'
+      path: '/api/public/jobs/owner-followup-batch'
+      fullPath: '/api/public/jobs/owner-followup-batch'
+      preLoaderRoute: typeof ApiPublicJobsOwnerFollowupBatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1924,6 +1945,7 @@ const rootRouteChildren: RootRouteChildren = {
   PropertiesCodeRoute: PropertiesCodeRoute,
   ApiPublicN8nRoute: ApiPublicN8nRoute,
   ApiPublicFilesSplatRoute: ApiPublicFilesSplatRoute,
+  ApiPublicJobsOwnerFollowupBatchRoute: ApiPublicJobsOwnerFollowupBatchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

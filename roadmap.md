@@ -14,3 +14,4 @@
 - [x] Rent owners (no contract) page under sale owners
 - [x] Goals: list like design, employee goals page, auto calc + admin manual override
 - [x] Sale owners: biweekly message panel (template, countdown, delivery status, send now, on/off)
+- [x] Biweekly owner message: split into batches of 20 every 30 min via queue + managed schedule
