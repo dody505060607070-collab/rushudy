@@ -2697,6 +2697,53 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_followup_queue: {
+        Row: {
+          body: string
+          contact_id: string
+          created_at: string
+          failure_reason: string | null
+          id: string
+          recipient_name: string | null
+          recipient_phone: string
+          run_id: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          body: string
+          contact_id: string
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          recipient_name?: string | null
+          recipient_phone: string
+          run_id: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          body?: string
+          contact_id?: string
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          recipient_name?: string | null
+          recipient_phone?: string
+          run_id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_followup_queue_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       owner_login_events: {
         Row: {
           created_at: string
