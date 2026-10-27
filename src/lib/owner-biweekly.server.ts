@@ -163,7 +163,7 @@ export async function runOwnerBiweekly(now = new Date()) {
     .eq("is_active", true);
   const seen = new Set<string>();
   const runId = crypto.randomUUID();
-  const rows: Record<string, unknown>[] = [];
+  const rows: import("@/integrations/supabase/types").Database["public"]["Tables"]["owner_followup_queue"]["Insert"][] = [];
   let noPhone = 0;
   for (const o of owners ?? []) {
     const phone = (o.whatsapp || o.phone || "").trim();
