@@ -1,5 +1,6 @@
 import { RENT_FOLLOWUP_MESSAGE, nextRentFollowup } from "./rent-followup";
 import type { RentConfig } from "./rent-followup.functions";
+import { followupDatabase } from "./followup-database";
 
 export async function runRentFollowup(now = new Date()) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -28,16 +29,16 @@ export async function runRentFollowup(now = new Date()) {
       rows.push({ run_id: runId, contact_id: owner.id, recipient_name: owner.full_name, recipient_phone: phone, body, followup_kind: "owner_monthly_rent" });
     }
     if (rows.length) {
-      const queued = await supabaseAdmin.from("owner_followup_queue").insert(rows);
+    const queued = await followupDatabase(supabaseAdmin).from("owner_followup_queue").insert(rows);
       if (queued.error) throw queued.error;
     }
     const patch = { updated_at: now.toISOString(), rent_next_at: nextRentFollowup(now) };
-    const saved = await supabaseAdmin.from("owner_followup_config").update(patch).eq("id", true);
+    const saved = await followupDatabase(supabaseAdmin).from("owner_followup_config").update(patch).eq("id", true);
     if (saved.error) throw saved.error;
     const { sendOwnerFollowupBatch } = await import("./owner-biweekly.server");
     return { ran: true, queued: rows.length, ...await sendOwnerFollowupBatch() };
   } finally {
-    const finish = await supabaseAdmin.rpc("finish_automation_lease", { _job_name: "rent_owner_monthly_enqueue", _error: null });
+    const finish = await supabaseAdmin.rpc("finish_automation_lease", { _job_name: "rent_owner_monthly_enqueue" });
     if (finish.error) throw finish.error;
   }
 }
