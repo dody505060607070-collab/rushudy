@@ -457,6 +457,26 @@ function PropertiesPage() {
                           <Star className="size-3 fill-current" /> مميز
                         </span>
                       )}
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`حذف العقار ${r.name}`}
+                        title="حذف"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`حذف العقار "${r.name}"؟`)) remove.mutate(r.id);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter" && e.key !== " ") return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (window.confirm(`حذف العقار "${r.name}"؟`)) remove.mutate(r.id);
+                        }}
+                        className="absolute bottom-3 start-3 inline-flex items-center gap-1 rounded-full bg-card/95 px-2.5 py-1 text-[11px] font-semibold text-destructive shadow-sm transition-colors hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 className="size-3.5" />
+                        حذف
+                      </span>
                     </div>
                     <div className="space-y-3 p-4">
                       <div className="flex items-start justify-between gap-2">
