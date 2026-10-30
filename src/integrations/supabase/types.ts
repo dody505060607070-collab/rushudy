@@ -614,6 +614,7 @@ export type Database = {
           amount_paid: number
           contract_id: string
           created_at: string
+          deadline_date: string | null
           due_date: string
           id: string
           is_derived: boolean
@@ -627,6 +628,7 @@ export type Database = {
           amount_paid?: number
           contract_id: string
           created_at?: string
+          deadline_date?: string | null
           due_date: string
           id?: string
           is_derived?: boolean
@@ -640,6 +642,7 @@ export type Database = {
           amount_paid?: number
           contract_id?: string
           created_at?: string
+          deadline_date?: string | null
           due_date?: string
           id?: string
           is_derived?: boolean

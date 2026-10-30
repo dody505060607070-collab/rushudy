@@ -393,6 +393,13 @@
       "when": 1793042348313,
       "tag": "0055_invoice_asset_links",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1793318425127,
+      "tag": "0056_payment_deadline_date",
+      "breakpoints": true
     }
   ]
 }
