@@ -142,6 +142,8 @@ export type EjarPayment = {
   total: number;
   issue_date: string;
   due_date: string;
+  /** نهاية مهلة السداد — دائمًا بعد تاريخ الاستحقاق أو مساويًا له */
+  deadline_date?: string;
 };
 
 export type EjarParsed = {
@@ -267,16 +269,19 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
     const simpleRe =
       /([\d.,]+\.\d{2})\s{2,}\d{4}-\d{2}-\d{2}\s{2,}\d{4}-\d{2}-\d{2}\s{2,}[^\s]+\s{2,}(\d{4}-\d{2}-\d{2})\s{2,}(\d{4}-\d{2}-\d{2})\s{2,}(\d{1,3})(?!\d)/g;
     for (const m of text.matchAll(simpleRe)) {
-      const dueAd = m[2]!;
-      if (Number(dueAd.slice(0, 4)) < 1900) continue;
+      // عمودان ميلاديان: «تاريخ الاستحقاق» و«نهاية مهلة السداد». ترتيبهما في النص يختلف
+      // حسب اتجاه القراءة، فالأقدم دائمًا هو الاستحقاق والأحدث هو نهاية المهلة.
+      const [dueAd, deadlineAd] = [m[2]!, m[3]!].sort();
+      if (Number(dueAd!.slice(0, 4)) < 1900) continue;
       payments.push({
         no: Number(m[4]),
         total: num(m[1]),
         services: 0,
         vat: 0,
         rent: num(m[1]),
-        due_date: dueAd,
-        issue_date: m[3]!,
+        due_date: dueAd!,
+        issue_date: dueAd!,
+        deadline_date: deadlineAd!,
       });
     }
   }
