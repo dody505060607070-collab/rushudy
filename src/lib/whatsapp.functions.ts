@@ -42,6 +42,7 @@ async function evoFetch(path: string, init?: RequestInit, line: WaLine = 1) {
   if (!cfg) throw new Error("إعدادات واتساب غير مكتملة");
   return fetch(`${cfg.url}${path}`, {
     ...init,
+    signal: init?.signal ?? AbortSignal.timeout(15000),
     headers: {
       apikey: cfg.key,
       "Content-Type": "application/json",

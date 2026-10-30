@@ -28,7 +28,12 @@ export const Route = createFileRoute("/api/public/n8n")({
           } catch (err) {
             ownerBiweekly = { error: (err as Error).message };
           }
-          Object.assign(result as object, { ownerBiweekly });
+          let rentFollowup: unknown = null;
+          try {
+            const { runRentFollowup } = await import("@/lib/rent-followup.server");
+            rentFollowup = await runRentFollowup();
+          } catch (err) { rentFollowup = { error: (err as Error).message }; }
+          Object.assign(result as object, { ownerBiweekly, rentFollowup });
           return new Response(JSON.stringify(result), {
             status: 200,
             headers: { "Content-Type": "application/json" },

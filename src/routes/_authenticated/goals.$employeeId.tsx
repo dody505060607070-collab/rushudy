@@ -17,6 +17,8 @@ import {
 import { PageHero } from "@/components/kit/PageHero";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { incrementAchievement } from "@/lib/goal-increment";
 import {
   computeAutoProgress,
   effectiveAchieved,
@@ -88,6 +90,7 @@ function EmployeeGoalsPage() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [increments, setIncrements] = useState<Record<string, string>>({});
   const period = monthStart(month);
 
   const { data: employee } = useQuery({
@@ -140,7 +143,8 @@ function EmployeeGoalsPage() {
         throw new Error("المنجز اليدوي يجب أن يكون صفرًا أو أكثر");
       if (!Number.isFinite(points) || points < 0)
         throw new Error("نقاط الهدف يجب أن تكون صفرًا أو أكثر");
-      const { error } = await supabase.from("employee_goals").upsert(
+      if (goals.some(g => g.goal_type === form.goal_type)) throw new Error("هذا الهدف موجود لهذا الشهر؛ يمكنك زيادة إنجازه من بطاقته دون تصفيره");
+      const { error } = await supabase.from("employee_goals").insert(
         {
           employee_id: employeeId,
           period_month: period,
@@ -151,7 +155,6 @@ function EmployeeGoalsPage() {
           points_per_unit: points,
           notes: form.notes || null,
         },
-        { onConflict: "employee_id,period_month,goal_type" },
       );
       if (error) throw error;
     },
@@ -170,6 +173,24 @@ function EmployeeGoalsPage() {
       if (error) throw error;
     },
     onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const increment = useMutation({
+    mutationFn: async ({ goal, amount }: { goal: GoalRow; amount: number }) => {
+      if (!canManage) throw new Error("ليست لديك صلاحية تعديل الأهداف");
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const current = await supabase.from("employee_goals").select("achieved_value,auto_track").eq("id", goal.id).single();
+        if (current.error) throw current.error;
+        const base = current.data.auto_track ? effectiveAchieved({ ...goal, ...current.data }, auto) : current.data.achieved_value;
+        const value = incrementAchievement(base, amount);
+        const result = await supabase.from("employee_goals").update({ achieved_value: value, auto_track: false }).eq("id", goal.id).eq("achieved_value", current.data.achieved_value).eq("auto_track", current.data.auto_track).select("id");
+        if (result.error) throw result.error;
+        if (result.data?.length) return;
+      }
+      throw new Error("تزامنت إضافة أخرى؛ حاول مرة أخرى");
+    },
+    onSuccess: () => { invalidate(); toast.success("تمت إضافة الإنجاز إلى الرصيد السابق"); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -255,9 +276,9 @@ function EmployeeGoalsPage() {
           >
             <ArrowRight className="size-4" />
           </button>
-          <PrimaryButton onClick={() => setOpen(true)}>
+          {canManage ? <PrimaryButton onClick={() => setOpen(true)}>
             <Plus className="size-4" /> هدف جديد
-          </PrimaryButton>
+          </PrimaryButton> : null}
         </div>
       </div>
 
@@ -326,7 +347,7 @@ function EmployeeGoalsPage() {
             return (
               <article
                 key={goal.id}
-                className="rounded-2xl border border-border bg-card p-5 shadow-card"
+                className="brand-break rounded-2xl border border-border bg-card p-5 shadow-card"
               >
                 <header className="mb-3 flex items-start justify-between gap-3">
                   <div>
@@ -360,6 +381,11 @@ function EmployeeGoalsPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   {canManage ? (
                     <>
+                      <div className="flex w-full flex-wrap items-center gap-2 border-b border-border pb-3">
+                        {[1, 2].map(amount => <Button key={amount} size="sm" variant="outline" disabled={increment.isPending} onClick={() => increment.mutate({ goal, amount })}><Plus className="size-3.5" />{amount}</Button>)}
+                        <input aria-label={`إضافة إنجاز ${typeDef?.label ?? goal.goal_type}`} inputMode="decimal" value={increments[goal.id] ?? ""} onChange={e => setIncrements(v => ({ ...v, [goal.id]: e.target.value }))} className={`${inputClass} h-9 max-w-24`} placeholder="إضافة" />
+                        <Button size="sm" disabled={increment.isPending} onClick={() => increment.mutate({ goal, amount: toNum(increments[goal.id] ?? "") })}><Plus />إضافة إنجاز</Button>
+                      </div>
                       {isAutoSource && goal.auto_track ? (
                         isEditing ? (
                           <div className="flex items-center gap-1.5">
@@ -458,7 +484,7 @@ function EmployeeGoalsPage() {
                       ) : null}
                     </>
                   ) : null}
-                  <button
+                  {canManage ? <button
                     type="button"
                     onClick={() => {
                       if (window.confirm("هل أنت متأكد من الحذف؟")) remove.mutate(goal.id);
@@ -467,7 +493,7 @@ function EmployeeGoalsPage() {
                     aria-label="حذف الهدف"
                   >
                     <Trash2 className="size-4" />
-                  </button>
+                  </button> : null}
                 </div>
               </article>
             );

@@ -86,6 +86,7 @@ import { Route as AuthenticatedOwnerSectionSectionIdRouteImport } from './routes
 import { Route as AuthenticatedOwnersIndexRouteImport } from './routes/_authenticated/owners.index'
 import { Route as AuthenticatedOwnersOwnerIdRouteImport } from './routes/_authenticated/owners.$ownerId'
 import { Route as AuthenticatedPaymentReminderPaymentIdRouteImport } from './routes/_authenticated/payment-reminder.$paymentId'
+import { Route as AuthenticatedRequestsIndexRouteImport } from './routes/_authenticated/requests.index'
 import { Route as AuthenticatedSupplyRequestsIndexRouteImport } from './routes/_authenticated/supply-requests.index'
 import { Route as AuthenticatedSupplyRequestsRequestIdRouteImport } from './routes/_authenticated/supply-requests.$requestId'
 import { Route as ApiPublicN8nRouteImport } from './routes/api/public/n8n'
@@ -95,6 +96,7 @@ import { Route as PortalInvoicesIndexRouteImport } from './routes/portal.invoice
 import { Route as PortalInvoicesInvoiceIdRouteImport } from './routes/portal.invoices.$invoiceId'
 import { Route as PortalServicesIndexRouteImport } from './routes/portal.services.index'
 import { Route as PortalServicesPartnerCodeRouteImport } from './routes/portal.services.$partnerCode'
+import { Route as AuthenticatedRequestsKindRequestIdRouteImport } from './routes/_authenticated/requests.$kind.$requestId'
 import { Route as ApiPublicFilesSplatRouteImport } from './routes/api/public/files/$'
 import { Route as ApiPublicJobsOwnerFollowupBatchRouteImport } from './routes/api/public/jobs/owner-followup-batch'
 
@@ -503,6 +505,12 @@ const AuthenticatedPaymentReminderPaymentIdRoute =
     path: '/payment-reminder/$paymentId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRequestsIndexRoute =
+  AuthenticatedRequestsIndexRouteImport.update({
+    id: '/requests/',
+    path: '/requests/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSupplyRequestsIndexRoute =
   AuthenticatedSupplyRequestsIndexRouteImport.update({
     id: '/supply-requests/',
@@ -551,6 +559,12 @@ const PortalServicesPartnerCodeRoute =
     id: '/services/$partnerCode',
     path: '/services/$partnerCode',
     getParentRoute: () => PortalRoute,
+  } as any)
+const AuthenticatedRequestsKindRequestIdRoute =
+  AuthenticatedRequestsKindRequestIdRouteImport.update({
+    id: '/requests/$kind/$requestId',
+    path: '/requests/$kind/$requestId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const ApiPublicFilesSplatRoute = ApiPublicFilesSplatRouteImport.update({
   id: '/api/public/files/$',
@@ -646,10 +660,12 @@ export interface FileRoutesByFullPath {
   '/invoices/': typeof AuthenticatedInvoicesIndexRoute
   '/listing-requests/': typeof AuthenticatedListingRequestsIndexRoute
   '/owners/': typeof AuthenticatedOwnersIndexRoute
+  '/requests/': typeof AuthenticatedRequestsIndexRoute
   '/supply-requests/': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts/': typeof PortalContractsIndexRoute
   '/portal/invoices/': typeof PortalInvoicesIndexRoute
   '/portal/services/': typeof PortalServicesIndexRoute
+  '/requests/$kind/$requestId': typeof AuthenticatedRequestsKindRequestIdRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
   '/api/public/jobs/owner-followup-batch': typeof ApiPublicJobsOwnerFollowupBatchRoute
 }
@@ -733,10 +749,12 @@ export interface FileRoutesByTo {
   '/invoices': typeof AuthenticatedInvoicesIndexRoute
   '/listing-requests': typeof AuthenticatedListingRequestsIndexRoute
   '/owners': typeof AuthenticatedOwnersIndexRoute
+  '/requests': typeof AuthenticatedRequestsIndexRoute
   '/supply-requests': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts': typeof PortalContractsIndexRoute
   '/portal/invoices': typeof PortalInvoicesIndexRoute
   '/portal/services': typeof PortalServicesIndexRoute
+  '/requests/$kind/$requestId': typeof AuthenticatedRequestsKindRequestIdRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
   '/api/public/jobs/owner-followup-batch': typeof ApiPublicJobsOwnerFollowupBatchRoute
 }
@@ -824,10 +842,12 @@ export interface FileRoutesById {
   '/_authenticated/invoices/': typeof AuthenticatedInvoicesIndexRoute
   '/_authenticated/listing-requests/': typeof AuthenticatedListingRequestsIndexRoute
   '/_authenticated/owners/': typeof AuthenticatedOwnersIndexRoute
+  '/_authenticated/requests/': typeof AuthenticatedRequestsIndexRoute
   '/_authenticated/supply-requests/': typeof AuthenticatedSupplyRequestsIndexRoute
   '/portal/contracts/': typeof PortalContractsIndexRoute
   '/portal/invoices/': typeof PortalInvoicesIndexRoute
   '/portal/services/': typeof PortalServicesIndexRoute
+  '/_authenticated/requests/$kind/$requestId': typeof AuthenticatedRequestsKindRequestIdRoute
   '/api/public/files/$': typeof ApiPublicFilesSplatRoute
   '/api/public/jobs/owner-followup-batch': typeof ApiPublicJobsOwnerFollowupBatchRoute
 }
@@ -915,10 +935,12 @@ export interface FileRouteTypes {
     | '/invoices/'
     | '/listing-requests/'
     | '/owners/'
+    | '/requests/'
     | '/supply-requests/'
     | '/portal/contracts/'
     | '/portal/invoices/'
     | '/portal/services/'
+    | '/requests/$kind/$requestId'
     | '/api/public/files/$'
     | '/api/public/jobs/owner-followup-batch'
   fileRoutesByTo: FileRoutesByTo
@@ -1002,10 +1024,12 @@ export interface FileRouteTypes {
     | '/invoices'
     | '/listing-requests'
     | '/owners'
+    | '/requests'
     | '/supply-requests'
     | '/portal/contracts'
     | '/portal/invoices'
     | '/portal/services'
+    | '/requests/$kind/$requestId'
     | '/api/public/files/$'
     | '/api/public/jobs/owner-followup-batch'
   id:
@@ -1092,10 +1116,12 @@ export interface FileRouteTypes {
     | '/_authenticated/invoices/'
     | '/_authenticated/listing-requests/'
     | '/_authenticated/owners/'
+    | '/_authenticated/requests/'
     | '/_authenticated/supply-requests/'
     | '/portal/contracts/'
     | '/portal/invoices/'
     | '/portal/services/'
+    | '/_authenticated/requests/$kind/$requestId'
     | '/api/public/files/$'
     | '/api/public/jobs/owner-followup-batch'
   fileRoutesById: FileRoutesById
@@ -1669,6 +1695,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPaymentReminderPaymentIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/requests/': {
+      id: '/_authenticated/requests/'
+      path: '/requests'
+      fullPath: '/requests/'
+      preLoaderRoute: typeof AuthenticatedRequestsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/supply-requests/': {
       id: '/_authenticated/supply-requests/'
       path: '/supply-requests'
@@ -1731,6 +1764,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/portal/services/$partnerCode'
       preLoaderRoute: typeof PortalServicesPartnerCodeRouteImport
       parentRoute: typeof PortalRoute
+    }
+    '/_authenticated/requests/$kind/$requestId': {
+      id: '/_authenticated/requests/$kind/$requestId'
+      path: '/requests/$kind/$requestId'
+      fullPath: '/requests/$kind/$requestId'
+      preLoaderRoute: typeof AuthenticatedRequestsKindRequestIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/files/$': {
       id: '/api/public/files/$'
@@ -1811,7 +1851,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInvoicesIndexRoute: typeof AuthenticatedInvoicesIndexRoute
   AuthenticatedListingRequestsIndexRoute: typeof AuthenticatedListingRequestsIndexRoute
   AuthenticatedOwnersIndexRoute: typeof AuthenticatedOwnersIndexRoute
+  AuthenticatedRequestsIndexRoute: typeof AuthenticatedRequestsIndexRoute
   AuthenticatedSupplyRequestsIndexRoute: typeof AuthenticatedSupplyRequestsIndexRoute
+  AuthenticatedRequestsKindRequestIdRoute: typeof AuthenticatedRequestsKindRequestIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1866,7 +1908,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedListingRequestsIndexRoute:
     AuthenticatedListingRequestsIndexRoute,
   AuthenticatedOwnersIndexRoute: AuthenticatedOwnersIndexRoute,
+  AuthenticatedRequestsIndexRoute: AuthenticatedRequestsIndexRoute,
   AuthenticatedSupplyRequestsIndexRoute: AuthenticatedSupplyRequestsIndexRoute,
+  AuthenticatedRequestsKindRequestIdRoute:
+    AuthenticatedRequestsKindRequestIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

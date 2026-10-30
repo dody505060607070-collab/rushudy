@@ -83,7 +83,7 @@ export function StatCard({
       ref={ref}
       dir="rtl"
       className={cn(
-        "surface-card flex items-start justify-between gap-3 p-5 transition-shadow hover:shadow-float",
+        "surface-card brand-break flex items-start justify-between gap-3 p-5 transition-shadow hover:shadow-float",
         className,
       )}
     >

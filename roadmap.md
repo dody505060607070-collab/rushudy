@@ -1,4 +1,11 @@
 # Roadmap
+- [x] Implement task submission/review and action-triggered manager/assignee notices; screens and transition tests checked.
+- [ ] Verify task database guards after draft acceptance and real WhatsApp submission/return delivery after explicit send approval.
+- [x] Stage opt-in rent-owner 30-day settings and queued follow-up code; cadence tested, no automatic sends enabled.
+- [ ] Verify monthly follow-up after draft acceptance and opt-in activation; recipient delivery callbacks remain unverified.
+- [x] Additive employee goals: UI test 4 + 1 + 2 = 7 persisted after reload; temporary goal removed.
+- [x] Branded decorative breaks on statistics, active-contract dashboard tile, goal and request cards; screens checked.
+- [x] Clickable notifications and unified request history: real owner request opened with unit 12 details.
 - [x] Fix owner installment page hook-order crash; admin owner and reminder pages smoke-checked.
 - [ ] Verify installment success with an owner session (blocked: current session has no linked client portal account).
 - [x] Invoice: restrict contracts to selected owner and add owner asset selection; saved, reopened and deleted a test invoice successfully.

@@ -4,6 +4,10 @@ import { Camera, MapPin, CircleCheck, ClipboardList, LayoutGrid, List, Loader2, 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { useServerFn } from "@tanstack/react-start";
+import { useCurrentUser } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { decideTask, finishTask } from "@/lib/tasks.functions";
 import { Chip } from "@/components/kit/Chip";
 import { DataTable } from "@/components/kit/DataTable";
 import { EmptyState, formatDate, useTableRows } from "@/components/kit/LiveTable";
@@ -85,6 +89,9 @@ const emptyForm: FormState = {
 
 function TasksPage() {
   const navigate = useNavigate();
+  const { isSuperAdmin } = useCurrentUser();
+  const submitTask = useServerFn(finishTask);
+  const reviewTask = useServerFn(decideTask);
   const [type, setType] = useState("all");
   const [status, setStatus] = useState("all");
   const [propertyFilter, setPropertyFilter] = useState("all");
@@ -186,13 +193,18 @@ function TasksPage() {
 
   const changeStatus = useMutation({
     mutationFn: async (input: { id: string; status: string }) => {
+      if (input.status === "submitted") return submitTask({ data: { taskId: input.id } });
+      if (input.status === "approved" || input.status === "done") return reviewTask({ data: { taskId: input.id, decision: "approve" } });
+      if (input.status === "rejected") return reviewTask({ data: { taskId: input.id, decision: "return" } });
       const { error } = await supabase
         .from("tasks")
         .update({ status: input.status })
         .eq("id", input.id);
       if (error) throw error;
+      return { warning: null };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (result?.warning) toast.warning(result.warning);
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
       toast.success("تم تحديث حالة المهمة");
@@ -384,6 +396,10 @@ function TasksPage() {
                       </span>
                       <Chip tone={r.task_type === "photography" ? "gold" : "neutral"}>{r.task_type === "photography" ? "تصوير" : "عادية"}</Chip>
                     </div>
+                    {r.status === "submitted" && isSuperAdmin ? <div className="flex flex-wrap gap-2" onClick={e => e.stopPropagation()}>
+                      <Button size="sm" disabled={changeStatus.isPending} onClick={() => changeStatus.mutate({ id: r.id, status: "approved" })}><CircleCheck />اعتماد واكتمال</Button>
+                      <Button size="sm" variant="outline" disabled={changeStatus.isPending} onClick={() => { if (window.confirm("إرجاع المهمة للموظف لمراجعتها وإكمال المطلوب؟")) changeStatus.mutate({ id: r.id, status: "rejected" }); }}>إرجاع للموظف</Button>
+                    </div> : null}
                     {r.due_date ? <p className="text-[11.5px] font-semibold text-warning">📅 {formatDate(r.due_date)}{r.due_time ? ` · ${r.due_time}` : ""}</p> : null}
                   </article>
                 ))}
@@ -467,7 +483,7 @@ function TasksPage() {
                   className={`h-9 rounded-lg border px-2 text-[12.5px] font-semibold outline-none ${toneBadgeClass[rowTone(r.status, r.due_date)]}`}
                   aria-label="حالة المهمة"
                 >
-                  {statusOrder.map((s) => (
+                  {statusOrder.filter(s => s === r.status || (!["approved", "done", "rejected"].includes(s) && r.status !== "submitted") || (isSuperAdmin && r.status === "submitted")).map((s) => (
                     <option key={s} value={s}>
                       {taskStatusLabels[s] ?? s}
                     </option>

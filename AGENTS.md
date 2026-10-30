@@ -13,3 +13,7 @@
 - Sale-owner biweekly follow-up reads its on/off flag and template from `owner_followup_config` and logs every attempt to `message_log` with `kind = owner_biweekly` + `contact_id`. Why: the sale-owners page shows per-owner delivery status and edits the message without code changes.
 
 - Invoice asset links use separate nullable building/property/unit foreign keys with at most one selection; shared invoice-scope helpers handle owner filtering and edit round-trips to avoid stale associations.
+- Task completion uses authenticated submit/approve/return functions plus a database transition guard; only Super Admin approves or returns, so client status editing cannot bypass review.
+- Goal increments use compare-and-swap updates of the stored achievement and tracking mode; creating a goal inserts rather than upserts, preventing lost increments and accidental resets.
+- The request center reads existing request tables with staff authorization and per-source details; legacy owner notifications resolve to this history instead of an unrelated owner list.
+- Rent follow-up uses separate opt-in settings and a next-due timestamp, queues through the existing owner batch processor, and is checked by the existing hourly entry point to avoid a new recurring poller.

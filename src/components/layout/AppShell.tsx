@@ -4,7 +4,7 @@ import { Archive, Bell, Bot, Building, Building2, CalendarCheck, CalendarClock, 
 
 const itemIcons: Record<string, LucideIcon> = {
   "/dashboard": Home, "/ai": Bot, "/properties": Building, "/sale-owners": KeyRound, "/rent-owners": KeyRound, "/buildings": Building2,
-  "/supply-requests": FileText, "/listing-requests": ClipboardCheck, "/reservations": CalendarCheck,
+  "/supply-requests": FileText, "/listing-requests": ClipboardCheck, "/requests": ClipboardCheck, "/reservations": CalendarCheck,
   "/owners": Users, "/contracts": FileText, "/renewals": Bell, "/invoices": Receipt, "/reminders": CalendarClock,
   "/maintenance": Wrench, "/service-partners": Handshake, "/tasks": ListChecks, "/activities": History,
   "/team-chat": MessagesSquare, "/goals": Target, "/clients": UserRound, "/marketing": Megaphone,

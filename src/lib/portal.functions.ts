@@ -716,7 +716,7 @@ export const createOwnerRequest = createServerFn({ method: "POST" })
           user_id,
           title: "طلب جديد من مالك",
           body: `${contact?.full_name ?? "مالك"}: ${title}`,
-          link: "/owners",
+          link: `/requests/owner/${ins.data.id}`,
         })),
       );
     }
