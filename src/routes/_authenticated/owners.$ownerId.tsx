@@ -93,16 +93,31 @@ function OwnerDetailPage() {
   const [payingPayment, setPayingPayment] = useState<PaymentRow | null>(null);
 
   useEffect(() => {
-    const autoScrollWhileDragging = (event: DragEvent) => {
-      if (!dragAsset && !dragGroup && !dragContractId) return;
-      const edge = 110;
-      const speed = 22;
-      if (event.clientY < edge) window.scrollBy({ top: -speed, behavior: "instant" });
-      if (event.clientY > window.innerHeight - edge)
-        window.scrollBy({ top: speed, behavior: "instant" });
+    // تمرير تلقائي ناعم أثناء السحب: كلما اقترب المؤشر من الحافة زادت السرعة، مع بقاء عجلة الماوس تعمل.
+    if (!dragAsset && !dragGroup && !dragContractId) return;
+    let pointerY = -1;
+    let frame = 0;
+    const edge = 140;
+    const maxSpeed = 18;
+    const onDragOver = (event: DragEvent) => {
+      pointerY = event.clientY;
     };
-    window.addEventListener("dragover", autoScrollWhileDragging);
-    return () => window.removeEventListener("dragover", autoScrollWhileDragging);
+    const tick = () => {
+      if (pointerY >= 0) {
+        const h = window.innerHeight;
+        let delta = 0;
+        if (pointerY < edge) delta = -maxSpeed * ((edge - pointerY) / edge);
+        else if (pointerY > h - edge) delta = maxSpeed * ((pointerY - (h - edge)) / edge);
+        if (delta) window.scrollBy({ top: delta, behavior: "instant" as ScrollBehavior });
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    window.addEventListener("dragover", onDragOver);
+    frame = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("dragover", onDragOver);
+    };
   }, [dragAsset, dragContractId, dragGroup]);
 
   const dossier = useQuery({
@@ -113,7 +128,7 @@ function OwnerDetailPage() {
         supabase
           .from("properties")
           .select(
-            "id, code, name, purpose, property_type, city, district, price_value, status, is_visible, building_id",
+            "id, code, name, purpose, property_type, city, district, price_value, status, is_visible, building_id, unit_id",
           )
           .eq("owner_id", ownerId)
           .order("created_at", { ascending: false }),
@@ -616,7 +631,11 @@ function OwnerDetailPage() {
         })),
     });
   }
-  const looseUnits = data.units.filter((u) => !u.building_id);
+  // الوحدة المرتبطة بعقار ظاهر تُعرض ضمن العقار نفسه — لا نكررها كعنصر مستقل.
+  const unitsCoveredByProperty = new Set(
+    data.properties.map((p) => p.unit_id).filter(Boolean) as string[],
+  );
+  const looseUnits = data.units.filter((u) => !u.building_id && !unitsCoveredByProperty.has(u.id));
   const looseProps = data.properties;
   if (looseUnits.length || looseProps.length) {
     groups.push({

@@ -252,12 +252,20 @@ export const finalizeContractImport = createServerFn({ method: "POST" })
     const rawRows = Array.isArray(e["payments"]) ? (e["payments"] as Record<string, unknown>[]) : [];
     const scheduleRows = rawRows
       .filter((r) => r && typeof r === "object")
-      .map((r) => ({
-        due: /^\d{4}-\d{2}-\d{2}$/.test(str(r["due_date"])) ? str(r["due_date"]) : null,
+      .map((r) => {
+        const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
+        const d1 = isDate(str(r["due_date"])) ? str(r["due_date"]) : null;
+        const d2 = isDate(str(r["deadline_date"])) ? str(r["deadline_date"]) : null;
+        // الأقدم = تاريخ الاستحقاق، الأحدث = نهاية مهلة السداد (حتى لو انعكسا في القراءة)
+        const [due, deadline] = d1 && d2 ? [d1, d2].sort() : [d1 ?? d2, null];
+        return {
+        due: due ?? null,
+        deadline: deadline ?? null,
         amount:
           num(r["total"]) ??
           (num(r["rent"]) ?? 0) + (num(r["vat"]) ?? 0) + (num(r["services"]) ?? 0),
-      }))
+        };
+      })
       .filter((r) => r.due || r.amount);
     const declaredCount = Number(num(e["payments_count"]) ?? 0);
     const paymentsCount = Math.min(
@@ -334,6 +342,7 @@ export const finalizeContractImport = createServerFn({ method: "POST" })
         contract_id: contractId,
         payment_number: i + 1,
         due_date: row?.due ?? addCycle(base, cycle, i),
+        deadline_date: row?.deadline ?? null,
         amount_due: row?.amount ?? amountEach,
         amount_paid: 0,
         status: "active",
