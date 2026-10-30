@@ -271,7 +271,7 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
     for (const m of text.matchAll(simpleRe)) {
       // عمودان ميلاديان: «تاريخ الاستحقاق» و«نهاية مهلة السداد». ترتيبهما في النص يختلف
       // حسب اتجاه القراءة، فالأقدم دائمًا هو الاستحقاق والأحدث هو نهاية المهلة.
-      const [dueAd, deadlineAd] = [m[2]!, m[3]!].sort();
+      const [dueAd, deadlineAd] = orderPaymentDates(m[2]!, m[3]!);
       if (Number(dueAd!.slice(0, 4)) < 1900) continue;
       payments.push({
         no: Number(m[4]),
@@ -356,4 +356,9 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
 
     payments,
   };
+}
+
+/** يعيد [تاريخ الاستحقاق، نهاية مهلة السداد]: الأقدم دائمًا هو الاستحقاق. */
+export function orderPaymentDates(a: string, b: string): [string, string] {
+  return a <= b ? [a, b] : [b, a];
 }
