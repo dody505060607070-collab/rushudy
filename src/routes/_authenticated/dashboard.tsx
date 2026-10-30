@@ -531,7 +531,7 @@ function CardHead({ title, to }: { title: string; to?: string }) {
 
 function StatTile({ label, value, badge, note, to, featured, danger }: { label: string; value: string; badge: string; note: string; to: string; featured?: boolean; danger?: boolean }) {
   return (
-    <Link to={to} className={cn("group block p-5 transition-transform hover:-translate-y-0.5", featured ? "brand-tile" : "surface-card")}>
+    <Link to={to} className={cn("group block p-5 transition-transform hover:-translate-y-0.5", featured ? "brand-tile brand-break-solid" : "surface-card brand-break")}>
       <div className="flex items-start justify-between">
         <p className={cn("text-[14px] font-bold", featured ? "text-primary-foreground" : "text-foreground")}>{label}</p>
         <span className={cn("grid size-9 place-items-center rounded-full border", featured ? "border-primary-foreground/40 bg-primary-foreground text-primary" : "border-border text-foreground group-hover:bg-muted")}>
