@@ -41,7 +41,7 @@ export function PageHero({
             return (
               <div
                 key={stat.label}
-                className={cn("flex items-center justify-between gap-4 rounded-2xl border p-5 shadow-sm", tone.card)}
+                className={cn("brand-break flex items-center justify-between gap-4 rounded-2xl border p-5 shadow-sm", tone.card)}
               >
                 <div className="min-w-0">
                   <div className="text-[13px] font-semibold text-muted-foreground">{stat.label}</div>

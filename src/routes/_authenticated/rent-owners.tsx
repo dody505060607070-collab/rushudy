@@ -8,6 +8,7 @@ import { Field, GhostButton, Modal, PrimaryButton, inputClass, textareaClass } f
 import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import { describeDbError } from "@/lib/db-errors";
+import { RentFollowupPanel } from "@/components/owners/RentFollowupPanel";
 
 export const Route = createFileRoute("/_authenticated/rent-owners")({
   head: () => ({
@@ -210,6 +211,7 @@ function RentOwnersPage() {
         ]}
       />
 
+      <RentFollowupPanel />
       <div className="surface-card flex flex-wrap items-center gap-3 p-3">
         <div className="flex flex-wrap gap-2">
           {([

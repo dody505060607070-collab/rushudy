@@ -102,13 +102,14 @@ export async function sendOwnerFollowupBatch(limit = OWNER_FOLLOWUP_BATCH_SIZE) 
   const { whatsappSend } = await import("@/lib/whatsapp.functions");
   const { data: rows } = await supabaseAdmin
     .from("owner_followup_queue")
-    .select("id, contact_id, recipient_name, recipient_phone, body")
+    .select("id, contact_id, recipient_name, recipient_phone, body, followup_kind")
     .eq("status", "pending")
     .order("created_at", { ascending: true })
     .limit(limit);
+  if (rows === null) throw new Error("تعذّر تحميل دفعة متابعة الملاك");
   let sent = 0;
   let failed = 0;
-  for (const row of rows ?? []) {
+  for (const row of rows as unknown as { id: string; contact_id: string; recipient_name: string; recipient_phone: string; body: string; followup_kind: string }[]) {
     let ok = false;
     let reason: string | null = null;
     let sid: string | null = null;
@@ -127,9 +128,9 @@ export async function sendOwnerFollowupBatch(limit = OWNER_FOLLOWUP_BATCH_SIZE) 
       .update({ status: ok ? "sent" : "failed", failure_reason: reason, sent_at: new Date().toISOString() })
       .eq("id", row.id);
     await supabaseAdmin.from("message_log").insert({
-      kind: "owner_biweekly", contact_id: row.contact_id, recipient_name: row.recipient_name,
+      kind: row.followup_kind, contact_id: row.contact_id, recipient_name: row.recipient_name,
       recipient_phone: row.recipient_phone, body: row.body, channel: "whatsapp",
-      result: ok ? "sent" : "failed", failure_reason: reason, provider_message_id: sid,
+      result: ok ? "accepted" : "failed", failure_reason: reason, provider_message_id: sid,
       sent_by: null, sent_by_system: true,
     });
   }
