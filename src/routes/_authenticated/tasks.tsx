@@ -201,6 +201,7 @@ function TasksPage() {
         .update({ status: input.status })
         .eq("id", input.id);
       if (error) throw error;
+      return { warning: null };
     },
     onSuccess: (result) => {
       if (result?.warning) toast.warning(result.warning);

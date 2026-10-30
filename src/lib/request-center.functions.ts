@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const requestKinds = ["owner", "maintenance", "listing", "supply", "service"] as const;
 export type RequestKind = typeof requestKinds[number];
 const tables = { owner: "owner_requests", maintenance: "maintenance_requests", listing: "listing_requests", supply: "supply_requests", service: "service_partner_requests" } as const;
-const columns = { owner: "id,title,details,status,created_at,owner_id,unit_id,property_id,contract_id,staff_note", maintenance: "id,description,reporter_name,reporter_phone,status,created_at,unit_id,property_id,contract_id", listing: "id,full_name,phone,description,status,created_at,property_id", supply: "id,full_name,phone,notes,status,created_at", service: "id,title,description,status,created_at" } as const;
+const columns = { owner: "id,title,details,status,created_at,owner_id,unit_id,property_id,contract_id,staff_note", maintenance: "id,description,reporter_name,reporter_phone,status,created_at,unit_id,property_id,contract_id", listing: "id,full_name,phone,description,status,created_at,property_id", supply: "id,full_name,phone,requester_notes,status,created_at", service: "id,request_number,customer_name,customer_phone,details,service_type,status,created_at,contract_id" } as const;
 export type CenterRequest = { id: string; kind: RequestKind; title: string; details: string; name: string; phone: string; status: string; createdAt: string; unitId: string | null; propertyId: string | null; contractId: string | null; note: string };
 
 export const getRequestCenter = createServerFn({ method: "GET" })
@@ -26,14 +26,14 @@ export const getRequestCenter = createServerFn({ method: "GET" })
       if ((result.data?.length ?? 0) === 40) hasMore = true;
       for (const item of result.data ?? []) {
         const row = item as unknown as Record<string, unknown>;
-        let name = String(row.full_name ?? row.reporter_name ?? "");
-        let phone = String(row.phone ?? row.reporter_phone ?? "");
-        if (kind === "owner" && typeof row.owner_id === "string") {
-          const owner = await context.supabase.from("contacts").select("full_name,phone").eq("id", row.owner_id).maybeSingle();
+        let name = String(row["full_name"] ?? row["reporter_name"] ?? row["customer_name"] ?? "");
+        let phone = String(row["phone"] ?? row["reporter_phone"] ?? row["customer_phone"] ?? "");
+        if (kind === "owner" && typeof row["owner_id"] === "string") {
+          const owner = await context.supabase.from("contacts").select("full_name,phone").eq("id", row["owner_id"]).maybeSingle();
           if (owner.error) throw owner.error;
           name = owner.data?.full_name ?? "المالك"; phone = owner.data?.phone ?? "";
         }
-        rows.push({ id: String(row.id), kind, title: String(row.title ?? row.description ?? row.full_name ?? "طلب").slice(0, 160), details: String(row.details ?? row.description ?? row.notes ?? ""), name, phone, status: String(row.status), createdAt: String(row.created_at), unitId: typeof row.unit_id === "string" ? row.unit_id : null, propertyId: typeof row.property_id === "string" ? row.property_id : null, contractId: typeof row.contract_id === "string" ? row.contract_id : null, note: String(row.staff_note ?? "") });
+        rows.push({ id: String(row["id"]), kind, title: String(row["title"] ?? row["service_type"] ?? row["description"] ?? row["full_name"] ?? "طلب").slice(0, 160), details: String(row["details"] ?? row["description"] ?? row["requester_notes"] ?? ""), name, phone, status: String(row["status"]), createdAt: String(row["created_at"]), unitId: typeof row["unit_id"] === "string" ? row["unit_id"] : null, propertyId: typeof row["property_id"] === "string" ? row["property_id"] : null, contractId: typeof row["contract_id"] === "string" ? row["contract_id"] : null, note: String(row["staff_note"] ?? "") });
       }
     }
     return { rows: rows.sort((a,b) => b.createdAt.localeCompare(a.createdAt)), hasMore };
