@@ -11,6 +11,7 @@ import { CardsSkeleton } from "@/components/kit/Skeletons";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { notificationLink } from "@/lib/notification-link";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({ meta: [
@@ -34,10 +35,10 @@ function NotificationsPage() {
     ]);
     for (const result of [notifications, contracts, payments, tasks]) if (result.error) throw result.error;
     const alerts: Alert[] = [
-      ...(notifications.data ?? []).map((n) => ({ id: `n-${n.id}`, category: "notification" as const, title: n.title, body: n.body ?? "", date: n.created_at, link: n.link ?? "/notifications", unread: !n.is_read })),
+      ...(notifications.data ?? []).map((n) => ({ id: `n-${n.id}`, category: "notification" as const, title: n.title, body: n.body ?? "", date: n.created_at, link: notificationLink(n), unread: !n.is_read })),
       ...(contracts.data ?? []).map((c) => ({ id: `c-${c.id}`, category: "contract" as const, title: `العقد ${c.contract_number} يقترب من الانتهاء`, body: `ينتهي في ${c.end_date}`, date: c.end_date ?? todayText, link: `/contracts/${c.id}` })),
       ...(payments.data ?? []).map((p) => ({ id: `p-${p.id}`, category: "payment" as const, title: `دفعة متأخرة — ${p.contract?.contract_number ?? "عقد"}`, body: `المتبقي ${formatCurrency(Number(p.amount_due) - Number(p.amount_paid))}`, date: p.due_date, link: p.contract?.id ? `/contracts/${p.contract.id}` : "/contracts" })),
-      ...(tasks.data ?? []).map((t) => ({ id: `t-${t.id}`, category: "task" as const, title: t.title, body: `تأخرت منذ ${t.due_date}`, date: t.due_date ?? todayText, link: "/tasks" })),
+      ...(tasks.data ?? []).map((t) => ({ id: `t-${t.id}`, category: "task" as const, title: t.title, body: `تأخرت منذ ${t.due_date}`, date: t.due_date ?? todayText, link: `/task-form?id=${t.id}` })),
     ]; return alerts.sort((a, b) => b.date.localeCompare(a.date));
   }});
   const markAll = useMutation({ mutationFn: async () => { const { error } = await supabase.from("notifications").update({ is_read: true }).eq("user_id", userId!).eq("is_read", false); if (error) throw error; }, onSuccess: () => { void qc.invalidateQueries({ queryKey: ["notifications-center"] }); void qc.invalidateQueries({ queryKey: ["my-notifications"] }); } });

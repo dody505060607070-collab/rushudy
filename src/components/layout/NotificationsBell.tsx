@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { notificationLink } from "@/lib/notification-link";
 
 type Notif = {
   id: string;
@@ -49,7 +50,7 @@ export function NotificationsBell() {
         const notification = payload.new as Notif;
         void qc.invalidateQueries({ queryKey: ["my-notifications", userId] });
         void qc.invalidateQueries({ queryKey: ["notifications-center"] });
-        toast(notification.title, { description: notification.body ?? undefined });
+        toast(notification.title, { description: notification.body ?? undefined, action: { label: "عرض", onClick: () => navigate({ to: notificationLink(notification) }) } });
         try {
           const AudioContextCtor = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
           if (AudioContextCtor) {
@@ -59,11 +60,14 @@ export function NotificationsBell() {
             oscillator.connect(gain); gain.connect(context.destination); oscillator.start(); oscillator.stop(context.currentTime + 0.45);
           }
         } catch { /* قد يمنع المتصفح الصوت قبل أول تفاعل */ }
-        if ("Notification" in window && Notification.permission === "granted") new Notification(notification.title, { body: notification.body ?? "لديك إشعار جديد" });
+        if ("Notification" in window && Notification.permission === "granted") {
+          const alert = new Notification(notification.title, { body: notification.body ?? "لديك إشعار جديد" });
+          alert.onclick = () => { window.focus(); navigate({ to: notificationLink(notification) }); alert.close(); };
+        }
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [qc, userId]);
+  }, [qc, userId, navigate]);
 
   const markRead = useMutation({
     mutationFn: async (id?: string) => {
@@ -120,7 +124,7 @@ export function NotificationsBell() {
                     onClick={() => {
                       markRead.mutate(n.id);
                       setOpen(false);
-                      if (n.link) navigate({ to: n.link });
+                      navigate({ to: notificationLink(n) });
                     }}
                     className={cn(
                       "block w-full border-b border-border px-3 py-2 text-end transition-colors hover:bg-accent/50",
