@@ -2680,6 +2680,9 @@ export type Database = {
         Row: {
           enabled: boolean
           id: boolean
+          rent_enabled: boolean
+          rent_next_at: string | null
+          rent_template: string | null
           template: string | null
           updated_at: string
           updated_by: string | null
@@ -2687,6 +2690,9 @@ export type Database = {
         Insert: {
           enabled?: boolean
           id?: boolean
+          rent_enabled?: boolean
+          rent_next_at?: string | null
+          rent_template?: string | null
           template?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -2694,6 +2700,9 @@ export type Database = {
         Update: {
           enabled?: boolean
           id?: boolean
+          rent_enabled?: boolean
+          rent_next_at?: string | null
+          rent_template?: string | null
           template?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -2703,9 +2712,11 @@ export type Database = {
       owner_followup_queue: {
         Row: {
           body: string
+          claimed_at: string | null
           contact_id: string
           created_at: string
           failure_reason: string | null
+          followup_kind: string
           id: string
           recipient_name: string | null
           recipient_phone: string
@@ -2715,9 +2726,11 @@ export type Database = {
         }
         Insert: {
           body: string
+          claimed_at?: string | null
           contact_id: string
           created_at?: string
           failure_reason?: string | null
+          followup_kind?: string
           id?: string
           recipient_name?: string | null
           recipient_phone: string
@@ -2727,9 +2740,11 @@ export type Database = {
         }
         Update: {
           body?: string
+          claimed_at?: string | null
           contact_id?: string
           created_at?: string
           failure_reason?: string | null
+          followup_kind?: string
           id?: string
           recipient_name?: string | null
           recipient_phone?: string
