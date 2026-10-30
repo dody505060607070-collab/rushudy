@@ -15,7 +15,9 @@ export const notifyTaskNow = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const task = await context.supabase.from("tasks").select("id").eq("id", data.taskId).single();
+    if (task.error || !task.data) throw new Error("لا يمكنك إرسال هذه المهمة");
     const { notifyTaskAssigneesNow } = await import("@/lib/tasks.server");
     return notifyTaskAssigneesNow(data.taskId, data.userIds, { schedule: data.schedule ?? false });
   });
@@ -24,23 +26,26 @@ export const notifyTaskNow = createServerFn({ method: "POST" })
 export const finishTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ taskId: z.string().min(1) }).parse(input))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { stopTaskReminders } = await import("@/lib/tasks.server");
-    const { error } = await supabaseAdmin
-      .from("tasks")
-      .update({ status: "done", submitted_at: new Date().toISOString() })
-      .eq("id", data.taskId);
-    if (error) throw new Error(error.message);
-    await stopTaskReminders(data.taskId);
-    return { ok: true };
+  .handler(async ({ data, context }) => {
+    const { reviewTask } = await import("./task-review.server");
+    return reviewTask(context.supabase, context.userId, data.taskId, "submit");
+  });
+
+export const decideTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ taskId: z.string().uuid(), decision: z.enum(["approve", "return"]), note: z.string().max(2000).optional() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { reviewTask } = await import("./task-review.server");
+    return reviewTask(context.supabase, context.userId, data.taskId, data.decision, data.note);
   });
 
 /** إيقاف رسائل المهمة المتكررة بدون تغيير حالتها. */
 export const stopTaskWhatsapp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ taskId: z.string().min(1) }).parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const task = await context.supabase.from("tasks").select("id").eq("id", data.taskId).single();
+    if (task.error || !task.data) throw new Error("لا يمكنك تعديل هذه المهمة");
     const { stopTaskReminders } = await import("@/lib/tasks.server");
     return stopTaskReminders(data.taskId);
   });

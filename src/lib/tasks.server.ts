@@ -26,7 +26,7 @@ export function taskIntervalHours(priority: string | null | undefined): number {
   return 72;
 }
 
-export const CLOSED_TASK_STATUSES = ["approved", "done", "cancelled", "rejected"];
+export const CLOSED_TASK_STATUSES = ["approved", "done", "cancelled", "submitted"];
 
 export async function notifyTaskAssigneesNow(
   taskId: string,
