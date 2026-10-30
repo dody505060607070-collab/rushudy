@@ -102,9 +102,6 @@ function OwnerDetailPage() {
     const onDragOver = (event: DragEvent) => {
       pointerY = event.clientY;
     };
-    const onWheel = (event: WheelEvent) => {
-      window.scrollBy({ top: event.deltaY, behavior: "instant" as ScrollBehavior });
-    };
     const tick = () => {
       if (pointerY >= 0) {
         const h = window.innerHeight;
@@ -116,12 +113,10 @@ function OwnerDetailPage() {
       frame = requestAnimationFrame(tick);
     };
     window.addEventListener("dragover", onDragOver);
-    window.addEventListener("wheel", onWheel, { passive: true });
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("dragover", onDragOver);
-      window.removeEventListener("wheel", onWheel);
     };
   }, [dragAsset, dragContractId, dragGroup]);
 
