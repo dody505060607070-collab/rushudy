@@ -19,7 +19,7 @@ BEGIN
       IF TG_OP = 'UPDATE' AND (
         NEW.approved_by IS DISTINCT FROM OLD.approved_by OR
         NEW.approved_at IS DISTINCT FROM OLD.approved_at OR
-        NEW.rejection_note IS DISTINCT FROM OLD.rejection_note OR
+        (NEW.rejection_note IS DISTINCT FROM OLD.rejection_note AND NOT (NEW.status = 'submitted' AND NEW.rejection_note IS NULL)) OR
         (OLD.status = 'submitted' AND NEW.status IS DISTINCT FROM OLD.status)
       ) THEN RAISE EXCEPTION 'Only Super Admin can review submitted tasks'; END IF;
     END IF;

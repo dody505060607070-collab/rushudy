@@ -148,6 +148,7 @@ export async function notifyTaskAssigneesNow(
 /** يوقف كل رسائل واتساب المتكررة الخاصة بمهمة. */
 export async function stopTaskReminders(taskId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  await supabaseAdmin.from("task_reminder_state").delete().eq("task_id", taskId);
+  const { error } = await supabaseAdmin.from("task_reminder_state").delete().eq("task_id", taskId);
+  if (error) throw error;
   return { ok: true };
 }

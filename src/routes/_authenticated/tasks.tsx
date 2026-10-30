@@ -398,7 +398,7 @@ function TasksPage() {
                     </div>
                     {r.status === "submitted" && isSuperAdmin ? <div className="flex flex-wrap gap-2" onClick={e => e.stopPropagation()}>
                       <Button size="sm" disabled={changeStatus.isPending} onClick={() => changeStatus.mutate({ id: r.id, status: "approved" })}><CircleCheck />اعتماد واكتمال</Button>
-                      <Button size="sm" variant="outline" onClick={() => navigate({ to: "/task-form", search: { id: r.id } })}>إرجاع للموظف</Button>
+                      <Button size="sm" variant="outline" disabled={changeStatus.isPending} onClick={() => { if (window.confirm("إرجاع المهمة للموظف لمراجعتها وإكمال المطلوب؟")) changeStatus.mutate({ id: r.id, status: "rejected" }); }}>إرجاع للموظف</Button>
                     </div> : null}
                     {r.due_date ? <p className="text-[11.5px] font-semibold text-warning">📅 {formatDate(r.due_date)}{r.due_time ? ` · ${r.due_time}` : ""}</p> : null}
                   </article>

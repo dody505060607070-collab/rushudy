@@ -106,6 +106,7 @@ export async function sendOwnerFollowupBatch(limit = OWNER_FOLLOWUP_BATCH_SIZE) 
     .from("owner_followup_queue")
     .select("id, contact_id, recipient_name, recipient_phone, body, followup_kind")
     .eq("status", "pending")
+    .is("claimed_at", null)
     .order("created_at", { ascending: true })
     .limit(limit);
   if (queueError) throw queueError;
@@ -136,7 +137,7 @@ export async function sendOwnerFollowupBatch(limit = OWNER_FOLLOWUP_BATCH_SIZE) 
     const logged = await supabaseAdmin.from("message_log").insert({
       kind: row.followup_kind, contact_id: row.contact_id, recipient_name: row.recipient_name,
       recipient_phone: row.recipient_phone, body: row.body, channel: "whatsapp",
-      result: ok ? "accepted" : "failed", failure_reason: reason, provider_message_id: sid,
+      result: ok ? (row.followup_kind === "owner_biweekly" ? "sent" : "accepted") : "failed", failure_reason: reason, provider_message_id: sid,
       sent_by: null, sent_by_system: true,
     });
     if (logged.error) throw logged.error;
