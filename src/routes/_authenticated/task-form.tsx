@@ -22,8 +22,11 @@ import { PageHero } from "@/components/kit/PageHero";
 import { supabase } from "@/integrations/supabase/client";
 import { priorityLabels, taskStatusLabels } from "@/lib/labels";
 import { parseCoordsFromMapLink, resolveMapLink } from "@/lib/maps.functions";
-import { finishTask, notifyTaskNow } from "@/lib/tasks.functions";
+import { decideTask, finishTask, notifyTaskNow } from "@/lib/tasks.functions";
 import { cn } from "@/lib/utils";
+import { useServerFn } from "@tanstack/react-start";
+import { useCurrentUser } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 /** الوقت المتبقي حتى الرسالة القادمة بصيغة عربية مختصرة. */
 function remainingLabel(iso: string) {
@@ -109,6 +112,11 @@ function SectionCard({
 
 function TaskFormPage() {
   const { id } = Route.useSearch();
+  const { isSuperAdmin } = useCurrentUser();
+  const submitTask = useServerFn(finishTask);
+  const notifyTask = useServerFn(notifyTaskNow);
+  const review = useServerFn(decideTask);
+  const [reviewNote, setReviewNote] = useState("");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -243,7 +251,7 @@ function TaskFormPage() {
         details: form.details.trim() || null,
         task_type: form.task_type,
         priority: form.priority,
-        status: form.status,
+        status: id ? task.data?.status ?? "new" : "new",
         due_date: form.due_date || null,
         due_time: form.due_time || null,
         property_id: form.property_id || null,
@@ -290,7 +298,7 @@ function TaskFormPage() {
       toast.success(id ? "تم تحديث المهمة" : "تم إنشاء المهمة وتكليف الفريق");
       if (added.length && newId) {
         try {
-          const result = await notifyTaskNow({
+          const result = await notifyTask({
             data: { taskId: newId, userIds: added, schedule: true },
           });
           if (result.sent > 0) toast.success(`تم إرسال المهمة على واتساب لـ ${result.sent} موظف`);
@@ -328,7 +336,7 @@ function TaskFormPage() {
     mutationFn: async () => {
       if (!id) throw new Error("احفظ المهمة أولًا قبل إرسالها");
       if (!assignees.length) throw new Error("اختر موظفًا واحدًا على الأقل");
-      return notifyTaskNow({ data: { taskId: id, userIds: assignees, schedule: true } });
+      return notifyTask({ data: { taskId: id, userIds: assignees, schedule: true } });
     },
     onSuccess: (result) => {
       if (result.sent > 0) toast.success(`تم إرسال المهمة على واتساب لـ ${result.sent} موظف`);
@@ -342,16 +350,28 @@ function TaskFormPage() {
   const completeTask = useMutation({
     mutationFn: async () => {
       if (!id) throw new Error("احفظ المهمة أولًا");
-      return finishTask({ data: { taskId: id } });
+      return submitTask({ data: { taskId: id } });
     },
-    onSuccess: () => {
-      toast.success("تم إنهاء المهمة وإيقاف رسائل واتساب المتكررة");
-      setForm((f) => ({ ...f, status: "done" }));
+    onSuccess: (result) => {
+      toast.success("تم تسليم المهمة؛ بانتظار موافقة المدير");
+      if (result.warning) toast.warning(result.warning);
+      setForm((f) => ({ ...f, status: "submitted" }));
+      queryClient.invalidateQueries({ queryKey: ["task", id] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
       queryClient.invalidateQueries({ queryKey: ["task-reminder-state", id] });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "تعذّر إنهاء المهمة"),
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: (decision: "approve" | "return") => review({ data: { taskId: id, decision, note: reviewNote } }),
+    onSuccess: (result) => {
+      toast.success(result.status === "approved" ? "تم اعتماد واكتمال المهمة" : "تم إرجاع المهمة للموظف");
+      if (result.warning) toast.warning(result.warning);
+      for (const key of ["task", "tasks", "nav-counts", "task-reminder-state"]) queryClient.invalidateQueries({ queryKey: [key] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const upload = async (files: FileList | null) => {
@@ -508,7 +528,7 @@ function TaskFormPage() {
             <select
               className={inputClass}
               value={form.status}
-              onChange={(e) => set({ status: e.target.value })}
+              disabled
             >
               {Object.entries(taskStatusLabels).map(([key, label]) => (
                 <option key={key} value={key}>
@@ -636,7 +656,7 @@ function TaskFormPage() {
 
       <SectionCard
         title="الموظفون المكلّفون"
-        subtitle="اختيار الموظف يحفظ التكليف فقط؛ لن تُرسل أي رسالة إلا عند الضغط على زر واتساب."
+        subtitle="الموظفون المكلّفون بهذه المهمة."
         icon={Users}
       >
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -743,6 +763,15 @@ function TaskFormPage() {
         </p>
       ) : null}
 
+      {form.status === "submitted" && isSuperAdmin ? <section className="surface-card space-y-3 p-5">
+        <h2 className="font-bold">مراجعة المهمة</h2>
+        <textarea aria-label="ملاحظات المراجعة" className={textareaClass} value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="ملاحظات للموظف" />
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate("approve")}><Check />اعتماد واكتمال</Button>
+          <Button variant="outline" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate("return")}><ArrowRight />إرجاع للموظف</Button>
+        </div>
+      </section> : null}
+      {task.data?.rejection_note ? <p className="border-s-2 border-warning ps-3 text-sm">ملاحظات المدير: {task.data.rejection_note}</p> : null}
       <div className="flex flex-wrap items-center justify-center gap-3 pb-4">
         <button
           type="button"
@@ -764,8 +793,8 @@ function TaskFormPage() {
             إرسال المهمة على واتساب
           </button>
         ) : null}
-        {id ? (
-          <button
+        {id && ["new", "in_progress", "rejected"].includes(form.status) ? (
+          <Button
             type="button"
             onClick={() => completeTask.mutate()}
             disabled={completeTask.isPending}
@@ -776,8 +805,8 @@ function TaskFormPage() {
             ) : (
               <Check className="size-4" />
             )}
-            المهمة خلصت
-          </button>
+            تسليم للموافقة
+          </Button>
         ) : null}
         <Link
           to="/tasks"
