@@ -1,4 +1,9 @@
 # Roadmap
+- [ ] Task submission requires Super Admin approval; notify designated manager and returned assignees.
+- [ ] Rent-owner follow-up every 30 days with separate settings and delivery history.
+- [ ] Additive employee goal increments and safe new-goal creation.
+- [ ] Branded decorative breaks on repeated statistic and contract cards.
+- [ ] Clickable notifications and unified administrator request history.
 - [x] Fix owner installment page hook-order crash; admin owner and reminder pages smoke-checked.
 - [ ] Verify installment success with an owner session (blocked: current session has no linked client portal account).
 - [x] Invoice: restrict contracts to selected owner and add owner asset selection; saved, reopened and deleted a test invoice successfully.
