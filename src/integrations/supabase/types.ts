@@ -2110,6 +2110,81 @@ export type Database = {
           },
         ]
       }
+      meeting_reminders: {
+        Row: {
+          agent_name: string | null
+          agent_phone: string | null
+          auto_enabled: boolean
+          created_at: string
+          created_by: string
+          id: string
+          interval_hours: number
+          last_sent_at: string | null
+          location_text: string | null
+          location_url: string | null
+          meeting_at: string
+          next_send_at: string | null
+          notes: string | null
+          owner_name: string | null
+          owner_phone: string | null
+          property_name: string
+          sent_count: number
+          status: string
+          title: string
+          updated_at: string
+          visitor_name: string | null
+          visitor_phone: string | null
+        }
+        Insert: {
+          agent_name?: string | null
+          agent_phone?: string | null
+          auto_enabled?: boolean
+          created_at?: string
+          created_by?: string
+          id?: string
+          interval_hours?: number
+          last_sent_at?: string | null
+          location_text?: string | null
+          location_url?: string | null
+          meeting_at: string
+          next_send_at?: string | null
+          notes?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          property_name: string
+          sent_count?: number
+          status?: string
+          title: string
+          updated_at?: string
+          visitor_name?: string | null
+          visitor_phone?: string | null
+        }
+        Update: {
+          agent_name?: string | null
+          agent_phone?: string | null
+          auto_enabled?: boolean
+          created_at?: string
+          created_by?: string
+          id?: string
+          interval_hours?: number
+          last_sent_at?: string | null
+          location_text?: string | null
+          location_url?: string | null
+          meeting_at?: string
+          next_send_at?: string | null
+          notes?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          property_name?: string
+          sent_count?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          visitor_name?: string | null
+          visitor_phone?: string | null
+        }
+        Relationships: []
+      }
       message_log: {
         Row: {
           body: string
