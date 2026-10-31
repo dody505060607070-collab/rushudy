@@ -33,7 +33,12 @@ export const Route = createFileRoute("/api/public/n8n")({
             const { runRentFollowup } = await import("@/lib/rent-followup.server");
             rentFollowup = await runRentFollowup();
           } catch (err) { rentFollowup = { error: (err as Error).message }; }
-          Object.assign(result as object, { ownerBiweekly, rentFollowup });
+          let meetings: unknown = null;
+          try {
+            const { runMeetingReminders } = await import("@/lib/meeting-reminders.server");
+            meetings = await runMeetingReminders();
+          } catch (err) { meetings = { error: (err as Error).message }; }
+          Object.assign(result as object, { ownerBiweekly, rentFollowup, meetings });
           return new Response(JSON.stringify(result), {
             status: 200,
             headers: { "Content-Type": "application/json" },

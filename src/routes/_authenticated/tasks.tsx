@@ -19,6 +19,7 @@ import {
   inputClass,
   textareaClass,
 } from "@/components/kit/Modal";
+import { MeetingReminders } from "@/components/tasks/MeetingReminders";
 import { PageHero } from "@/components/kit/PageHero";
 import { Pills } from "@/components/kit/Pills";
 import { StatusLegend } from "@/components/kit/StatusLegend";
@@ -610,5 +611,10 @@ function TasksPage() {
 
 // Tasks, follow-ups and team chat each have their own page, linked under "المهام" in the side menu.
 function TasksHub() {
-  return <TasksPage />;
+  return (
+    <>
+      <TasksPage />
+      <div className="mt-8"><MeetingReminders /></div>
+    </>
+  );
 }
