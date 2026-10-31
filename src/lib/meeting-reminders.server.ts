@@ -1,6 +1,7 @@
+import type { Database } from "@/integrations/supabase/types";
 import { buildMeetingMessage, nextMeetingSend, type MeetingRole } from "./meeting-reminders";
 
-type Row = Record<string, any>;
+type Row = Database["public"]["Tables"]["meeting_reminders"]["Row"];
 
 /** يرسل رسالة لكل طرف في الموعد ويسجلها. */
 export async function sendMeetingNow(row: Row, now = new Date()) {
@@ -11,7 +12,7 @@ export async function sendMeetingNow(row: Row, now = new Date()) {
     ["visitor", row.visitor_name, row.visitor_phone],
     ["agent", row.agent_name, row.agent_phone],
   ];
-  const results: { role: MeetingRole; ok: boolean; error?: string }[] = [];
+  const results: { role: MeetingRole; ok: boolean; error?: string | undefined }[] = [];
   for (const [role, name, phone] of targets) {
     if (!phone?.trim()) continue;
     const body = buildMeetingMessage(role, row as never);

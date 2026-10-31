@@ -39,7 +39,7 @@ export function MeetingReminders() {
       if (at <= new Date()) throw new Error("وقت الموعد يجب أن يكون في المستقبل");
       const { data: u } = await supabase.auth.getUser();
       const r = await supabase.from("meeting_reminders").insert({
-        ...f, meeting_at: at.toISOString(), created_by: u.user?.id,
+        ...f, meeting_at: at.toISOString(), ...(u.user ? { created_by: u.user.id } : {}),
         interval_hours: Math.min(168, Math.max(1, Number(f.interval_hours) || 12)),
         next_send_at: f.auto_enabled ? new Date().toISOString() : null,
       });
