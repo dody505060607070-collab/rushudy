@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Field, GhostButton, Modal, PrimaryButton, inputClass, textareaClass } from "@/components/kit/Modal";
+import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMeetingTime } from "@/lib/meeting-reminders";
 import { sendMeetingReminderNow } from "@/lib/meeting-reminders.functions";
@@ -50,7 +51,7 @@ export function MeetingReminders() {
   });
 
   const update = useMutation({
-    mutationFn: async (p: { id: string; patch: Record<string, unknown> }) => {
+    mutationFn: async (p: { id: string; patch: Database["public"]["Tables"]["meeting_reminders"]["Update"] }) => {
       const r = await supabase.from("meeting_reminders").update(p.patch).eq("id", p.id);
       if (r.error) throw r.error;
     },
@@ -62,7 +63,7 @@ export function MeetingReminders() {
     mutationFn: (id: string) => sendNow({ data: { id } }),
     onSuccess: (res) => {
       const failed = res.filter((x) => !x.ok);
-      failed.length ? toast.error(`لم تصل لـ ${failed.length} طرف: ${failed[0].error}`) : toast.success("تم إرسال التذكير");
+      failed.length ? toast.error(`لم تصل لـ ${failed.length} طرف: ${failed[0]?.error ?? ""}`) : toast.success("تم إرسال التذكير");
       qc.invalidateQueries({ queryKey: ["meeting_reminders"] });
     },
     onError: (e: Error) => toast.error(e.message),
