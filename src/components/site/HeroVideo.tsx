@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { BrandWordmark } from "@/components/site/BrandWordmark";
 import { FileText, MapPinned, Search } from "lucide-react";
 
 import desktopHero from "@/assets/home-hero-desktop.jpg";
@@ -74,8 +75,8 @@ export function HeroVideo({
             <span className="text-[13px] tracking-wide text-primary-foreground/80 sm:text-[15px] md:text-[19px]">
               خبرةٌ محلية.. وقرارٌ عقاري أوضح
             </span>
-            <span className="hero-title-shadow mt-1 pb-2 text-[42px] leading-[1.2] text-primary-foreground sm:text-[64px] md:mt-2 md:pb-3 md:text-[92px] lg:text-[110px]">
-              الرشودي للعقارات
+            <span className="mt-2 flex w-full justify-center pb-2 text-primary-foreground md:mt-4 md:pb-4">
+              <BrandWordmark className="w-[88%] max-w-[760px] drop-shadow-[0_6px_24px_hsl(0_0%_0%/0.35)]" />
             </span>
             <span className="hero-accent-text mt-1 text-[22px] leading-[1.5] sm:text-[30px] md:mt-2 md:text-[44px] lg:text-[52px]">
               نعرف بريدة.. ونفهم العقار
