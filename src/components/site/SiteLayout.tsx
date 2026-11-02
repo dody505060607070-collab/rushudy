@@ -9,7 +9,6 @@ import { FloatingActions, ScrollProgress } from "@/components/site/Chrome";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/hooks/useAuth";
 import { COMPANY_EMAIL, COMPANY_PHONE, publicSettingsQuery } from "@/lib/site-data";
-import { ThemeToggle } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -89,7 +88,6 @@ function SiteHeader() {
           >
             اعرض | اطلب عقارك
           </Link>
-          <ThemeToggle className="hidden border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 sm:inline-flex" />
           <Link
             to="/favorites"
             aria-label="المفضلة"
@@ -153,7 +151,6 @@ function SiteHeader() {
               </Link>
             </li>
             <li className="mt-2 border-t border-primary-foreground/15 pt-3">
-              <ThemeToggle showLabel className="w-full justify-center border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" />
             </li>
           </ul>
         </nav>

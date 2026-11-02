@@ -16,7 +16,6 @@ import { KillSwitchGate } from "@/components/KillSwitchGate";
 import { AuthProvider } from "@/hooks/useAuth";
 import { useSiteAnalytics } from "@/hooks/useSiteAnalytics";
 import { LanguageProvider } from "@/lib/i18n";
-import { ThemeProvider } from "@/lib/theme";
 
 function NotFoundComponent() {
   return (
@@ -155,15 +154,13 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <LanguageProvider>
+      <LanguageProvider>
         <AuthProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
           <Toaster richColors position="top-center" />
         </AuthProvider>
-        </LanguageProvider>
-      </ThemeProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }
