@@ -1,6 +1,6 @@
 # Roadmap
-- [ ] Put viewing requests beside tasks and inside Add task, preserving the three phones and reminders.
-- [ ] Match the homepage brand lettering to the original uploaded PDF and visually verify it.
+- [x] Put viewing requests beside tasks and inside Add task, preserving the three phones and reminders.
+- [x] Match the homepage brand lettering to the original uploaded PDF and visually verify it.
 - [x] Implement task submission/review and action-triggered manager/assignee notices; screens and transition tests checked.
 - [ ] Verify task database guards after draft acceptance and real WhatsApp submission/return delivery after explicit send approval.
 - [x] Stage opt-in rent-owner 30-day settings and queued follow-up code; cadence tested, no automatic sends enabled.
