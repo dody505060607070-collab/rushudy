@@ -3,7 +3,6 @@ import { buildMaintenanceMessage, type MaintenanceNotice } from "./maintenance-n
 
 export async function notifyMaintenanceStaff(requestId: string) {
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
-  const { whatsappSend } = await import("./whatsapp.functions");
 
   const req = await db
     .from("maintenance_requests")
@@ -35,6 +34,20 @@ export async function notifyMaintenanceStaff(requestId: string) {
     place: row.property?.name ?? row.unit?.building?.name ?? null,
     unitNumber: row.unit?.unit_number ?? null,
   };
+  return sendMaintenanceNotice(notice, {
+    key: `maintenance:${row.id}`,
+    contractId: row.contract_id,
+    unitId: row.unit_id,
+  });
+}
+
+/** يرسل نص البلاغ لكل الأرقام المفعّلة ويسجّل كل محاولة في سجل الرسائل. */
+export async function sendMaintenanceNotice(
+  notice: MaintenanceNotice,
+  meta: { key: string; contractId?: string | null; unitId?: string | null; contactId?: string | null },
+) {
+  const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+  const { whatsappSend } = await import("./whatsapp.functions");
   const body = buildMaintenanceMessage(notice);
 
   const recipients = await db
@@ -64,8 +77,9 @@ export async function notifyMaintenanceStaff(requestId: string) {
     else failed += 1;
     await db.from("message_log").insert({
       kind: "maintenance_alert",
-      contract_id: row.contract_id,
-      unit_id: row.unit_id,
+      contract_id: meta.contractId ?? null,
+      unit_id: meta.unitId ?? null,
+      contact_id: meta.contactId ?? null,
       recipient_name: r.label,
       recipient_phone: r.phone,
       body,
@@ -74,7 +88,7 @@ export async function notifyMaintenanceStaff(requestId: string) {
       failure_reason: reason,
       provider_message_id: sid,
       sent_by_system: true,
-      idempotency_key: `maintenance:${row.id}:${key}`,
+      idempotency_key: `${meta.key}:${key}`,
     });
   }
   return { sent, failed };
