@@ -49,7 +49,7 @@ function TenantMaintenancePage() {
   useEffect(() => {
     if (!form.contractId && data?.contracts.length) {
       const first = data.contracts.find((c) => c.status === "active") ?? data.contracts[0];
-      setForm((f) => ({ ...f, contractId: first.id }));
+      if (first) setForm((f) => ({ ...f, contractId: first.id }));
     }
   }, [data, form.contractId]);
 
