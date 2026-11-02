@@ -8,6 +8,7 @@ import { Chip } from "@/components/kit/Chip";
 import { EmptyState, formatCurrency, formatDate } from "@/components/kit/LiveTable";
 import { Modal } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
+import { NotifyRecipients } from "@/components/maintenance/NotifyRecipients";
 import { Pills } from "@/components/kit/Pills";
 import { supabase } from "@/integrations/supabase/client";
 import { whatsappLink } from "@/lib/site-data";
@@ -281,6 +282,8 @@ function MaintenancePage() {
           { value: formatCurrency(totalCost), label: "تكلفة منجزة" },
         ]}
       />
+
+      <NotifyRecipients />
 
       <section className="rounded-2xl border border-border bg-card p-5">
         <header className="mb-3">
