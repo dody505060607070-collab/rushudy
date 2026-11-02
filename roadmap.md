@@ -1,8 +1,10 @@
 # Roadmap
-- [ ] Repair tenant and owner portal data and maintenance submission/read-back.
-- [ ] Notify office recipients and Abu Rakan on explicit maintenance submission; verify durable WhatsApp callbacks.
-- [ ] Complete portal self-service using existing contracts, payments, documents and request history; smoke-check signed-in flows.
-- [ ] Deliver a detailed reusable Arabic prompt describing completed changes and outstanding setup.
+- [x] Repair tenant and owner portal data and maintenance submission/read-back (tenant + owner pages checked signed in).
+- [x] Notify office recipients and Abu Rakan on explicit maintenance submission.
+- [ ] Real WhatsApp delivery of a maintenance alert (not sent in testing to avoid messaging real numbers).
+- [x] Portal self-service: tenant maintenance page, quick actions, contract PDF download, half-yearly label fix.
+- [ ] Link the 60 imported contracts to their buildings/properties (data missing; needs office input).
+- [x] Deliver a detailed reusable Arabic prompt describing completed changes and outstanding setup.
 - [x] Put viewing requests beside tasks and inside Add task, preserving the three phones and reminders.
 - [x] Match the homepage brand lettering to the original uploaded PDF and visually verify it.
 - [x] Implement task submission/review and action-triggered manager/assignee notices; screens and transition tests checked.
