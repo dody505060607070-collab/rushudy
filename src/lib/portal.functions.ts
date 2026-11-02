@@ -426,6 +426,25 @@ export const getPortalContract = createServerFn({ method: "POST" })
     return { contract: withPlace(contract.data), payments: payments.data ?? [] };
   });
 
+/** رابط مؤقت (10 دقائق) لنسخة العقد PDF — فقط لأطراف العقد. */
+export const getPortalContractFile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { contractId: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { db, contactId } = await currentClient(context.userId);
+    const contract = await db
+      .from("contracts")
+      .select("id, file_path")
+      .eq("id", data.contractId)
+      .or(partyFilter(contactId))
+      .maybeSingle();
+    if (!contract.data) throw new Error("العقد غير متاح.");
+    if (!contract.data.file_path) return { url: null as string | null };
+    const signed = await db.storage.from("contract-files").createSignedUrl(contract.data.file_path, 600);
+    if (signed.error) throw new Error("نسخة العقد غير متاحة حاليًا.");
+    return { url: signed.data.signedUrl as string | null };
+  });
+
 export const getPortalInvoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { invoiceId: string }) => input)
