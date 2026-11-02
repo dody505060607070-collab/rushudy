@@ -42,11 +42,17 @@ export function MeetingReminders({ mode = "list", onCreated }: { mode?: "list" |
       const r = await supabase.from("meeting_reminders").insert({
         ...f, meeting_at: at.toISOString(), ...(u.user ? { created_by: u.user.id } : {}),
         interval_hours: Math.min(168, Math.max(1, Number(f.interval_hours) || 12)),
-        next_send_at: f.auto_enabled ? new Date().toISOString() : null,
-      });
+        next_send_at: null,
+      }).select("id").single();
       if (r.error) throw r.error;
+      // أول تذكير يُرسل فورًا عند الحفظ، والباقي حسب المدة المحددة
+      return sendNow({ data: { id: r.data.id } });
     },
-    onSuccess: () => { toast.success("تم حفظ طلب المعاينة"); setOpen(false); setF(empty); qc.invalidateQueries({ queryKey: ["meeting_reminders"] }); onCreated?.(); },
+    onSuccess: (res) => {
+      const failed = (res ?? []).filter((x) => !x.ok);
+      failed.length ? toast.error(`تم الحفظ، لكن لم تصل الرسالة لـ ${failed.length} طرف: ${failed[0]?.error ?? ""}`) : toast.success("تم حفظ طلب المعاينة وإرسال الرسائل");
+      setOpen(false); setF(empty); qc.invalidateQueries({ queryKey: ["meeting_reminders"] }); onCreated?.();
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
