@@ -81,7 +81,7 @@ function PortalContracts() {
             <div className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
               <div>
                 <p className="text-[11px] text-muted-foreground">العقار / الوحدة</p>
-                <p className="font-semibold">{c.property?.name ?? "—"}</p>
+                <p className="font-semibold">{c.property?.name ?? "لم يُسجَّل اسم العقار بعد"}</p>
                 <p className="text-xs text-muted-foreground">
                   {c.unit?.unit_number ? `${c.unit.unit_type ?? "شقة"} — وحدة ${c.unit.unit_number}` : "—"}
                 </p>

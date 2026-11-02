@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { PenLine } from "lucide-react";
+import { Download, PenLine } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { SignaturePad } from "@/components/kit/SignaturePad";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { getPortalContract } from "@/lib/portal.functions";
+import { getPortalContract, getPortalContractFile } from "@/lib/portal.functions";
 
 export const Route = createFileRoute("/portal/contracts/$contractId")({
   head: () => ({
@@ -59,6 +59,18 @@ function ContractDetail() {
   const signatures = useQuery({ queryKey: ["portal-contract-signatures", contractId], enabled: Boolean(data), queryFn: async () => { const { data: rows, error: signatureError } = await supabase.from("contract_signatures").select("id,signer_name,image_data,signed_at").eq("contract_id", contractId).order("signed_at", { ascending: false }); if (signatureError) throw signatureError; return rows ?? []; } });
   const sign = useMutation({ mutationFn: async () => { if (!signerName.trim() || !signature) throw new Error("اكتب اسمك وأضف توقيعك"); const { data: auth } = await supabase.auth.getUser(); if (!auth.user) throw new Error("يجب تسجيل الدخول"); const { error: signError } = await supabase.from("contract_signatures").insert({ contract_id: contractId, signer_name: signerName.trim(), signer_role: "tenant", image_data: signature, created_by: auth.user.id }); if (signError) throw signError; }, onSuccess: () => { setSignature(""); setSignerName(""); void queryClient.invalidateQueries({ queryKey: ["portal-contract-signatures", contractId] }); toast.success("تم توقيع العقد بنجاح"); }, onError: (signError) => toast.error(signError instanceof Error ? signError.message : "تعذّر التوقيع") });
 
+  const download = useMutation({
+    mutationFn: () => getPortalContractFile({ data: { contractId } }),
+    onSuccess: (res) => {
+      if (!res.url) {
+        toast.error("لا توجد نسخة محفوظة من العقد، تواصل مع المكتب.");
+        return;
+      }
+      window.open(res.url, "_blank", "noopener");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <p className="text-sm text-muted-foreground">جاري التحميل…</p>;
   if (error) return <p className="text-sm text-destructive">{(error as Error).message}</p>;
   if (!data) return null;
@@ -83,14 +95,24 @@ function ContractDetail() {
             <h1 className="text-lg font-bold text-primary">تفاصيل العقد</h1>
             <p className="text-xs text-muted-foreground">{c.contract_number}</p>
           </div>
-          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-            {c.status === "active" ? "نشط" : c.status}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => download.mutate()}
+              disabled={download.isPending}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/5"
+            >
+              <Download className="size-3.5" /> {download.isPending ? "جاري الفتح…" : "تحميل نسخة العقد"}
+            </button>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              {c.status === "active" ? "نشط" : c.status}
+            </span>
+          </div>
         </header>
         <dl className="grid gap-4 p-5 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-xs text-muted-foreground">العقار</dt>
-            <dd className="font-semibold">{c.property?.name ?? "—"}</dd>
+            <dd className="font-semibold">{c.property?.name ?? "لم يُسجَّل اسم العقار بعد"}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">الوحدة</dt>
