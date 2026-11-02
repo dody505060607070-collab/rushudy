@@ -42,8 +42,13 @@ async function findUserByPhone(db: Db, key: string): Promise<string | null> {
     if (![c.phone, c.whatsapp, c.phone_alt].some((v) => phoneKey(v) === key)) continue;
     let acc = await db.from("client_accounts").select("user_id").eq("contact_id", c.id).maybeSingle();
     if (!acc.data) {
-      const { ensureClientAccountForContact } = await import("./client-account.server");
-      await ensureClientAccountForContact(c.id);
+      const { ensureClientAccountForContact, ensureTenantAccountForContract } = await import("./client-account.server");
+      const made = await ensureClientAccountForContact(c.id).catch(() => ({ ok: false as const }));
+      if (!made.ok) {
+        // مستأجر بدون رقم هوية: نفعّل حسابه من عقده
+        const contract = await db.from("contracts").select("id").eq("tenant_id", c.id).order("start_date", { ascending: false }).limit(1).maybeSingle();
+        if (contract.data) await ensureTenantAccountForContract(contract.data.id).catch(() => undefined);
+      }
       acc = await db.from("client_accounts").select("user_id").eq("contact_id", c.id).maybeSingle();
     }
     if (acc.data?.user_id) return acc.data.user_id;

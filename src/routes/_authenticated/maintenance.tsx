@@ -8,6 +8,7 @@ import { Chip } from "@/components/kit/Chip";
 import { EmptyState, formatCurrency, formatDate } from "@/components/kit/LiveTable";
 import { Modal } from "@/components/kit/Modal";
 import { PageHero } from "@/components/kit/PageHero";
+import { NotifyRecipients } from "@/components/maintenance/NotifyRecipients";
 import { Pills } from "@/components/kit/Pills";
 import { supabase } from "@/integrations/supabase/client";
 import { whatsappLink } from "@/lib/site-data";
@@ -113,12 +114,24 @@ function MaintenancePage() {
       const { data, error } = await supabase
         .from("maintenance_requests")
         .select(
-          "id, reporter_name, reporter_phone, category, priority, description, status, technician_name, technician_phone, scheduled_at, cost, rating, internal_notes, created_at, property:property_id(name, code)",
+          "id, reporter_name, reporter_phone, category, priority, description, status, technician_name, technician_phone, scheduled_at, cost, rating, internal_notes, created_at, property:property_id(name, code), unit:unit_id(unit_number, building:building_id(name))",
         )
         .order("created_at", { ascending: false })
         .limit(400);
       if (error) throw error;
-      return (data ?? []) as unknown as Row[];
+      // بلاغات المستأجرين مربوطة بالوحدة؛ نعرض «العمارة — وحدة» بدل «بدون عقار»
+      return (data ?? []).map((r) => {
+        const row = r as unknown as Row & {
+          unit?: { unit_number: string | null; building: { name: string | null } | null } | null;
+        };
+        if (!row.property && row.unit) {
+          const name = [row.unit.building?.name, row.unit.unit_number ? `وحدة ${row.unit.unit_number}` : null]
+            .filter(Boolean)
+            .join(" — ");
+          if (name) (row as { property: unknown }).property = { name, code: "" };
+        }
+        return row as Row;
+      });
     },
   });
 
@@ -281,6 +294,8 @@ function MaintenancePage() {
           { value: formatCurrency(totalCost), label: "تكلفة منجزة" },
         ]}
       />
+
+      <NotifyRecipients />
 
       <section className="rounded-2xl border border-border bg-card p-5">
         <header className="mb-3">

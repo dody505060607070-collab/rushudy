@@ -1686,6 +1686,30 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_notify_recipients: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       maintenance_requests: {
         Row: {
           after_images: string[]

@@ -428,6 +428,13 @@
       "when": 1793581130986,
       "tag": "0060_allow_auto_interval_meeting_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1793582972688,
+      "tag": "0061_maintenance_notify_recipients",
+      "breakpoints": true
     }
   ]
 }

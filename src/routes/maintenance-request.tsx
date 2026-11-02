@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { submitPublicMaintenance } from "@/lib/maintenance.functions";
 
 const TITLE = "طلب صيانة | الرشودي للعقارات";
 const DESC = "أرسل بلاغ صيانة لوحدتك في دقيقة واحدة وسيتواصل معك فريق الصيانة في الرشودي للعقارات.";
@@ -64,16 +64,16 @@ function MaintenanceRequestPage() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.from("maintenance_requests").insert({
-        reporter_name: form.reporter_name.trim(),
-        reporter_phone: form.reporter_phone.trim(),
-        category: form.category,
-        priority: form.priority,
-        description: form.description.trim(),
-        status: "new",
-        cost: 0,
+      const result = await submitPublicMaintenance({
+        data: {
+          reporter_name: form.reporter_name.trim(),
+          reporter_phone: form.reporter_phone.trim(),
+          category: form.category,
+          priority: form.priority,
+          description: form.description.trim(),
+        },
       });
-      if (error) throw error;
+      if (!result.ok) throw new Error(result.error);
       setDone(true);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذّر إرسال البلاغ");

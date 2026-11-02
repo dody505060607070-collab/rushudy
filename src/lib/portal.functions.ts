@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { MAINTENANCE_CATEGORIES, MAINTENANCE_PRIORITIES } from "./maintenance-notify";
 import { CLIENT_EMAIL_DOMAIN, clientUsername, localPhone } from "./client-credentials";
 
 export { clientUsername, localPhone } from "./client-credentials";
@@ -303,6 +304,23 @@ async function currentClient(userId: string) {
   return { db, contactId: account.data.contact_id };
 }
 
+type PlaceRow = {
+  property?: { name?: string | null; city?: string | null; district?: string | null } | null;
+  unit?: {
+    building?: { name: string | null; city: string | null; district: string | null } | null;
+  } | null;
+};
+/** أغلب العقود مربوطة بوحدة داخل عمارة بدون «عقار»؛ نعرض العمارة مكان العقار حتى يظهر المكان. */
+function withPlace<T>(row: T): T {
+  const r = row as unknown as PlaceRow;
+  if (!r) return row;
+  const b = r.unit?.building;
+  if ((!r.property || !r.property.name) && b) {
+    r.property = { name: b.name, city: b.city, district: b.district };
+  }
+  return row;
+}
+
 /** كل عقود العميل: سواء كان مستأجرًا أو مالكًا أو وسيطًا في العقد. */
 const partyFilter = (id: string) => `tenant_id.eq.${id},owner_id.eq.${id},broker_id.eq.${id}`;
 
@@ -319,7 +337,7 @@ export const getPortalOverview = createServerFn({ method: "GET" })
       db
         .from("contracts")
         .select(
-          "id, contract_number, contract_type, start_date, end_date, annual_rent, total_value, payment_cycle, payments_count, status, tenant:tenant_id(full_name), property:property_id(name, city, district), unit:unit_id(unit_number, unit_type)",
+          "id, contract_number, contract_type, start_date, end_date, annual_rent, total_value, payment_cycle, payments_count, status, tenant:tenant_id(full_name), property:property_id(name, city, district), unit:unit_id(unit_number, unit_type, floor, building:building_id(name, city, district, address))",
         )
         .or(partyFilter(contactId))
         .order("start_date", { ascending: false }),
@@ -366,7 +384,7 @@ export const getPortalOverview = createServerFn({ method: "GET" })
 
     return {
       contact: contact.data,
-      contracts: contracts.data ?? [],
+      contracts: (contracts.data ?? []).map(withPlace),
       invoices: invoices.data ?? [],
       payments: (payments.data ?? []) as {
         id: string;
@@ -392,7 +410,7 @@ export const getPortalContract = createServerFn({ method: "POST" })
     const contract = await db
       .from("contracts")
       .select(
-        "id, contract_number, contract_type, start_date, end_date, annual_rent, total_value, deposit, payment_cycle, payments_count, status, tenant:tenant_id(full_name), property:property_id(name, city, district), unit:unit_id(unit_number, unit_type)",
+        "id, contract_number, contract_type, start_date, end_date, annual_rent, total_value, deposit, payment_cycle, payments_count, status, tenant:tenant_id(full_name), property:property_id(name, city, district), unit:unit_id(unit_number, unit_type, floor, building:building_id(name, city, district, address))",
       )
       .eq("id", data.contractId)
       .or(partyFilter(contactId))
@@ -405,7 +423,7 @@ export const getPortalContract = createServerFn({ method: "POST" })
       .eq("contract_id", data.contractId)
       .order("payment_number", { ascending: true });
 
-    return { contract: contract.data, payments: payments.data ?? [] };
+    return { contract: withPlace(contract.data), payments: payments.data ?? [] };
   });
 
 export const getPortalInvoice = createServerFn({ method: "POST" })
@@ -467,11 +485,12 @@ export const getOwnerDashboard = createServerFn({ method: "GET" })
       db
         .from("contracts")
         .select(
-          "id, contract_number, status, start_date, end_date, annual_rent, total_value, created_at, tenant:tenant_id(full_name, phone), property:property_id(name), unit:unit_id(id, unit_number, unit_type)",
+          "id, contract_number, status, start_date, end_date, annual_rent, total_value, created_at, tenant:tenant_id(full_name, phone), property:property_id(name), unit:unit_id(id, unit_number, unit_type, building:building_id(name, city, district))",
         )
         .eq("owner_id", contactId)
         .order("start_date", { ascending: false }),
     ]);
+    (contracts.data ?? []).forEach(withPlace);
 
     const contractIds = (contracts.data ?? []).map((c) => c.id);
     const payments = contractIds.length
@@ -566,7 +585,7 @@ async function ownerContext(userId: string) {
   const { db, contactId } = await currentClient(userId);
   const contact = await db
     .from("contacts")
-    .select("id, full_name, roles")
+    .select("id, full_name, roles, phone")
     .eq("id", contactId)
     .single();
   if (!(contact.data?.roles ?? []).includes("owner"))
@@ -721,6 +740,22 @@ export const createOwnerRequest = createServerFn({ method: "POST" })
       );
     }
 
+    if (data.kind === "maintenance") {
+      const { sendMaintenanceNotice } = await import("./maintenance-notify.server");
+      await sendMaintenanceNotice(
+        {
+          reporterName: `${contact?.full_name ?? "مالك"} (مالك)`,
+          reporterPhone: contact?.phone ?? null,
+          category: "owner",
+          priority: "normal",
+          description: [title, String(data.details ?? "").trim()].filter(Boolean).join(" — "),
+          place: null,
+          unitNumber: null,
+        },
+        { key: `owner_request:${ins.data.id}`, contractId: data.contractId ?? null, unitId: data.unitId ?? null, contactId },
+      ).catch(() => undefined);
+    }
+
     return { ok: true as const, id: ins.data.id };
   });
 
@@ -733,9 +768,10 @@ export const getOwnerStatement = createServerFn({ method: "POST" })
     const contracts = await db
       .from("contracts")
       .select(
-        "id, contract_number, tenant:tenant_id(full_name), unit:unit_id(unit_number), property:property_id(name)",
+        "id, contract_number, tenant:tenant_id(full_name), unit:unit_id(unit_number, building:building_id(name, city, district)), property:property_id(name)",
       )
       .eq("owner_id", contactId);
+    (contracts.data ?? []).forEach(withPlace);
     const ids = (contracts.data ?? []).map((c) => c.id);
 
     const payments = ids.length
@@ -1057,7 +1093,9 @@ export const removeOwnerDelegate = createServerFn({ method: "POST" })
 export const ensureTenantContractAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { contractId: string }) => input)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const staff = await context.supabase.rpc("is_staff", { _user_id: context.userId });
+    if (!staff.data) throw new Error("غير مصرّح.");
     const { ensureTenantAccountForContract } = await import("./client-account.server");
     return ensureTenantAccountForContract(data.contractId);
   });
@@ -1069,16 +1107,30 @@ export const getTenantMaintenance = createServerFn({ method: "GET" })
     const { db, contactId } = await currentClient(context.userId);
     const contracts = await db
       .from("contracts")
-      .select("id, contract_number, unit_id, property_id")
-      .eq("tenant_id", contactId);
+      .select(
+        "id, contract_number, status, unit_id, property_id, property:property_id(name), unit:unit_id(unit_number, building:building_id(name, city, district))",
+      )
+      .eq("tenant_id", contactId)
+      .order("start_date", { ascending: false });
     const ids = (contracts.data ?? []).map((c) => c.id);
     if (!ids.length) return { contracts: [], requests: [] };
     const requests = await db
       .from("maintenance_requests")
-      .select("id, category, description, status, priority, scheduled_at, created_at, contract_id")
+      .select(
+        "id, category, description, status, priority, scheduled_at, technician_name, created_at, contract_id",
+      )
       .in("contract_id", ids)
       .order("created_at", { ascending: false });
-    return { contracts: contracts.data ?? [], requests: requests.data ?? [] };
+    return {
+      contracts: (contracts.data ?? []).map(withPlace) as unknown as {
+        id: string;
+        contract_number: string;
+        status: string;
+        property: { name: string | null } | null;
+        unit: { unit_number: string | null } | null;
+      }[],
+      requests: requests.data ?? [],
+    };
   });
 
 /** إرسال بلاغ صيانة من بوابة المستأجر إلى المكتب. */
@@ -1090,7 +1142,8 @@ export const createTenantMaintenance = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { db, contactId } = await currentClient(context.userId);
-    if (!data.description.trim()) throw new Error("اكتب وصف المشكلة.");
+    const description = String(data.description ?? "").trim().slice(0, 2000);
+    if (description.length < 3) throw new Error("اكتب وصف المشكلة.");
     const contract = await db
       .from("contracts")
       .select("id, unit_id, property_id")
@@ -1108,13 +1161,30 @@ export const createTenantMaintenance = createServerFn({ method: "POST" })
       contract_id: contract.data.id,
       unit_id: contract.data.unit_id,
       property_id: contract.data.property_id,
-      category: data.category || "general",
-      description: data.description.trim(),
-      priority: data.priority || "normal",
+      category: MAINTENANCE_CATEGORIES[data.category] ? data.category : "other",
+      description,
+      priority: MAINTENANCE_PRIORITIES[data.priority ?? ""] ? data.priority! : "normal",
       status: "new",
+      cost: 0,
       reporter_name: contact.data?.full_name ?? "مستأجر",
       reporter_phone: contact.data?.phone ?? contact.data?.whatsapp ?? "",
-    });
+    }).select("id").single();
     if (insert.error) throw new Error(insert.error.message);
-    return { ok: true };
+
+    // إشعار داخل النظام للموظفين + واتساب لأرقام المكتب وموظف الصيانة
+    const staffRoles = await db.from("user_roles").select("user_id").in("role", ["super_admin", "employee"]);
+    const targets = [...new Set((staffRoles.data ?? []).map((r) => r.user_id))];
+    if (targets.length) {
+      await db.from("notifications").insert(
+        targets.map((user_id) => ({
+          user_id,
+          title: "بلاغ صيانة جديد",
+          body: `${contact.data?.full_name ?? "مستأجر"}: ${description.slice(0, 120)}`,
+          link: `/requests/maintenance/${insert.data.id}`,
+        })),
+      );
+    }
+    const { notifyMaintenanceStaff } = await import("./maintenance-notify.server");
+    const wa = await notifyMaintenanceStaff(insert.data.id).catch(() => ({ sent: 0, failed: 0 }));
+    return { ok: true, id: insert.data.id, whatsappSent: wa.sent };
   });

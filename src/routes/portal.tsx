@@ -87,6 +87,7 @@ function PortalLayout() {
         { to: "/portal", label: "الرئيسية", icon: Home, exact: true },
         { to: "/portal/contracts", label: "العقود", icon: FileText },
         { to: "/portal/invoices", label: "الفواتير", icon: Receipt },
+        ...(isOwner ? [] : [{ to: "/portal/maintenance", label: "طلبات الصيانة", icon: Wrench }]),
       ],
     },
     ...(isOwner
