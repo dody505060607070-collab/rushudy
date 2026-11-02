@@ -214,7 +214,7 @@ function PortalHome() {
               <article key={c.id} className="overflow-hidden rounded-2xl border border-border bg-card border-r-4 border-r-primary">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
                   <div>
-                    <p className="text-sm font-bold">{c.property?.name ?? "عقار"}</p>
+                    <p className="text-sm font-bold">{c.property?.name ?? (c.unit?.unit_number ? `${c.unit.unit_type ?? "وحدة"} رقم ${c.unit.unit_number}` : "عقاري")}</p>
                     <p className="text-[11px] text-muted-foreground">
                       {[c.property?.city, c.property?.district].filter(Boolean).join(" — ") || "—"}
                     </p>
