@@ -68,7 +68,7 @@ async function buildOwnerReport(db: Db, contactId: string) {
       db.from("unit_condition_reports").select("*").eq("owner_id", contactId).order("reported_on", { ascending: false }).limit(100),
       db
         .from("maintenance_requests")
-        .select("id, category, priority, status, description, cost, rating, created_at, property_id")
+        .select("id, category, priority, status, description, cost, rating, created_at, property_id, unit_id")
         .order("created_at", { ascending: false })
         .limit(300),
     ]);
@@ -109,7 +109,11 @@ async function buildOwnerReport(db: Db, contactId: string) {
 
   const expenseRows = (expenses.data ?? []) as { id: string; category: string; description: string | null; amount: number; spent_on: string; unit_id: string | null; property_id: string | null }[];
   const propertyIds = new Set((properties.data ?? []).map((p) => p.id));
-  const ownerMaintenance = (maintenance.data ?? []).filter((m) => m.property_id && propertyIds.has(m.property_id));
+  const ownerUnitIds = new Set((units.data ?? []).map((u) => u.id));
+  // بلاغات المستأجرين غالبًا مربوطة بالوحدة فقط (بدون عقار)، فنطابق بالوحدة أيضًا
+  const ownerMaintenance = (maintenance.data ?? []).filter(
+    (m) => (m.property_id && propertyIds.has(m.property_id)) || (m.unit_id && ownerUnitIds.has(m.unit_id)),
+  );
 
   /* ---------- مالي ---------- */
   const collected = paymentRows.reduce((s, p) => s + n(p.amount_paid), 0);
