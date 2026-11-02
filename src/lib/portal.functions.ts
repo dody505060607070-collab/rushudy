@@ -584,7 +584,7 @@ async function ownerContext(userId: string) {
   const { db, contactId } = await currentClient(userId);
   const contact = await db
     .from("contacts")
-    .select("id, full_name, roles")
+    .select("id, full_name, roles, phone")
     .eq("id", contactId)
     .single();
   if (!(contact.data?.roles ?? []).includes("owner"))
@@ -744,7 +744,7 @@ export const createOwnerRequest = createServerFn({ method: "POST" })
       await sendMaintenanceNotice(
         {
           reporterName: `${contact?.full_name ?? "مالك"} (مالك)`,
-          reporterPhone: (contact as { phone?: string | null } | null)?.phone ?? null,
+          reporterPhone: contact?.phone ?? null,
           category: "owner",
           priority: "normal",
           description: [title, String(data.details ?? "").trim()].filter(Boolean).join(" — "),
