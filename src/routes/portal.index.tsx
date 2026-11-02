@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { FileText, MessageCircle, Receipt, Wrench } from "lucide-react";
 import { lazy, Suspense } from "react";
 
 import { getPortalOverview } from "@/lib/portal.functions";
+import { whatsappLink } from "@/lib/site-data";
 
 const OwnerDashboard = lazy(() =>
   import("@/components/portal/OwnerDashboard").then((module) => ({ default: module.OwnerDashboard })),
@@ -156,6 +158,25 @@ function PortalHome() {
               return <article key={building.id} className="rounded-xl border border-border bg-card p-4 shadow-card"><div className="flex items-center justify-between"><h3 className="font-bold">{building.name}</h3><span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-bold text-primary">{units.length} وحدة</span></div><p className="mt-1 text-xs text-muted-foreground">{[building.district, building.city, building.address].filter(Boolean).join("، ") || "—"}</p><div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs"><span className="rounded-lg bg-success/10 p-2 text-success"><b className="block text-base">{occupied}</b>مشغولة</span><span className="rounded-lg bg-muted p-2"><b className="block text-base">{Math.max(units.length - occupied, 0)}</b>شاغرة</span></div></article>;
             })}
           </div>
+        </section>
+      ) : null}
+
+      {!data.isOwner ? (
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            { to: "/portal/maintenance", label: "طلب صيانة", hint: "يصل للمكتب فورًا", icon: Wrench },
+            { to: "/portal/contracts", label: "عقدي وأقساطي", hint: "المدة والدفعات", icon: FileText },
+            { to: "/portal/invoices", label: "فواتيري", hint: "كل الفواتير", icon: Receipt },
+          ].map((a) => (
+            <Link key={a.to} to={a.to} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-card transition hover:border-primary/40">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><a.icon className="size-5" /></span>
+              <span className="min-w-0"><b className="block text-sm">{a.label}</b><span className="text-[11.5px] text-muted-foreground">{a.hint}</span></span>
+            </Link>
+          ))}
+          <a href={whatsappLink(undefined, `السلام عليكم، معك ${data.contact?.full_name ?? "مستأجر"}`)} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-card transition hover:border-primary/40">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-success/10 text-success"><MessageCircle className="size-5" /></span>
+            <span className="min-w-0"><b className="block text-sm">كلّم المكتب</b><span className="text-[11.5px] text-muted-foreground">واتساب مباشر</span></span>
+          </a>
         </section>
       ) : null}
 
