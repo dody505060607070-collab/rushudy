@@ -18,7 +18,6 @@ import { navGroups } from "@/data/nav";
 import { signOut, useCurrentUser } from "@/hooks/useAuth";
 import { navCountsQuery } from "@/lib/counts";
 import { LanguageToggle, useI18n } from "@/lib/i18n";
-import { ThemeToggle } from "@/lib/theme";
 import { CommandPalette } from "@/components/kit/CommandPalette";
 import { cn } from "@/lib/utils";
 
@@ -147,7 +146,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
           <span className="hidden lg:contents">
             <LanguageToggle className="border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" />
-            <ThemeToggle showLabel className="border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" />
           </span>
           <StaffCall />
           <NotificationsBell />
@@ -207,7 +205,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span className="grid size-9 place-items-center rounded-full bg-primary/10 text-[13px] font-bold text-primary">{initial}</span>
                 <span className="min-w-0 flex-1 truncate text-[13px] font-bold">{profile?.full_name ?? "—"}</span>
                 <LanguageToggle />
-                <ThemeToggle />
                 <PushToggle />
                 <button type="button" onClick={handleSignOut} className="flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[12px] font-semibold text-destructive">
                   <LogOut className="size-4" /> خروج
