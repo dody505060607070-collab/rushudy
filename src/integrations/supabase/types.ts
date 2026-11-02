@@ -2118,10 +2118,13 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          image_path: string | null
           interval_hours: number
           last_sent_at: string | null
+          latitude: number | null
           location_text: string | null
           location_url: string | null
+          longitude: number | null
           meeting_at: string
           next_send_at: string | null
           notes: string | null
@@ -2142,10 +2145,13 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          image_path?: string | null
           interval_hours?: number
           last_sent_at?: string | null
+          latitude?: number | null
           location_text?: string | null
           location_url?: string | null
+          longitude?: number | null
           meeting_at: string
           next_send_at?: string | null
           notes?: string | null
@@ -2166,10 +2172,13 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          image_path?: string | null
           interval_hours?: number
           last_sent_at?: string | null
+          latitude?: number | null
           location_text?: string | null
           location_url?: string | null
+          longitude?: number | null
           meeting_at?: string
           next_send_at?: string | null
           notes?: string | null
