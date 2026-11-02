@@ -17,3 +17,4 @@
 - Goal increments use compare-and-swap updates of the stored achievement and tracking mode; creating a goal inserts rather than upserts, preventing lost increments and accidental resets.
 - The request center reads existing request tables with staff authorization and per-source details; legacy owner notifications resolve to this history instead of an unrelated owner list.
 - Rent follow-up uses separate opt-in settings and a next-due timestamp, queues through the existing owner batch processor, and is checked by the existing hourly entry point to avoid a new recurring poller.
+- Viewing requests reuse the meeting-reminder form in the task creation screen and a sibling tasks tab; keep one storage and reminder flow to avoid duplicate requests or messages.

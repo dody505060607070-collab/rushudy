@@ -4,6 +4,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   Camera,
+  CalendarClock,
   Check,
   ClipboardList,
   Loader2,
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { MeetingReminders } from "@/components/tasks/MeetingReminders";
 
 /** الوقت المتبقي حتى الرسالة القادمة بصيغة عربية مختصرة. */
 function remainingLabel(iso: string) {
@@ -55,10 +57,10 @@ export const Route = createFileRoute("/_authenticated/task-form")({
       { title: "إضافة / تعديل مهمة | الرشودي للعقارات" },
       {
         name: "description",
-        content: "نموذج كامل لإنشاء مهمة: النوع، التفاصيل، الأولوية، الموعد، الموظفون المكلّفون والمرفقات.",
+        content: "إنشاء مهام وطلبات معاينة مع بيانات المالك والزائر والوسيط والموعد والتذكير.",
       },
       { property: "og:title", content: "إضافة / تعديل مهمة | الرشودي للعقارات" },
-      { property: "og:description", content: "تكليف الفريق بمهام عادية أو مهام تصوير ومتابعة تنفيذها." },
+      { property: "og:description", content: "تكليف الفريق بمهام عادية أو تصوير وإضافة طلبات معاينة وتذكير الأطراف." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -124,6 +126,7 @@ function TaskFormPage() {
   const [uploading, setUploading] = useState(false);
   const [mapLink, setMapLink] = useState("");
   const [resolvingMap, setResolvingMap] = useState(false);
+  const [viewingRequest, setViewingRequest] = useState(false);
 
   const set = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
@@ -432,7 +435,7 @@ function TaskFormPage() {
   return (
     <>
       <PageHero
-        title={id ? "تعديل مهمة" : "إضافة مهمة جديدة"}
+        title={id ? "تعديل مهمة" : viewingRequest ? "إضافة طلب معاينة" : "إضافة مهمة جديدة"}
         subtitle="حدّد نوع المهمة والموظفين المكلّفين والموعد، وأرفق الصور المرجعية عند الحاجة."
         icon={form.task_type === "photo" ? Camera : ClipboardList}
       />
@@ -445,7 +448,7 @@ function TaskFormPage() {
           <ArrowRight className="size-4" />
           رجوع لقائمة المهام
         </Link>
-        <button
+        {!viewingRequest ? <button
           type="button"
           onClick={() => save.mutate()}
           disabled={save.isPending}
@@ -453,7 +456,7 @@ function TaskFormPage() {
         >
           {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
           {id ? "حفظ التعديلات" : "حفظ المهمة"}
-        </button>
+        </button> : null}
       </div>
 
       <SectionCard
@@ -461,20 +464,23 @@ function TaskFormPage() {
         subtitle="المهمة العادية للأعمال الإدارية، ومهمة التصوير لتغطية عقار بالصور والفيديو."
         icon={ClipboardList}
       >
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           {[
             { key: "normal", label: "مهمة عادية", hint: "متابعة، اتصال، زيارة، تجهيز مستندات", icon: ClipboardList },
             { key: "photo", label: "مهمة تصوير", hint: "تصوير عقار ورفع الصور والفيديو", icon: Camera },
+            ...(!id ? [{ key: "viewing", label: "طلب معاينة", hint: "موعد معاينة", icon: CalendarClock }] : []),
           ].map((item) => {
             const Icon = item.icon;
-            const active = form.task_type === item.key;
+            const active = viewingRequest ? item.key === "viewing" : form.task_type === item.key;
             return (
-              <button
+              <Button
                 key={item.key}
                 type="button"
-                onClick={() => set({ task_type: item.key })}
+                variant="outline"
+                aria-pressed={active}
+                onClick={() => { setViewingRequest(item.key === "viewing"); if (item.key !== "viewing") set({ task_type: item.key }); }}
                 className={cn(
-                  "flex items-start gap-3 rounded-xl border p-4 text-start transition-colors",
+                  "h-auto justify-start whitespace-normal items-start gap-3 rounded-lg border p-4 text-start transition-colors",
                   active ? "border-primary bg-accent/50" : "border-border hover:bg-muted",
                 )}
               >
@@ -483,12 +489,13 @@ function TaskFormPage() {
                   <span className="block text-[13.5px] font-bold">{item.label}</span>
                   <span className="block text-[12px] text-muted-foreground">{item.hint}</span>
                 </span>
-              </button>
+              </Button>
             );
           })}
         </div>
       </SectionCard>
 
+      {viewingRequest ? <MeetingReminders mode="create" onCreated={() => navigate({ to: "/tasks" })} /> : <>
       <SectionCard
         title="بيانات المهمة"
         subtitle="العنوان والتفاصيل والأولوية والحالة والموعد."
@@ -816,6 +823,7 @@ function TaskFormPage() {
           رجوع
         </Link>
       </div>
+      </>}
     </>
   );
 }
