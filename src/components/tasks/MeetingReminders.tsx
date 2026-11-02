@@ -16,7 +16,7 @@ const empty = {
   auto_enabled: true, interval_hours: 12,
 };
 
-export function MeetingReminders() {
+export function MeetingReminders({ mode = "list", onCreated }: { mode?: "list" | "create"; onCreated?: () => void }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState(empty);
@@ -46,7 +46,7 @@ export function MeetingReminders() {
       });
       if (r.error) throw r.error;
     },
-    onSuccess: () => { toast.success("تم حفظ الموعد"); setOpen(false); setF(empty); qc.invalidateQueries({ queryKey: ["meeting_reminders"] }); },
+    onSuccess: () => { toast.success("تم حفظ طلب المعاينة"); setOpen(false); setF(empty); qc.invalidateQueries({ queryKey: ["meeting_reminders"] }); onCreated?.(); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -69,13 +69,33 @@ export function MeetingReminders() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const fields = (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Field label="عنوان الموعد"><input className={inputClass} value={f.title} onChange={(e) => set("title", e.target.value)} /></Field>
+      <Field label="اسم العقار" required><input className={inputClass} value={f.property_name} onChange={(e) => set("property_name", e.target.value)} /></Field>
+      <Field label="تاريخ ووقت الموعد" required><input type="datetime-local" className={inputClass} value={f.meeting_at} onChange={(e) => set("meeting_at", e.target.value)} /></Field>
+      <Field label="المكان"><input className={inputClass} value={f.location_text} onChange={(e) => set("location_text", e.target.value)} /></Field>
+      <Field label="رابط الموقع على الخريطة" className="sm:col-span-2"><input dir="ltr" type="url" className={inputClass} value={f.location_url} onChange={(e) => set("location_url", e.target.value)} /></Field>
+      <Field label="ملاحظات الموعد (تصل للوسيط فقط)" className="sm:col-span-2"><textarea className={textareaClass} rows={3} value={f.notes} onChange={(e) => set("notes", e.target.value)} /></Field>
+      <Field label="اسم المالك"><input className={inputClass} value={f.owner_name} onChange={(e) => set("owner_name", e.target.value)} /></Field>
+      <Field label="جوال المالك"><input dir="ltr" type="tel" className={inputClass} value={f.owner_phone} onChange={(e) => set("owner_phone", e.target.value)} placeholder="05xxxxxxxx" /></Field>
+      <Field label="اسم الزائر"><input className={inputClass} value={f.visitor_name} onChange={(e) => set("visitor_name", e.target.value)} /></Field>
+      <Field label="جوال الزائر"><input dir="ltr" type="tel" className={inputClass} value={f.visitor_phone} onChange={(e) => set("visitor_phone", e.target.value)} placeholder="05xxxxxxxx" /></Field>
+      <Field label="اسم الوسيط / الموظف"><input className={inputClass} value={f.agent_name} onChange={(e) => set("agent_name", e.target.value)} /></Field>
+      <Field label="جوال الوسيط"><input dir="ltr" type="tel" className={inputClass} value={f.agent_phone} onChange={(e) => set("agent_phone", e.target.value)} placeholder="05xxxxxxxx" /></Field>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.auto_enabled} onChange={(e) => set("auto_enabled", e.target.checked)} /> تذكير تلقائي</label>
+      <Field label="كل كم ساعة؟"><input type="number" min={1} max={168} className={inputClass} value={f.interval_hours} onChange={(e) => set("interval_hours", Number(e.target.value))} /></Field>
+    </div>
+  );
+  const saveButton = <PrimaryButton onClick={() => create.mutate()} disabled={create.isPending}>{create.isPending ? <Loader2 className="size-4 animate-spin" /> : null}حفظ طلب المعاينة</PrimaryButton>;
+  if (mode === "create") return <section className="space-y-5 border-t border-border py-5"><h2 className="flex items-center gap-2 text-lg font-bold"><CalendarClock className="size-5 text-primary" />بيانات طلب المعاينة</h2>{fields}<div className="flex justify-end border-t border-border pt-4">{saveButton}</div></section>;
+
   const rows = list.data ?? [];
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 md:p-5">
+    <section className="py-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="flex items-center gap-2 text-lg font-bold"><CalendarClock className="size-5 text-primary" /> مواعيد المعاينة والتذكير</h2>
-          <p className="text-sm text-muted-foreground">موعد بين المالك والزائر والوسيط، ويصل لكل واحد تذكير واتساب برسالة خاصة به حتى يُغلق الموعد.</p>
+          <h2 className="flex items-center gap-2 text-lg font-bold"><CalendarClock className="size-5 text-primary" /> طلبات المعاينة</h2>
         </div>
         <PrimaryButton onClick={() => setOpen(true)}><Plus className="size-4" /> موعد جديد</PrimaryButton>
       </div>
@@ -127,24 +147,9 @@ export function MeetingReminders() {
         </div>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="موعد جديد" subtitle="وقت الموعد واسم العقار مطلوبان، والباقي اختياري."
-        footer={<><GhostButton onClick={() => setOpen(false)}>إلغاء</GhostButton><PrimaryButton onClick={() => create.mutate()} disabled={create.isPending}>حفظ الموعد</PrimaryButton></>}>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="عنوان الموعد"><input className={inputClass} value={f.title} onChange={(e) => set("title", e.target.value)} /></Field>
-          <Field label="اسم العقار" required><input className={inputClass} value={f.property_name} onChange={(e) => set("property_name", e.target.value)} /></Field>
-          <Field label="تاريخ ووقت الموعد" required><input type="datetime-local" className={inputClass} value={f.meeting_at} onChange={(e) => set("meeting_at", e.target.value)} /></Field>
-          <Field label="المكان"><input className={inputClass} value={f.location_text} onChange={(e) => set("location_text", e.target.value)} /></Field>
-          <Field label="رابط الموقع على الخريطة" className="sm:col-span-2"><input dir="ltr" className={inputClass} value={f.location_url} onChange={(e) => set("location_url", e.target.value)} /></Field>
-          <Field label="ملاحظات الموعد (تصل للوسيط فقط)" className="sm:col-span-2"><textarea className={textareaClass} rows={3} value={f.notes} onChange={(e) => set("notes", e.target.value)} /></Field>
-          <Field label="اسم المالك"><input className={inputClass} value={f.owner_name} onChange={(e) => set("owner_name", e.target.value)} /></Field>
-          <Field label="جوال المالك"><input dir="ltr" className={inputClass} value={f.owner_phone} onChange={(e) => set("owner_phone", e.target.value)} placeholder="05xxxxxxxx" /></Field>
-          <Field label="اسم الزائر"><input className={inputClass} value={f.visitor_name} onChange={(e) => set("visitor_name", e.target.value)} /></Field>
-          <Field label="جوال الزائر"><input dir="ltr" className={inputClass} value={f.visitor_phone} onChange={(e) => set("visitor_phone", e.target.value)} placeholder="05xxxxxxxx" /></Field>
-          <Field label="اسم الوسيط / الموظف"><input className={inputClass} value={f.agent_name} onChange={(e) => set("agent_name", e.target.value)} /></Field>
-          <Field label="جوال الوسيط"><input dir="ltr" className={inputClass} value={f.agent_phone} onChange={(e) => set("agent_phone", e.target.value)} placeholder="05xxxxxxxx" /></Field>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.auto_enabled} onChange={(e) => set("auto_enabled", e.target.checked)} /> تذكير تلقائي</label>
-          <Field label="كل كم ساعة؟"><input type="number" min={1} max={168} className={inputClass} value={f.interval_hours} onChange={(e) => set("interval_hours", Number(e.target.value))} /></Field>
-        </div>
+      <Modal open={open} onClose={() => setOpen(false)} title="طلب معاينة جديد" wide
+        footer={<><GhostButton onClick={() => setOpen(false)}>إلغاء</GhostButton>{saveButton}</>}>
+        {fields}
       </Modal>
     </section>
   );

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Camera, MapPin, CircleCheck, ClipboardList, LayoutGrid, List, Loader2, Plus, Trash2 } from "lucide-react";
+import { Camera, CalendarClock, MapPin, CircleCheck, ClipboardList, LayoutGrid, List, Loader2, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -611,10 +611,14 @@ function TasksPage() {
 
 // Tasks, follow-ups and team chat each have their own page, linked under "المهام" in the side menu.
 function TasksHub() {
+  const [tab, setTab] = useState("tasks");
   return (
     <>
-      <TasksPage />
-      <div className="mt-8"><MeetingReminders /></div>
+      <div className="flex flex-wrap gap-2 border-b border-border pb-3" role="tablist" aria-label="المهام وطلبات المعاينة">
+        <Button role="tab" aria-selected={tab === "tasks"} variant={tab === "tasks" ? "default" : "outline"} onClick={() => setTab("tasks")}><ClipboardList className="size-4" />المهام</Button>
+        <Button role="tab" aria-selected={tab === "viewing"} variant={tab === "viewing" ? "default" : "outline"} onClick={() => setTab("viewing")}><CalendarClock className="size-4" />طلبات المعاينة</Button>
+      </div>
+      {tab === "tasks" ? <TasksPage /> : <MeetingReminders />}
     </>
   );
 }
