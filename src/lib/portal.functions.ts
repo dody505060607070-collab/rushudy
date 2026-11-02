@@ -485,11 +485,12 @@ export const getOwnerDashboard = createServerFn({ method: "GET" })
       db
         .from("contracts")
         .select(
-          "id, contract_number, status, start_date, end_date, annual_rent, total_value, created_at, tenant:tenant_id(full_name, phone), property:property_id(name), unit:unit_id(id, unit_number, unit_type)",
+          "id, contract_number, status, start_date, end_date, annual_rent, total_value, created_at, tenant:tenant_id(full_name, phone), property:property_id(name), unit:unit_id(id, unit_number, unit_type, building:building_id(name, city, district))",
         )
         .eq("owner_id", contactId)
         .order("start_date", { ascending: false }),
     ]);
+    (contracts.data ?? []).forEach(withPlace);
 
     const contractIds = (contracts.data ?? []).map((c) => c.id);
     const payments = contractIds.length
@@ -767,9 +768,10 @@ export const getOwnerStatement = createServerFn({ method: "POST" })
     const contracts = await db
       .from("contracts")
       .select(
-        "id, contract_number, tenant:tenant_id(full_name), unit:unit_id(unit_number), property:property_id(name)",
+        "id, contract_number, tenant:tenant_id(full_name), unit:unit_id(unit_number, building:building_id(name, city, district)), property:property_id(name)",
       )
       .eq("owner_id", contactId);
+    (contracts.data ?? []).forEach(withPlace);
     const ids = (contracts.data ?? []).map((c) => c.id);
 
     const payments = ids.length
