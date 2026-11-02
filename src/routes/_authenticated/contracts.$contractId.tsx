@@ -508,7 +508,7 @@ function ContractViewPage() {
               <Row label="نوع العقد" value={c.contract_type === "sale" ? "بيع" : "إيجار"} />
               <Row icon={CalendarDays} label="تاريخ البداية" value={<InlineEdit table="contracts" id={c.id} column="start_date" type="date" value={c.start_date} />} />
               <Row icon={CalendarDays} label="تاريخ النهاية" value={<InlineEdit table="contracts" id={c.id} column="end_date" type="date" value={c.end_date} />} />
-              <Row label="دورة السداد" value={<InlineEdit table="contracts" id={c.id} column="payment_cycle" value={c.payment_cycle} options={[{value:"monthly",label:"شهري"},{value:"quarterly",label:"ربع سنوي"},{value:"semi_annual",label:"نصف سنوي"},{value:"annual",label:"سنوي"}]} />} />
+              <Row label="دورة السداد" value={<InlineEdit table="contracts" id={c.id} column="payment_cycle" value={c.payment_cycle} options={[{value:"monthly",label:"شهري"},{value:"quarterly",label:"ربع سنوي"},{value:"semiannual",label:"نصف سنوي"},{value:"annual",label:"سنوي"}]} />} />
               <Row label="الإيجار السنوي" value={<InlineEdit table="contracts" id={c.id} column="annual_rent" type="number" value={c.annual_rent} display={money(c.annual_rent)} />} />
               <Row icon={CircleDollarSign} label="القيمة الإجمالية" value={<InlineEdit table="contracts" id={c.id} column="total_value" type="number" value={c.total_value} display={money(c.total_value)} />} />
               <Row label="التأمين" value={<InlineEdit table="contracts" id={c.id} column="deposit" type="number" value={c.deposit} display={money(c.deposit)} />} />

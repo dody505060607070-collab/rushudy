@@ -21,6 +21,7 @@ export const Route = createFileRoute("/portal/contracts/")({
 const cycleLabel: Record<string, string> = {
   monthly: "شهري",
   quarterly: "ربع سنوي",
+  semiannual: "نصف سنوي",
   semi_annual: "نصف سنوي",
   annual: "سنوي",
 };
