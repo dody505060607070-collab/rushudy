@@ -6,7 +6,12 @@ type Row = Database["public"]["Tables"]["meeting_reminders"]["Row"];
 /** يرسل رسالة لكل طرف في الموعد ويسجلها. */
 export async function sendMeetingNow(row: Row, now = new Date()) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { whatsappSend } = await import("./whatsapp.functions");
+  const { whatsappSend, whatsappSendMedia } = await import("./whatsapp.functions");
+  let imageUrl: string | null = null;
+  if (row.image_path) {
+    const signed = await supabaseAdmin.storage.from("meeting-media").createSignedUrl(row.image_path, 60 * 60 * 24);
+    imageUrl = signed.data?.signedUrl ?? null;
+  }
   const targets: [MeetingRole, string | null, string | null][] = [
     ["owner", row.owner_name, row.owner_phone],
     ["visitor", row.visitor_name, row.visitor_phone],
@@ -16,7 +21,9 @@ export async function sendMeetingNow(row: Row, now = new Date()) {
   for (const [role, name, phone] of targets) {
     if (!phone?.trim()) continue;
     const body = buildMeetingMessage(role, row as never);
-    const r = await whatsappSend({ to: phone, body });
+    const r = imageUrl
+      ? await whatsappSendMedia({ to: phone, url: imageUrl, caption: body, mediatype: "image" })
+      : await whatsappSend({ to: phone, body });
     results.push({ role, ok: r.ok, error: r.ok ? undefined : r.error });
     await supabaseAdmin.from("message_log").insert({
       kind: "meeting_reminder", recipient_name: name ?? "", recipient_phone: phone, body,

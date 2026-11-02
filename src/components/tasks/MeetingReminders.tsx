@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BellRing, CalendarClock, Loader2, MapPin, Plus, Send, XCircle } from "lucide-react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
+import { ClientOnly } from "@tanstack/react-router";
+const LocationPicker = lazy(() => import("@/components/kit/LocationPicker").then((m) => ({ default: m.LocationPicker })));
 import { toast } from "sonner";
 
 import { Field, GhostButton, Modal, PrimaryButton, inputClass, textareaClass } from "@/components/kit/Modal";
@@ -14,12 +16,14 @@ const empty = {
   title: "موعد معاينة", property_name: "", meeting_at: "", location_text: "", location_url: "", notes: "",
   owner_name: "", owner_phone: "", visitor_name: "", visitor_phone: "", agent_name: "", agent_phone: "",
   auto_enabled: true, interval_hours: 12,
+  latitude: null as number | null, longitude: null as number | null,
 };
 
 export function MeetingReminders({ mode = "list", onCreated }: { mode?: "list" | "create"; onCreated?: () => void }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState(empty);
+  const [image, setImage] = useState<File | null>(null);
   const sendNow = useServerFn(sendMeetingReminderNow);
   const set = (k: keyof typeof empty, v: string | boolean | number) => setF((p) => ({ ...p, [k]: v }));
 
@@ -39,9 +43,16 @@ export function MeetingReminders({ mode = "list", onCreated }: { mode?: "list" |
       const at = new Date(f.meeting_at);
       if (at <= new Date()) throw new Error("وقت الموعد يجب أن يكون في المستقبل");
       const { data: u } = await supabase.auth.getUser();
+      let image_path: string | null = null;
+      if (image) {
+        if (!image.type.startsWith("image/")) throw new Error("الملف يجب أن يكون صورة");
+        image_path = `${Date.now()}-${image.name.replace(/[^\w.-]/g, "_")}`;
+        const up = await supabase.storage.from("meeting-media").upload(image_path, image, { contentType: image.type });
+        if (up.error) throw up.error;
+      }
       const r = await supabase.from("meeting_reminders").insert({
-        ...f, meeting_at: at.toISOString(), ...(u.user ? { created_by: u.user.id } : {}),
-        interval_hours: Math.min(168, Math.max(1, Number(f.interval_hours) || 12)),
+        ...f, image_path, meeting_at: at.toISOString(), ...(u.user ? { created_by: u.user.id } : {}),
+        interval_hours: Math.min(168, Math.max(0, Number(f.interval_hours) || 0)),
         next_send_at: null,
       }).select("id").single();
       if (r.error) throw r.error;
@@ -51,7 +62,7 @@ export function MeetingReminders({ mode = "list", onCreated }: { mode?: "list" |
     onSuccess: (res) => {
       const failed = (res ?? []).filter((x) => !x.ok);
       failed.length ? toast.error(`تم الحفظ، لكن لم تصل الرسالة لـ ${failed.length} طرف: ${failed[0]?.error ?? ""}`) : toast.success("تم حفظ طلب المعاينة وإرسال الرسائل");
-      setOpen(false); setF(empty); qc.invalidateQueries({ queryKey: ["meeting_reminders"] }); onCreated?.();
+      setOpen(false); setF(empty); setImage(null); qc.invalidateQueries({ queryKey: ["meeting_reminders"] }); onCreated?.();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -81,7 +92,18 @@ export function MeetingReminders({ mode = "list", onCreated }: { mode?: "list" |
       <Field label="اسم العقار" required><input className={inputClass} value={f.property_name} onChange={(e) => set("property_name", e.target.value)} /></Field>
       <Field label="تاريخ ووقت الموعد" required><input type="datetime-local" className={inputClass} value={f.meeting_at} onChange={(e) => set("meeting_at", e.target.value)} /></Field>
       <Field label="المكان"><input className={inputClass} value={f.location_text} onChange={(e) => set("location_text", e.target.value)} /></Field>
-      <Field label="رابط الموقع على الخريطة" className="sm:col-span-2"><input dir="ltr" type="url" className={inputClass} value={f.location_url} onChange={(e) => set("location_url", e.target.value)} /></Field>
+      <Field label="رابط الموقع على الخريطة (الصقه أو حدّد من الخريطة)" className="sm:col-span-2"><input dir="ltr" type="url" className={inputClass} value={f.location_url} onChange={(e) => set("location_url", e.target.value)} placeholder="https://maps.google.com/..." /></Field>
+      <div className="sm:col-span-2">
+        <ClientOnly fallback={<div className="h-72 rounded-xl bg-muted" />}>
+          <Suspense fallback={<div className="h-72 rounded-xl bg-muted" />}>
+            <LocationPicker latitude={f.latitude} longitude={f.longitude} onChange={(lat, lng) => setF((p) => ({ ...p, latitude: lat, longitude: lng, location_url: `https://maps.google.com/?q=${lat},${lng}` }))} />
+          </Suspense>
+        </ClientOnly>
+      </div>
+      <Field label="صورة (تصل مع رسالة الواتساب)" className="sm:col-span-2">
+        <input type="file" accept="image/*" className={inputClass} onChange={(e) => setImage(e.target.files?.[0] ?? null)} />
+        {image ? <img src={URL.createObjectURL(image)} alt="معاينة الصورة" className="mt-2 h-32 rounded-lg object-cover" /> : null}
+      </Field>
       <Field label="ملاحظات الموعد (تصل للوسيط فقط)" className="sm:col-span-2"><textarea className={textareaClass} rows={3} value={f.notes} onChange={(e) => set("notes", e.target.value)} /></Field>
       <Field label="اسم المالك"><input className={inputClass} value={f.owner_name} onChange={(e) => set("owner_name", e.target.value)} /></Field>
       <Field label="جوال المالك"><input dir="ltr" type="tel" className={inputClass} value={f.owner_phone} onChange={(e) => set("owner_phone", e.target.value)} placeholder="05xxxxxxxx" /></Field>
@@ -90,7 +112,15 @@ export function MeetingReminders({ mode = "list", onCreated }: { mode?: "list" |
       <Field label="اسم الوسيط / الموظف"><input className={inputClass} value={f.agent_name} onChange={(e) => set("agent_name", e.target.value)} /></Field>
       <Field label="جوال الوسيط"><input dir="ltr" type="tel" className={inputClass} value={f.agent_phone} onChange={(e) => set("agent_phone", e.target.value)} placeholder="05xxxxxxxx" /></Field>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.auto_enabled} onChange={(e) => set("auto_enabled", e.target.checked)} /> تذكير تلقائي</label>
-      <Field label="كل كم ساعة؟"><input type="number" min={1} max={168} className={inputClass} value={f.interval_hours} onChange={(e) => set("interval_hours", Number(e.target.value))} /></Field>
+      <Field label="كم مرة ترسل الرسالة؟">
+        <select className={inputClass} value={f.interval_hours} onChange={(e) => set("interval_hours", Number(e.target.value))}>
+          <option value={0}>تلقائي من النظام (يزيد كلما قرب الموعد)</option>
+          <option value={6}>كل 6 ساعات</option>
+          <option value={12}>كل 12 ساعة</option>
+          <option value={24}>كل 24 ساعة</option>
+          <option value={48}>كل يومين</option>
+        </select>
+      </Field>
     </div>
   );
   const saveButton = <PrimaryButton onClick={() => create.mutate()} disabled={create.isPending}>{create.isPending ? <Loader2 className="size-4 animate-spin" /> : null}حفظ طلب المعاينة</PrimaryButton>;
@@ -132,7 +162,7 @@ export function MeetingReminders({ mode = "list", onCreated }: { mode?: "list" |
                   {m.visitor_phone ? <li>الزائر: {m.visitor_name} {m.visitor_phone}</li> : null}
                   {m.agent_phone ? <li>الوسيط: {m.agent_name} {m.agent_phone}</li> : null}
                   <li>
-                    {m.auto_enabled && !closed ? `تذكير تلقائي كل ${m.interval_hours} ساعة` : "التذكير التلقائي متوقف"}
+                    {m.auto_enabled && !closed ? (m.interval_hours ? `تذكير تلقائي كل ${m.interval_hours} ساعة` : "تذكير تلقائي يزيد كلما قرب الموعد") : "التذكير التلقائي متوقف"}
                     {" · "}أُرسل {m.sent_count} مرة
                   </li>
                 </ul>
