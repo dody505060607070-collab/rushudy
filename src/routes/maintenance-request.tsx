@@ -64,16 +64,16 @@ function MaintenanceRequestPage() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.from("maintenance_requests").insert({
-        reporter_name: form.reporter_name.trim(),
-        reporter_phone: form.reporter_phone.trim(),
-        category: form.category,
-        priority: form.priority,
-        description: form.description.trim(),
-        status: "new",
-        cost: 0,
+      const result = await submitPublicMaintenance({
+        data: {
+          reporter_name: form.reporter_name.trim(),
+          reporter_phone: form.reporter_phone.trim(),
+          category: form.category,
+          priority: form.priority,
+          description: form.description.trim(),
+        },
       });
-      if (error) throw error;
+      if (!result.ok) throw new Error(result.error);
       setDone(true);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذّر إرسال البلاغ");
