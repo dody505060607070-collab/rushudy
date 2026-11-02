@@ -130,7 +130,7 @@
   --whatsapp-preview: oklch(0.925 0.018 100);
   --whatsapp-bubble: oklch(0.93 0.08 135);
   --whatsapp-foreground: oklch(0.2 0.02 155);
-  --hero-accent: oklch(0.78 0.11 18);
+  --hero-accent: oklch(0.82 0.1 18);
   --map-sale: oklch(0.52 0.015 250);
 }
 
@@ -175,7 +175,7 @@
   --whatsapp-preview: oklch(0.24 0.025 150);
   --whatsapp-bubble: oklch(0.34 0.07 145);
   --whatsapp-foreground: oklch(0.96 0.01 145);
-  --hero-accent: oklch(0.8 0.1 18);
+  --hero-accent: oklch(0.84 0.09 18);
   --map-sale: oklch(0.68 0.015 250);
 }
 
