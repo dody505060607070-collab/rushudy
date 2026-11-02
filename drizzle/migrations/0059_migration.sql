@@ -1,0 +1,3 @@
+ALTER TABLE public.meeting_reminders ADD COLUMN IF NOT EXISTS image_path text, ADD COLUMN IF NOT EXISTS latitude double precision, ADD COLUMN IF NOT EXISTS longitude double precision;
+CREATE POLICY "staff upload meeting media" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'meeting-media' AND public.is_staff(auth.uid()));
+CREATE POLICY "staff read meeting media" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'meeting-media' AND public.is_staff(auth.uid()));

@@ -17,3 +17,14 @@ describe("meeting reminders", () => {
     expect(buildMeetingMessage("agent", m)).toContain("سري");
   });
 });
+
+import { adaptiveInterval } from "./meeting-reminders";
+describe("adaptiveInterval", () => {
+  it("sends more often as the meeting gets closer", () => {
+    const now = new Date("2026-01-01T00:00:00Z");
+    expect(adaptiveInterval(now, "2026-01-05T00:00:00Z")).toBe(24);
+    expect(adaptiveInterval(now, "2026-01-02T12:00:00Z")).toBe(12);
+    expect(adaptiveInterval(now, "2026-01-01T10:00:00Z")).toBe(4);
+    expect(adaptiveInterval(now, "2026-01-01T03:00:00Z")).toBe(1);
+  });
+});

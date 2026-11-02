@@ -44,6 +44,16 @@ export function buildMeetingMessage(role: MeetingRole, m: MeetingInfo): string {
 
 /** موعد التذكير التالي، أو null إذا كان بعد وقت الموعد (تتوقف الرسائل). */
 export function nextMeetingSend(from: Date, intervalHours: number, meetingAt: string): string | null {
+  if (!intervalHours || intervalHours <= 0) intervalHours = adaptiveInterval(from, meetingAt);
   const next = new Date(from.getTime() + intervalHours * 3_600_000);
   return next.getTime() >= new Date(meetingAt).getTime() ? null : next.toISOString();
+}
+
+/** «تلقائي من النظام»: تزيد الرسائل كلما قرب الموعد. */
+export function adaptiveInterval(from: Date, meetingAt: string): number {
+  const left = (new Date(meetingAt).getTime() - from.getTime()) / 3_600_000;
+  if (left > 72) return 24;
+  if (left > 24) return 12;
+  if (left > 6) return 4;
+  return 1;
 }
