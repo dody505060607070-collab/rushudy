@@ -1,0 +1,1 @@
+ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS commission_rate numeric(5,2) CHECK (commission_rate IS NULL OR (commission_rate >= 0 AND commission_rate <= 100));
