@@ -30,6 +30,7 @@ import type { ReactNode } from "react";
 import { Chip } from "@/components/kit/Chip";
 import { formatCurrency, formatDate } from "@/components/kit/LiveTable";
 import { PageHero } from "@/components/kit/PageHero";
+import { OwnerCommissionCard } from "@/components/owners/OwnerCommissionCard";
 import { supabase } from "@/integrations/supabase/client";
 import { askAdminAi } from "@/lib/ai.functions";
 import { exportWorkbook, type ExportRow } from "@/lib/export";
@@ -707,6 +708,14 @@ function OwnerDetailPage() {
             استيراد عقد PDF
           </button>
           <Link
+            to="/contracts"
+            search={{ newFor: ownerId }}
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-card px-3 font-semibold hover:bg-muted"
+          >
+            <FilePlus2 className="size-4" />
+            إضافة عقد يدوي
+          </Link>
+          <Link
             to="/invoice-form"
             search={{ id: "", ownerId }}
             className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 font-semibold text-primary-foreground"
@@ -737,6 +746,15 @@ function OwnerDetailPage() {
           </button>
         </div>
       </div>
+
+      {data ? (
+        <OwnerCommissionCard
+          ownerId={ownerId}
+          rate={data.owner?.commission_rate ?? null}
+          contracts={data.contracts}
+          payments={data.payments}
+        />
+      ) : null}
 
       {ownerAccess ? (
         <section className="surface-card border-e-4 border-e-success p-4">

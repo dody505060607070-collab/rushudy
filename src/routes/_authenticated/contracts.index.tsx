@@ -77,8 +77,10 @@ export const Route = createFileRoute("/_authenticated/contracts/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { edit?: string } =>
-    typeof search["edit"] === "string" ? { edit: search["edit"] } : {},
+  validateSearch: (search: Record<string, unknown>): { edit?: string; newFor?: string } => ({
+    ...(typeof search["edit"] === "string" ? { edit: search["edit"] } : {}),
+    ...(typeof search["newFor"] === "string" ? { newFor: search["newFor"] } : {}),
+  }),
   component: ContractsPage,
 });
 
@@ -213,7 +215,15 @@ function ContractsPage() {
     setFormOpen(true);
   };
 
-  const { edit: editId } = Route.useSearch();
+  const { edit: editId, newFor } = Route.useSearch();
+  const handledNewFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!newFor || handledNewFor.current === newFor) return;
+    handledNewFor.current = newFor;
+    openCreate({ owner_id: newFor });
+    void navigate({ to: "/contracts", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newFor]);
   const handledEditId = useRef<string | null>(null);
   useEffect(() => {
     if (!editId || handledEditId.current === editId) return;
