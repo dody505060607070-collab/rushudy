@@ -460,6 +460,7 @@ export type Database = {
           assigned_to: string | null
           budget_max: number | null
           budget_min: number | null
+          commission_rate: number | null
           created_at: string
           created_by: string | null
           email: string | null
@@ -483,6 +484,7 @@ export type Database = {
           assigned_to?: string | null
           budget_max?: number | null
           budget_min?: number | null
+          commission_rate?: number | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -506,6 +508,7 @@ export type Database = {
           assigned_to?: string | null
           budget_max?: number | null
           budget_min?: number | null
+          commission_rate?: number | null
           created_at?: string
           created_by?: string | null
           email?: string | null

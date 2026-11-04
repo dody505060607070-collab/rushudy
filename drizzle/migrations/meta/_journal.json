@@ -435,6 +435,13 @@
       "when": 1793582972688,
       "tag": "0061_maintenance_notify_recipients",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1793822803807,
+      "tag": "0062_owner_commission_rate",
+      "breakpoints": true
     }
   ]
 }
