@@ -22,6 +22,7 @@ import {
   Settings2,
   UserRound,
   WalletCards,
+  FilePlus2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
