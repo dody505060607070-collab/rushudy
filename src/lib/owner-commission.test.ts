@@ -8,3 +8,16 @@ describe("owner commission", () => {
   it("rejects rate above 100", () => expect(() => parseCommissionRate("120")).toThrow());
   it("accepts 10%", () => expect(parseCommissionRate("10%")).toBe(10));
 });
+
+import { commissionBreakdown, roundHalfRiyal } from "./owner-commission";
+describe("commission breakdown", () => {
+  it("rounds to half riyal", () => expect(roundHalfRiyal(12.3)).toBe(12.5));
+  it("10% of 30000 rent with 15000 collected", () => {
+    const b = commissionBreakdown(30000, 15000, 10);
+    expect(b.officeExpected).toBe(3000);
+    expect(b.officeCollected).toBe(1500);
+    expect(b.ownerCollected).toBe(13500);
+    expect(b.remaining).toBe(15000);
+  });
+  it("7.5% of 12345 is 926 (half riyal)", () => expect(commissionBreakdown(12345, 0, 7.5).officeExpected).toBe(926));
+});
