@@ -20,6 +20,9 @@ import { Toggle } from "@/components/kit/Toggle";
 import { supabase } from "@/integrations/supabase/client";
 import { describeDbError } from "@/lib/db-errors";
 import { deleteOwners } from "@/lib/delete-helpers";
+import { commissionAmount, parseCommissionRate } from "@/lib/owner-commission";
+
+const money = (n: number) => `${n.toLocaleString("ar-SA", { maximumFractionDigits: 2 })} ر.س`;
 
 type Row = {
   id: string;
@@ -32,6 +35,7 @@ type Row = {
   notes: string | null;
   roles: string[] | null;
   is_active: boolean;
+  commission_rate: number | null;
   created_at: string;
 };
 
@@ -50,7 +54,7 @@ export const Route = createFileRoute("/_authenticated/owners/")({
 });
 
 const SELECT =
-  "id, full_name, phone, whatsapp, email, national_id, address, notes, roles, is_active, created_at";
+  "id, full_name, phone, whatsapp, email, national_id, address, notes, roles, is_active, commission_rate, created_at";
 
 type FormState = {
   full_name: string;
@@ -60,6 +64,7 @@ type FormState = {
   national_id: string;
   address: string;
   notes: string;
+  commission_rate: string;
   is_active: boolean;
 };
 
@@ -71,6 +76,7 @@ const emptyForm: FormState = {
   national_id: "",
   address: "",
   notes: "",
+  commission_rate: "",
   is_active: true,
 };
 
@@ -97,7 +103,7 @@ function OwnersPage() {
     queryFn: async () => {
       const [props, contracts] = await Promise.all([
         supabase.from("properties").select("owner_id"),
-        supabase.from("contracts").select("owner_id, status"),
+        supabase.from("contracts").select("owner_id, status, annual_rent"),
       ]);
       if (props.error) throw props.error;
       if (contracts.error) throw contracts.error;
@@ -105,10 +111,14 @@ function OwnersPage() {
       for (const row of props.data ?? [])
         if (row.owner_id) properties[row.owner_id] = (properties[row.owner_id] ?? 0) + 1;
       const active: Record<string, number> = {};
+      const rent: Record<string, number> = {};
       for (const row of contracts.data ?? [])
         if (row.owner_id && row.status === "active")
+        {
           active[row.owner_id] = (active[row.owner_id] ?? 0) + 1;
-      return { properties, active };
+          rent[row.owner_id] = (rent[row.owner_id] ?? 0) + Number(row.annual_rent ?? 0);
+        }
+      return { properties, active, rent };
     },
   });
 
@@ -128,6 +138,7 @@ function OwnersPage() {
       national_id: row.national_id ?? "",
       address: row.address ?? "",
       notes: row.notes ?? "",
+      commission_rate: row.commission_rate != null ? String(row.commission_rate) : "",
       is_active: row.is_active,
     });
     setOpen(true);
@@ -144,6 +155,7 @@ function OwnersPage() {
         national_id: form.national_id.trim() || null,
         address: form.address.trim() || null,
         notes: form.notes.trim() || null,
+        commission_rate: parseCommissionRate(form.commission_rate),
         is_active: form.is_active,
       };
       if (editing) {
@@ -207,6 +219,10 @@ function OwnersPage() {
       all: rows.length,
       active: rows.filter((r) => r.is_active).length,
       withProperties: rows.filter((r) => (links.data?.properties[r.id] ?? 0) > 0).length,
+      earnings: rows.reduce(
+        (sum, r) => sum + commissionAmount(links.data?.rent[r.id] ?? 0, r.commission_rate),
+        0,
+      ),
     }),
     [rows, links.data],
   );
@@ -221,6 +237,7 @@ function OwnersPage() {
           { value: String(stats.all), label: "إجمالي الملاك" },
           { value: String(stats.active), label: "نشط" },
           { value: String(stats.withProperties), label: "لديهم عقارات" },
+          { value: money(stats.earnings), label: "نصيب المكتب سنويًا" },
         ]}
       />
 
@@ -302,6 +319,35 @@ function OwnersPage() {
                 <Chip tone={(links.data?.active[r.id] ?? 0) > 0 ? "success" : "neutral"}>
                   {links.data?.active[r.id] ?? 0}
                 </Chip>
+              ),
+            },
+            {
+              header: "نسبة المكتب",
+              sortable: true,
+              value: (r) => r.commission_rate ?? 0,
+              cell: (r) =>
+                r.commission_rate != null ? (
+                  <Chip tone="gold">{r.commission_rate}%</Chip>
+                ) : (
+                  <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(r); }} className="text-[12px] font-semibold text-primary hover:underline">
+                    حدّد النسبة
+                  </button>
+                ),
+            },
+            {
+              header: "إيجار العقود السارية",
+              sortable: true,
+              value: (r) => links.data?.rent[r.id] ?? 0,
+              cell: (r) => money(links.data?.rent[r.id] ?? 0),
+            },
+            {
+              header: "نصيب المكتب سنويًا",
+              sortable: true,
+              value: (r) => commissionAmount(links.data?.rent[r.id] ?? 0, r.commission_rate),
+              cell: (r) => (
+                <span className="font-bold text-primary">
+                  {money(commissionAmount(links.data?.rent[r.id] ?? 0, r.commission_rate))}
+                </span>
               ),
             },
             {
@@ -416,6 +462,29 @@ function OwnersPage() {
               onChange={(e) => set({ address: e.target.value })}
             />
           </Field>
+          <Field label="نسبة المكتب من المالك (%)">
+            <input
+              className={inputClass}
+              dir="ltr"
+              inputMode="decimal"
+              placeholder="مثال: 10"
+              value={form.commission_rate}
+              onChange={(e) => set({ commission_rate: e.target.value })}
+            />
+          </Field>
+          <div className="self-end rounded-lg bg-muted px-3 py-2 text-[12.5px]">
+            {(() => {
+              try {
+                const rate = parseCommissionRate(form.commission_rate);
+                const rent = editing ? (links.data?.rent[editing.id] ?? 0) : 0;
+                return rate == null
+                  ? "اكتب النسبة ليظهر نصيب المكتب"
+                  : `نصيب المكتب سنويًا: ${money(commissionAmount(rent, rate))} من إيجار ${money(rent)}`;
+              } catch (e) {
+                return <span className="text-destructive">{(e as Error).message}</span>;
+              }
+            })()}
+          </div>
           <Field label="ملاحظات" className="sm:col-span-2">
             <textarea
               className={textareaClass}
