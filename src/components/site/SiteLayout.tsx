@@ -218,6 +218,17 @@ function SiteFooter() {
         <p className="mt-8 text-[12px] text-white/60">
           جميع الحقوق محفوظة © {new Date().getFullYear()} — مؤسسة الرشودي للعقارات
         </p>
+        <p className="mt-3 text-[11px] text-white/40">
+          تصميم وتطوير{" "}
+          <a
+            href="https://abdelrahmanstudio.store/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline-offset-2 hover:text-white/70 hover:underline"
+          >
+            Abdelrahman Studio
+          </a>
+        </p>
       </div>
     </footer>
   );
